@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nova Família - Plataforma Política</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .gradient-blue {
+            background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%);
+        }
+        
+        .gradient-green {
+            background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+        }
+        
+        .gradient-yellow {
+            background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
+        }
+        
+        .gradient-red {
+            background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%);
+        }
+        
+        .transition-all {
+            transition: all 0.3s ease;
+        }
+        
+        .hover-scale:hover {
+            transform: scale(1.02);
+        }
+        
+        .shadow-card {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        
+        .shadow-card:hover {
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        .slide-down {
+            animation: slideDown 0.3s ease-out;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-gray-50 via-white to-blue-50 min-h-screen">
+    <!-- Header -->
+    <div class="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center space-x-4">
+                    <button onclick="voltarPagina()" class="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-colors">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                        </svg>
+                    </button>
+                    <div class="w-10 h-10 gradient-blue rounded-xl flex items-center justify-center">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-900">Nova Família</h1>
+                        <p class="text-sm text-gray-600">Cadastro de família e membros</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <button onclick="salvarRascunho()" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors">
+                        Salvar Rascunho
+                    </button>
+                    <button onclick="cancelarCadastro()" class="px-4 py-2 bg-red-100 text-red-700 rounded-xl font-medium hover:bg-red-200 transition-colors">
+                        Cancelar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Informações da Família -->
+        <div class="bg-white rounded-3xl shadow-card border border-gray-100 p-8 mb-6">
+            <div class="flex items-center space-x-3 mb-6">
+                <div class="w-8 h-8 gradient-blue rounded-lg flex items-center justify-center">
+                    <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2m-6 4h4"></path>
+                    </svg>
+                </div>
+                <h2 class="text-xl font-bold text-gray-900">Informações da Família</h2>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Endereço -->
+                <div class="md:col-span-2">
+                    <label for="enderecoFamilia" class="block text-sm font-semibold text-gray-700 mb-2">Endereço Completo</label>
+                    <input 
+                        type="text" 
+                        id="enderecoFamilia"
+                        placeholder="Rua, número, bairro, cidade"
+                        class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all duration-200"
+                    />
+                </div>
+
+                <!-- Bairro -->
+                <div>
+                    <label for="bairroFamilia" class="block text-sm font-semibold text-gray-700 mb-2">Bairro</label>
+                    <select 
+                        id="bairroFamilia"
+                        class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all duration-200"
+                    >
+                        <option value="">Selecione o bairro</option>
+                        <option value="Centro">Centro</option>
+                        <option value="Vila Nova">Vila Nova</option>
+                        <option value="Jardim América">Jardim América</option>
+                        <option value="Santa Rita">Santa Rita</option>
+                        <option value="São João">São João</option>
+                        <option value="Outro">Outro</option>
+                    </select>
+                </div>
+
+                <!-- Telefone -->
+                <div>
+                    <label for="telefoneFamilia" class="block text-sm font-semibold text-gray-700 mb-2">Telefone de Contato</label>
+                    <input 
+                        type="tel" 
+                        id="telefoneFamilia"
+                        placeholder="(11) 99999-9999"
+                        class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all duration-200"
+                    />
+                </div>
+            </div>
+        </div>
+
+        <!-- Membros da Família -->
+        <div class="bg-white rounded-3xl shadow-card border border-gray-100 p-8">
+            <div class="flex items-center justify-between mb-6">
+                <div class="flex items-center space-x-3">
+                    <div class="w-8 h-8 gradient-blue rounded-lg flex items-center justify-center">
+                        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                        </svg>
+                    </div>
+                    <h2 class="text-xl font-bold text-gray-900">Membros da Família</h2>
+                </div>
+                <span id="contadorMembros" class="px-3 py-1 bg-blue-100 text-blue-700 text-sm font-medium rounded-full">
+                    1 membro
+                </span>
+            </div>
+
+            <!-- Container dos Membros -->
+            <div id="containerMembros" class="space-y-6">
+                <!-- Primeiro membro (sempre presente) -->
+                <div class="membro-card p-6 border-2 border-gray-200 rounded-2xl slide-down" data-membro="1">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold text-gray-900">1º Membro da Família</h3>
+                        <span class="px-3 py-1 bg-purple-100 text-purple-700 text-sm font-medium rounded-full">
+                            Responsável Obrigatório
+                        </span>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Nome Completo -->
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Nome Completo *</label>
+                            <input 
+                                type="text" 
+                                name="nome_1"
+                                placeholder="Nome completo da pessoa"
+                                class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all duration-200"
+                                required
+                            />
+                        </div>
+
+                        <!-- Data de Nascimento -->
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Data de Nascimento *</label>
+                            <input 
+                                type="date" 
+                                name="nascimento_1"
+                                class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all duration-200"
+                                required
+                            />
+                        </div>
+
+                        <!-- Profissão -->
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Profissão</label>
+                            <input 
+                                type="text" 
+                                name="profissao_1"
+                                placeholder="Profissão ou ocupação"
+                                class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all duration-200"
+                            />
+                        </div>
+
+                        <!-- Papel na Família -->
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Papel na Família *</label>
+                            <select 
+                                name="papel_1"
+                                class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all duration-200"
+                                required
+                            >
+                                <option value="Responsável" selected>Responsável</option>
+                                <option value="Membro">Membro</option>
+                            </select>
+                        </div>
+
+                        <!-- Probabilidade de Voto -->
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Probabilidade de Voto *</label>
+                            <select 
+                                name="probabilidade_1"
+                                class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all duration-200"
+                                required
+                            >
+                                <option value="">Selecione a probabilidade</option>
+                                <option value="Alta">Alta Probabilidade</option>
+                                <option value="Média">Média Probabilidade</option>
+                                <option value="Baixa">Baixa Probabilidade</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Botão Adicionar Membro -->
+            <div class="mt-6 text-center">
+                <button 
+                    onclick="adicionarNovoMembro()"
+                    class="inline-flex items-center space-x-2 px-6 py-3 gradient-green text-white rounded-xl font-semibold hover:opacity-90 transition-all duration-200 transform hover:scale-105"
+                >
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                    </svg>
+                    <span>Adicionar mais uma pessoa da mesma família</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Botões de Ação -->
+        <div class="mt-8 flex flex-col sm:flex-row gap-4 justify-end">
+            <button 
+                onclick="previewFamilia()"
+                class="px-8 py-3 bg-gray-100 text-gray-700 rounded-xl font-semibold hover:bg-gray-200 transition-all duration-200"
+            >
+                Visualizar Prévia
+            </button>
+            <button 
+                onclick="salvarFamilia()"
+                class="px-8 py-3 gradient-blue text-white rounded-xl font-semibold hover:opacity-90 transition-all duration-200 transform hover:scale-105"
+            >
+                Cadastrar Família
+            </button>
+        </div>
+    </div>
+
+    <!-- Modal de Prévia -->
+    <div id="modalPrevia" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-3xl shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div class="p-6 border-b border-gray-200">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-xl font-bold text-gray-900">Prévia da Família</h3>
+                    <button onclick="fecharPrevia()" class="p-2 text-gray-400 hover:text-gray-600 rounded-lg">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <div id="conteudoPrevia" class="p-6">
+                <!-- Conteúdo da prévia será inserido aqui -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let contadorMembros = 1;
+
+        // Função para adicionar novo membro
+        function adicionarNovoMembro() {
+            contadorMembros++;
+            
+            const container = document.getElementById('containerMembros');
+            const novoMembro = document.createElement('div');
+            novoMembro.className = 'membro-card p-6 border-2 border-gray-200 rounded-2xl slide-down';
+            novoMembro.setAttribute('data-membro', contadorMembros);
+            
+            novoMembro.innerHTML = `
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold text-gray-900">${contadorMembros}º Membro da Família</h3>
+                    <button 
+                        onclick="removerMembro(${contadorMembros})"
+                        class="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
+                        title="Remover membro"
+                    >
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Nome Completo -->
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">Nome Completo *</label>
+                        <input 
+                            type="text" 
+                            name="nome_${contadorMembros}"
+                            placeholder="Nome completo da pessoa"
+                            class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all duration-200"
+                            required
+                        />
+                    </div>
+
+                    <!-- Data de Nascimento -->
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">Data de Nascimento *</label>
+                        <input 
+                            type="date" 
+                            name="nascimento_${contadorMembros}"
+                            class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all duration-200"
+                            required
+                        />
+                    </div>
+
+                    <!-- Profissão -->
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">Profissão</label>
+                        <input 
+                            type="text" 
+                            name="profissao_${contadorMembros}"
+                            placeholder="Profissão ou ocupação"
+                            class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all duration-200"
+                        />
+                    </div>
+
+                    <!-- Papel na Família -->
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">Papel na Família *</label>
+                        <select 
+                            name="papel_${contadorMembros}"
+                            class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all duration-200"
+                            required
+                        >
+                            <option value="">Selecione o papel</option>
+                            <option value="Responsável">Responsável</option>
+                            <option value="Membro" selected>Membro</option>
+                        </select>
+                    </div>
+
+                    <!-- Probabilidade de Voto -->
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">Probabilidade de Voto *</label>
+                        <select 
+                            name="probabilidade_${contadorMembros}"
+                            class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all duration-200"
+                            required
+                        >
+                            <option value="">Selecione a probabilidade</option>
+                            <option value="Alta">Alta Probabilidade</option>
+                            <option value="Média">Média Probabilidade</option>
+                            <option value="Baixa">Baixa Probabilidade</option>
+                        </select>
+                    </div>
+                </div>
+            `;
+            
+            container.appendChild(novoMembro);
+            atualizarContadorMembros();
+            
+            // Scroll suave para o novo membro
+            setTimeout(() => {
+                novoMembro.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 100);
+        }
+
+        // Função para remover membro
+        function removerMembro(numeroMembro) {
+            if (contadorMembros <= 1) {
+                alert('É necessário ter pelo menos um membro na família!');
+                return;
+            }
+            
+            const membro = document.querySelector(`[data-membro="${numeroMembro}"]`);
+            if (membro) {
+                membro.style.animation = 'fadeOut 0.3s ease-out';
+                setTimeout(() => {
+                    membro.remove();
+                    contadorMembros--;
+                    atualizarContadorMembros();
+                    renumerarMembros();
+                }, 300);
+            }
+        }
+
+        // Função para atualizar contador de membros
+        function atualizarContadorMembros() {
+            const contador = document.getElementById('contadorMembros');
+            contador.textContent = `${contadorMembros} ${contadorMembros === 1 ? 'membro' : 'membros'}`;
+        }
+
+        // Função para renumerar membros após remoção
+        function renumerarMembros() {
+            const membros = document.querySelectorAll('.membro-card');
+            membros.forEach((membro, index) => {
+                const numero = index + 1;
+                membro.setAttribute('data-membro', numero);
+                
+                const titulo = membro.querySelector('h3');
+                if (numero === 1) {
+                    titulo.textContent = '1º Membro da Família';
+                } else {
+                    titulo.textContent = `${numero}º Membro da Família`;
+                }
+                
+                // Atualizar nomes dos campos
+                const inputs = membro.querySelectorAll('input, select');
+                inputs.forEach(input => {
+                    const name = input.getAttribute('name');
+                    if (name) {
+                        const prefixo = name.split('_')[0];
+                        input.setAttribute('name', `${prefixo}_${numero}`);
+                    }
+                });
+            });
+        }
+
+        // Função para validar formulário
+        function validarFormulario() {
+            const nomeFamilia = document.getElementById('nomeFamilia').value.trim();
+            const endereco = document.getElementById('enderecoFamilia').value.trim();
+            const bairro = document.getElementById('bairroFamilia').value;
+            const telefone = document.getElementById('telefoneFamilia').value.trim();
+            
+            if (!nomeFamilia || !endereco || !bairro || !telefone) {
+                alert('Por favor, preencha todas as informações da família!');
+                return false;
+            }
+            
+            // Validar membros
+            const membros = document.querySelectorAll('.membro-card');
+            for (let i = 0; i < membros.length; i++) {
+                const membro = membros[i];
+                const nome = membro.querySelector(`input[name^="nome_"]`).value.trim();
+                const nascimento = membro.querySelector(`input[name^="nascimento_"]`).value;
+                const papel = membro.querySelector(`select[name^="papel_"]`).value;
+                const probabilidade = membro.querySelector(`select[name^="probabilidade_"]`).value;
+                
+                if (!nome || !nascimento || !papel || !probabilidade) {
+                    alert(`Por favor, preencha todos os campos obrigatórios do ${i + 1}º membro!`);
+                    return false;
+                }
+            }
+            
+            return true;
+        }
+
+        // Função para coletar dados do formulário
+        function coletarDados() {
+            const dadosFamilia = {
+                nomeFamilia: document.getElementById('nomeFamilia').value.trim(),
+                endereco: document.getElementById('enderecoFamilia').value.trim(),
+                bairro: document.getElementById('bairroFamilia').value,
+                telefone: document.getElementById('telefoneFamilia').value.trim(),
+                membros: []
+            };
+            
+            const membros = document.querySelectorAll('.membro-card');
+            membros.forEach((membro, index) => {
+                const numero = index + 1;
+                const dadosMembro = {
+                    nome: membro.querySelector(`input[name="nome_${numero}"]`).value.trim(),
+                    nascimento: membro.querySelector(`input[name="nascimento_${numero}"]`).value,
+                    profissao: membro.querySelector(`input[name="profissao_${numero}"]`).value.trim() || 'Não informado',
+                    papel: membro.querySelector(`select[name="papel_${numero}"]`).value,
+                    probabilidade: membro.querySelector(`select[name="probabilidade_${numero}"]`).value
+                };
+                
+                // Calcular idade
+                if (dadosMembro.nascimento) {
+                    const nascimento = new Date(dadosMembro.nascimento);
+                    const hoje = new Date();
+                    dadosMembro.idade = hoje.getFullYear() - nascimento.getFullYear();
+                    if (hoje.getMonth() < nascimento.getMonth() || 
+                        (hoje.getMonth() === nascimento.getMonth() && hoje.getDate() < nascimento.getDate())) {
+                        dadosMembro.idade--;
+                    }
+                }
+                
+                dadosFamilia.membros.push(dadosMembro);
+            });
+            
+            return dadosFamilia;
+        }
+
+        // Função para mostrar prévia
+        function previewFamilia() {
+            if (!validarFormulario()) return;
+            
+            const dados = coletarDados();
+            const modal = document.getElementById('modalPrevia');
+            const conteudo = document.getElementById('conteudoPrevia');
+            
+            const getCorProbabilidade = (prob) => {
+                switch (prob) {
+                    case 'Alta': return 'text-green-600 bg-green-100';
+                    case 'Média': return 'text-yellow-600 bg-yellow-100';
+                    case 'Baixa': return 'text-red-600 bg-red-100';
+                    default: return 'text-gray-600 bg-gray-100';
+                }
+            };
+            
+            conteudo.innerHTML = `
+                <div class="space-y-6">
+                    <!-- Informações da Família -->
+                    <div class="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-2xl border border-blue-200">
+                        <h4 class="text-lg font-bold text-gray-900 mb-3">${dados.nomeFamilia}</h4>
+                        <div class="space-y-2 text-sm">
+                            <div class="flex items-center text-gray-600">
+                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                </svg>
+                                ${dados.endereco}
+                            </div>
+                            <div class="flex items-center text-gray-600">
+                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path>
+                                </svg>
+                                ${dados.telefone}
+                            </div>
+                            <div class="flex items-center text-gray-600">
+                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                                </svg>
+                                ${dados.bairro}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Lista de Membros -->
+                    <div>
+                        <h4 class="text-lg font-bold text-gray-900 mb-4">Membros da Família (${dados.membros.length})</h4>
+                        <div class="space-y-3">
+                            ${dados.membros.map((membro, index) => `
+                                <div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-100">
+                                    <div class="flex items-center space-x-4">
+                                        <div class="w-12 h-12 gradient-blue rounded-xl flex items-center justify-center text-white font-bold text-lg">
+                                            ${membro.nome.split(' ').map(n => n[0]).join('').substring(0, 2)}
+                                        </div>
+                                        <div class="flex-1">
+                                            <h5 class="font-semibold text-gray-900">${membro.nome}</h5>
+                                            <div class="flex items-center space-x-3 mt-1">
+                                                <span class="text-sm text-gray-600">${membro.profissao} • ${membro.idade} anos</span>
+                                                <span class="px-2 py-1 text-xs font-medium rounded-full ${membro.papel === 'Responsável' ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-700'}">
+                                                    ${membro.papel}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center space-x-3">
+                                        <span class="px-3 py-1 text-xs font-medium rounded-full ${getCorProbabilidade(membro.probabilidade)}">
+                                            ${membro.probabilidade}
+                                        </span>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        // Função para fechar prévia
+        function fecharPrevia() {
+            const modal = document.getElementById('modalPrevia');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        // Função para salvar família
+        function salvarFamilia() {
+            if (!validarFormulario()) return;
+            
+            const dados = coletarDados();
+            
+            // Simular salvamento
+            console.log('Dados da família:', dados);
+            
+            // Mostrar confirmação
+            alert(`Família "${dados.nomeFamilia}" cadastrada com sucesso!\n\nMembros cadastrados: ${dados.membros.length}\nResponsável: ${dados.membros.find(m => m.papel === 'Responsável')?.nome || 'Não definido'}`);
+            
+            // Aqui você implementaria a chamada para a API
+            // exemplo: await fetch('/api/familias', { method: 'POST', body: JSON.stringify(dados) })
+            
+            // Voltar para a página anterior
+            voltarPagina();
+        }
+
+        // Função para salvar rascunho
+        function salvarRascunho() {
+            const dados = coletarDados();
+            localStorage.setItem('rascunho_familia', JSON.stringify(dados));
+            
+            alert('Rascunho salvo com sucesso!');
+        }
+
+        // Função para carregar rascunho
+        function carregarRascunho() {
+            const rascunho = localStorage.getItem('rascunho_familia');
+            if (rascunho) {
+                const dados = JSON.parse(rascunho);
+                
+                // Preencher dados da família
+                document.getElementById('nomeFamilia').value = dados.nomeFamilia || '';
+                document.getElementById('enderecoFamilia').value = dados.endereco || '';
+                document.getElementById('bairroFamilia').value = dados.bairro || '';
+                document.getElementById('telefoneFamilia').value = dados.telefone || '';
+                
+                // Preencher membros
+                if (dados.membros && dados.membros.length > 0) {
+                    // Primeiro membro
+                    const primeiroMembro = dados.membros[0];
+                    document.querySelector('input[name="nome_1"]').value = primeiroMembro.nome || '';
+                    document.querySelector('input[name="nascimento_1"]').value = primeiroMembro.nascimento || '';
+                    document.querySelector('input[name="profissao_1"]').value = primeiroMembro.profissao || '';
+                    document.querySelector('select[name="papel_1"]').value = primeiroMembro.papel || '';
+                    document.querySelector('select[name="probabilidade_1"]').value = primeiroMembro.probabilidade || '';
+                    
+                    // Membros adicionais
+                    for (let i = 1; i < dados.membros.length; i++) {
+                        adicionarNovoMembro();
+                        const membro = dados.membros[i];
+                        const numeroMembro = i + 1;
+                        
+                        setTimeout(() => {
+                            document.querySelector(`input[name="nome_${numeroMembro}"]`).value = membro.nome || '';
+                            document.querySelector(`input[name="nascimento_${numeroMembro}"]`).value = membro.nascimento || '';
+                            document.querySelector(`input[name="profissao_${numeroMembro}"]`).value = membro.profissao || '';
+                            document.querySelector(`select[name="papel_${numeroMembro}"]`).value = membro.papel || '';
+                            document.querySelector(`select[name="probabilidade_${numeroMembro}"]`).value = membro.probabilidade || '';
+                        }, 100 * i);
+                    }
+                }
+            }
+        }
+
+        // Função para cancelar cadastro
+        function cancelarCadastro() {
+            if (confirm('Tem certeza que deseja cancelar o cadastro? Todos os dados não salvos serão perdidos.')) {
+                localStorage.removeItem('rascunho_familia');
+                voltarPagina();
+            }
+        }
+
+        // Função para voltar à página anterior
+        function voltarPagina() {
+            // Simular volta para a página de famílias
+            alert('Voltando para a página de famílias...');
+            // window.history.back(); // ou window.location.href = '/familias';
+        }
+
+        // Máscara para telefone
+        function aplicarMascaraTelefone(input) {
+            let value = input.value.replace(/\D/g, '');
+            
+            if (value.length <= 10) {
+                value = value.replace(/(\d{2})(\d{4})(\d{0,4})/, '($1) $2-$3');
+            } else {
+                value = value.replace(/(\d{2})(\d{5})(\d{0,4})/, '($1) $2-$3');
+            }
+            
+            input.value = value;
+        }
+
+        // Event listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            // Aplicar máscara no telefone
+            const telefoneInput = document.getElementById('telefoneFamilia');
+            telefoneInput.addEventListener('input', (e) => aplicarMascaraTelefone(e.target));
+            
+            // Verificar se existe rascunho
+            if (localStorage.getItem('rascunho_familia')) {
+                if (confirm('Foi encontrado um rascunho salvo. Deseja carregá-lo?')) {
+                    carregarRascunho();
+                }
+            }
+            
+            // Fechar modal ao clicar fora
+            const modal = document.getElementById('modalPrevia');
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    fecharPrevia();
+                }
+            });
+        });
+
+        // Adicionar CSS para animação de fadeOut
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes fadeOut {
+                from { opacity: 1; transform: translateX(0); }
+                to { opacity: 0; transform: translateX(-20px); }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>

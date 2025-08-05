@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Árvore de Indicações - Plataforma Política</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .gradient-blue {
+            background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%);
+        }
+        
+        .gradient-green {
+            background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+        }
+        
+        .gradient-yellow {
+            background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
+        }
+        
+        .gradient-red {
+            background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%);
+        }
+        
+        .gradient-purple {
+            background: linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%);
+        }
+        
+        .transition-all {
+            transition: all 0.3s ease;
+        }
+        
+        .shadow-card {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        
+        .shadow-card:hover {
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        .tree-line {
+            position: relative;
+        }
+
+        .tree-line::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            right: 100%;
+            width: 20px;
+            height: 2px;
+            background-color: #CBD5E1;
+            z-index: 1;
+        }
+
+        .tree-line::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            right: 100%;
+            width: 2px;
+            height: 100%;
+            background-color: #CBD5E1;
+            transform: translateY(-50%);
+            z-index: 1;
+        }
+
+        .tree-line:last-child::after {
+            height: 50%;
+            transform: translateY(-100%);
+        }
+
+        .tree-vertical-line {
+            position: absolute;
+            left: -21px;
+            top: 0;
+            width: 2px;
+            background-color: #CBD5E1;
+            z-index: 0;
+        }
+
+        .expandable-node {
+            cursor: pointer;
+        }
+
+        .expandable-node:hover {
+            transform: translateY(-2px);
+        }
+
+        .expand-button {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: .7;
+            }
+        }
+
+        .slide-down {
+            animation: slideDown 0.4s ease-out;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .scrollbar-thin {
+            scrollbar-width: thin;
+            scrollbar-color: #CBD5E1 #F1F5F9;
+        }
+
+        .scrollbar-thin::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .scrollbar-thin::-webkit-scrollbar-track {
+            background: #F1F5F9;
+            border-radius: 3px;
+        }
+
+        .scrollbar-thin::-webkit-scrollbar-thumb {
+            background: #CBD5E1;
+            border-radius: 3px;
+        }
+
+        .zoom-controls {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 50;
+        }
+
+        .tree-container {
+            transform-origin: top left;
+            transition: transform 0.3s ease;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-gray-50 via-white to-blue-50 min-h-screen">
+    <!-- Header -->
+    <div class="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center space-x-4">
+                    <button onclick="voltarPagina()" class="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-colors">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                        </svg>
+                    </button>
+                    <div class="w-10 h-10 gradient-purple rounded-xl flex items-center justify-center">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-900">Árvore de Indicações</h1>
+                        <p class="text-sm text-gray-600" id="familiaAtual">Família Silva Santos</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <select id="familiaSelector" class="px-3 py-2 border border-gray-200 rounded-lg text-sm">
+                        <option value="1">Maria Silva Santos</option>
+                        <option value="2">João Carlos Oliveira</option>
+                        <option value="3">Roberto Santos Lima</option>
+                        <option value="4">Ana Paula Costa</option>
+                    </select>
+                    <button onclick="exportarArvore()" class="px-4 py-2 bg-green-100 text-green-700 rounded-xl font-medium hover:bg-green-200 transition-colors">
+                        Exportar
+                    </button>
+                    <button onclick="expandirTodos()" class="px-4 py-2 gradient-blue text-white rounded-xl font-medium hover:opacity-90 transition-colors">
+                        Expandir Todos
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Painel de Informações -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div class="bg-white rounded-3xl shadow-card border border-gray-100 p-6 mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-blue-600" id="totalIndicacoes">12</div>
+                    <div class="text-sm text-gray-600">Total de Indicações</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-green-600" id="indicacoesAtivas">8</div>
+                    <div class="text-sm text-gray-600">Indicações Ativas</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-purple-600" id="nivelMaisAlto">3</div>
+                    <div class="text-sm text-gray-600">Nível Mais Alto</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-orange-600" id="taxaConversao">75%</div>
+                    <div class="text-sm text-gray-600">Taxa de Conversão</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Container da Árvore -->
+        <div class="bg-white rounded-3xl shadow-card border border-gray-100 overflow-hidden">
+            <div class="bg-gradient-to-r from-gray-50 to-blue-50 px-6 py-4 border-b border-gray-200">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-8 h-8 gradient-purple rounded-lg flex items-center justify-center">
+                            <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path>
+                            </svg>
+                        </div>
+                        <div>
+                            <h2 class="text-lg font-bold text-gray-900">Rede de Indicações</h2>
+                            <p class="text-sm text-gray-600">Clique nos nós para expandir as indicações</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <span class="text-xs text-gray-500">Legenda:</span>
+                        <div class="flex items-center space-x-1">
+                            <div class="w-3 h-3 bg-green-500 rounded-full"></div>
+                            <span class="text-xs text-gray-600">Alta</span>
+                        </div>
+                        <div class="flex items-center space-x-1">
+                            <div class="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                            <span class="text-xs text-gray-600">Média</span>
+                        </div>
+                        <div class="flex items-center space-x-1">
+                            <div class="w-3 h-3 bg-red-500 rounded-full"></div>
+                            <span class="text-xs text-gray-600">Baixa</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-6 overflow-auto scrollbar-thin" style="max-height: 70vh;">
+                <div id="arvoreContainer" class="tree-container">
+                    <!-- A árvore será inserida aqui -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Controles de Zoom -->
+    <div class="zoom-controls">
+        <div class="bg-white rounded-xl shadow-lg border border-gray-200 p-2">
+            <button onclick="zoomIn()" class="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                </svg>
+            </button>
+            <button onclick="zoomOut()" class="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 12H6"></path>
+                </svg>
+            </button>
+            <button onclick="resetZoom()" class="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- Modal de Detalhes -->
+    <div id="modalDetalhes" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-3xl shadow-xl max-w-lg w-full mx-4">
+            <div class="p-6 border-b border-gray-200">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-xl font-bold text-gray-900">Detalhes da Família</h3>
+                    <button onclick="fecharModal()" class="p-2 text-gray-400 hover:text-gray-600 rounded-lg">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <div id="conteudoModal" class="p-6">
+                <!-- Conteúdo será inserido dinamicamente -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Dados de exemplo da árvore de indicações
+        const dadosIndicacoes = {
+            1: {
+                id: 1,
+                nome: "Maria Silva Santos",
+                responsavel: "Maria Silva Santos",
+                endereco: "Rua das Flores, 123",
+                bairro: "Centro",
+                telefone: "(11) 99999-1234",
+                probabilidade: "Alta",
+                nivel: 0,
+                indicadoPor: null,
+                dataIndicacao: null,
+                indicacoes: [2, 3, 5],
+                membros: 3,
+                status: "ativo"
+            },
+            2: {
+                id: 2,
+                nome: "João Carlos Oliveira",
+                responsavel: "João Carlos Oliveira",
+                endereco: "Av. Brasil, 456",
+                bairro: "Vila Nova",
+                telefone: "(11) 98888-5678",
+                probabilidade: "Média",
+                nivel: 1,
+                indicadoPor: 1,
+                dataIndicacao: "2024-01-15",
+                indicacoes: [6, 7],
+                membros: 2,
+                status: "ativo"
+            },
+            3: {
+                id: 3,
+                nome: "Roberto Santos Lima",
+                responsavel: "Roberto Santos Lima",
+                endereco: "Rua do Sol, 789",
+                bairro: "Jardim América",
+                telefone: "(11) 97777-9012",
+                probabilidade: "Baixa",
+                nivel: 1,
+                indicadoPor: 1,
+                dataIndicacao: "2024-01-20",
+                indicacoes: [8],
+                membros: 4,
+                status: "ativo"
+            },
+            4: {
+                id: 4,
+                nome: "Ana Paula Costa",
+                responsavel: "Ana Paula Costa",
+                endereco: "Rua da Paz, 321",
+                bairro: "Santa Rita",
+                telefone: "(11) 96666-3456",
+                probabilidade: "Alta",
+                nivel: 0,
+                indicadoPor: null,
+                dataIndicacao: null,
+                indicacoes: [9, 10],
+                membros: 3,
+                status: "ativo"
+            },
+            5: {
+                id: 5,
+                nome: "Fernanda Rocha",
+                responsavel: "Fernanda Rocha",
+                endereco: "Av. Central, 654",
+                bairro: "São João",
+                telefone: "(11) 95555-7890",
+                probabilidade: "Alta",
+                nivel: 1,
+                indicadoPor: 1,
+                dataIndicacao: "2024-02-01",
+                indicacoes: [11, 12],
+                membros: 2,
+                status: "ativo"
+            },
+            6: {
+                id: 6,
+                nome: "Carlos Eduardo Silva",
+                responsavel: "Carlos Eduardo Silva",
+                endereco: "Rua Nova, 111",
+                bairro: "Centro",
+                telefone: "(11) 94444-1122",
+                probabilidade: "Média",
+                nivel: 2,
+                indicadoPor: 2,
+                dataIndicacao: "2024-02-10",
+                indicacoes: [],
+                membros: 3,
+                status: "ativo"
+            },
+            7: {
+                id: 7,
+                nome: "Patrícia Alves",
+                responsavel: "Patrícia Alves",
+                endereco: "Rua Velha, 222",
+                bairro: "Vila Nova",
+                telefone: "(11) 93333-2233",
+                probabilidade: "Alta",
+                nivel: 2,
+                indicadoPor: 2,
+                dataIndicacao: "2024-02-15",
+                indicacoes: [13],
+                membros: 1,
+                status: "ativo"
+            },
+            8: {
+                id: 8,
+                nome: "Marcos Pereira",
+                responsavel: "Marcos Pereira",
+                endereco: "Av. Liberdade, 333",
+                bairro: "Jardim América",
+                telefone: "(11) 92222-3344",
+                probabilidade: "Baixa",
+                nivel: 2,
+                indicadoPor: 3,
+                dataIndicacao: "2024-02-20",
+                indicacoes: [],
+                membros: 5,
+                status: "ativo"
+            },
+            9: {
+                id: 9,
+                nome: "Luciana Santos",
+                responsavel: "Luciana Santos",
+                endereco: "Rua Esperança, 444",
+                bairro: "Santa Rita",
+                telefone: "(11) 91111-4455",
+                probabilidade: "Média",
+                nivel: 1,
+                indicadoPor: 4,
+                dataIndicacao: "2024-01-25",
+                indicacoes: [],
+                membros: 2,
+                status: "ativo"
+            },
+            10: {
+                id: 10,
+                nome: "Rafael Costa",
+                responsavel: "Rafael Costa",
+                endereco: "Av. Progresso, 555",
+                bairro: "Santa Rita",
+                telefone: "(11) 90000-5566",
+                probabilidade: "Alta",
+                nivel: 1,
+                indicadoPor: 4,
+                dataIndicacao: "2024-02-05",
+                indicacoes: [],
+                membros: 3,
+                status: "ativo"
+            },
+            11: {
+                id: 11,
+                nome: "Daniela Lima",
+                responsavel: "Daniela Lima",
+                endereco: "Rua Futuro, 666",
+                bairro: "São João",
+                telefone: "(11) 89999-6677",
+                probabilidade: "Alta",
+                nivel: 2,
+                indicadoPor: 5,
+                dataIndicacao: "2024-02-25",
+                indicacoes: [],
+                membros: 2,
+                status: "ativo"
+            },
+            12: {
+                id: 12,
+                nome: "Thiago Oliveira",
+                responsavel: "Thiago Oliveira",
+                endereco: "Av. Vitória, 777",
+                bairro: "São João",
+                telefone: "(11) 88888-7788",
+                probabilidade: "Média",
+                nivel: 2,
+                indicadoPor: 5,
+                dataIndicacao: "2024-03-01",
+                indicacoes: [],
+                membros: 4,
+                status: "ativo"
+            },
+            13: {
+                id: 13,
+                nome: "Camila Rodriguez",
+                responsavel: "Camila Rodriguez",
+                endereco: "Rua Alegria, 888",
+                bairro: "Vila Nova",
+                telefone: "(11) 87777-8899",
+                probabilidade: "Alta",
+                nivel: 3,
+                indicadoPor: 7,
+                dataIndicacao: "2024-03-05",
+                indicacoes: [],
+                membros: 1,
+                status: "ativo"
+            }
+        };
+
+        // Estado da aplicação
+        let familiaRaizAtual = 1;
+        let nodosExpandidos = new Set();
+        let zoomLevel = 1;
+
+        // Função para obter cor da probabilidade
+        function getCorProbabilidade(probabilidade) {
+            switch (probabilidade) {
+                case 'Alta': return { bg: 'bg-green-100', text: 'text-green-600', border: 'border-green-200' };
+                case 'Média': return { bg: 'bg-yellow-100', text: 'text-yellow-600', border: 'border-yellow-200' };
+                case 'Baixa': return { bg: 'bg-red-100', text: 'text-red-600', border: 'border-red-200' };
+                default: return { bg: 'bg-gray-100', text: 'text-gray-600', border: 'border-gray-200' };
+            }
+        }
+
+        // Função para criar um nó da árvore
+        function criarNo(familia, nivel = 0, isUltimo = false) {
+            const cores = getCorProbabilidade(familia.probabilidade);
+            const temIndicacoes = familia.indicacoes && familia.indicacoes.length > 0;
+            const estaExpandido = nodosExpandidos.has(familia.id);
+            
+            return `
+                <div class="relative ${nivel > 0 ? 'tree-line' : ''}" data-familia-id="${familia.id}">
+                    ${nivel > 0 && !isUltimo ? `<div class="tree-vertical-line" style="height: 100%;"></div>` : ''}
+                    
+                    <div class="flex items-start space-x-4 mb-6">
+                        <div class="expandable-node bg-white rounded-2xl border-2 ${cores.border} shadow-card hover:shadow-lg transition-all duration-300 p-4 min-w-[280px] ${temIndicacoes ? 'cursor-pointer' : ''}"
+                             ${temIndicacoes ? `onclick="toggleNo(${familia.id})"` : ''}>
+                            
+                            <div class="flex items-start justify-between mb-3">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-12 h-12 gradient-blue rounded-xl flex items-center justify-center text-white font-bold text-sm">
+                                        ${familia.responsavel.split(' ').map(n => n[0]).join('').substring(0, 2)}
+                                    </div>
+                                    <div class="flex-1">
+                                        <h4 class="font-bold text-gray-900 text-sm">${familia.responsavel}</h4>
+                                        <p class="text-xs text-gray-600">${familia.bairro} • ${familia.membros} membros</p>
+                                    </div>
+                                </div>
+                                
+                                ${temIndicacoes ? `
+                                    <button class="expand-button w-6 h-6 rounded-full flex items-center justify-center ${estaExpandido ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-600'} hover:scale-110 transition-transform">
+                                        <svg class="w-3 h-3 transform ${estaExpandido ? 'rotate-45' : ''} transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                                        </svg>
+                                    </button>
+                                ` : ''}
+                            </div>
+                            
+                            <div class="space-y-2">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-xs text-gray-500">Probabilidade:</span>
+                                    <span class="px-2 py-1 text-xs font-medium rounded-full ${cores.bg} ${cores.text}">
+                                        ${familia.probabilidade}
+                                    </span>
+                                </div>
+                                
+                                ${familia.indicacoes.length > 0 ? `
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-xs text-gray-500">Indicações:</span>
+                                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-purple-100 text-purple-600">
+                                            ${familia.indicacoes.length}
+                                        </span>
+                                    </div>
+                                ` : ''}
+                                
+                                ${familia.dataIndicacao ? `
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-xs text-gray-500">Indicado em:</span>
+                                        <span class="text-xs text-gray-700">
+                                            ${new Date(familia.dataIndicacao).toLocaleDateString('pt-BR')}
+                                        </span>
+                                    </div>
+                                ` : ''}
+                            </div>
+                            
+                            <div class="flex items-center space-x-2 mt-3 pt-3 border-t border-gray-100">
+                                <button onclick="event.stopPropagation(); verDetalhes(${familia.id})" class="flex-1 px-3 py-1 bg-blue-50 text-blue-600 text-xs rounded-lg hover:bg-blue-100 transition-colors">
+                                    Ver Detalhes
+                                </button>
+                                <button onclick="event.stopPropagation(); verIndicacoes(${familia.id})" class="flex-1 px-3 py-1 bg-green-50 text-green-600 text-xs rounded-lg hover:bg-green-100 transition-colors">
+                                    Indicações
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    ${estaExpandido && temIndicacoes ? `
+                        <div class="ml-8 slide-down">
+                            ${familia.indicacoes.map((indicacaoId, index) => {
+                                const indicacao = dadosIndicacoes[indicacaoId];
+                                const ehUltimo = index === familia.indicacoes.length - 1;
+                                return indicacao ? criarNo(indicacao, nivel + 1, ehUltimo) : '';
+                            }).join('')}
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+        }
+
+        // Função para alternar expansão de um nó
+        function toggleNo(familiaId) {
+            if (nodosExpandidos.has(familiaId)) {
+                nodosExpandidos.delete(familiaId);
+            } else {
+                nodosExpandidos.add(familiaId);
+            }
+            renderizarArvore();
+        }
+
+        // Função para renderizar a árvore
+        function renderizarArvore() {
+            const container = document.getElementById('arvoreContainer');
+            const familiaRaiz = dadosIndicacoes[familiaRaizAtual];
+            
+            if (familiaRaiz) {
+                container.innerHTML = criarNo(familiaRaiz, 0);
+                atualizarEstatisticas();
+            }
+        }
+
+        // Função para expandir todos os nós
+        function expandirTodos() {
+            // Adicionar todos os IDs que têm indicações
+            Object.values(dadosIndicacoes).forEach(familia => {
+                if (familia.indicacoes && familia.indicacoes.length > 0) {
+                    nodosExpandidos.add(familia.id);
+                }
+            });
+            renderizarArvore();
+        }
+
+        // Função para atualizar estatísticas
+        function atualizarEstatisticas() {
+            const familiaRaiz = dadosIndicacoes[familiaRaizAtual];
+            let totalIndicacoes = 0;
+            let indicacoesAtivas = 0;
+            let nivelMaisAlto = 0;
+
+            function contarIndicacoes(familia, nivelAtual = 0) {
+                nivelMaisAlto = Math.max(nivelMaisAlto, nivelAtual);
+                
+                if (familia.indicacoes) {
+                    totalIndicacoes += familia.indicacoes.length;
+                    familia.indicacoes.forEach(indicacaoId => {
+                        const indicacao = dadosIndicacoes[indicacaoId];
+                        if (indicacao) {
+                            if (indicacao.status === 'ativo') {
+                                indicacoesAtivas++;
+                            }
+                            contarIndicacoes(indicacao, nivelAtual + 1);
+                        }
+                    });
+                }
+            }
+
+            contarIndicacoes(familiaRaiz);
+            
+            const taxaConversao = totalIndicacoes > 0 ? Math.round((indicacoesAtivas / totalIndicacoes) * 100) : 0;
+
+            document.getElementById('totalIndicacoes').textContent = totalIndicacoes;
+            document.getElementById('indicacoesAtivas').textContent = indicacoesAtivas;
+            document.getElementById('nivelMaisAlto').textContent = nivelMaisAlto;
+            document.getElementById('taxaConversao').textContent = taxaConversao + '%';
+        }
+
+        // Função para ver detalhes de uma família
+        function verDetalhes(familiaId) {
+            const familia = dadosIndicacoes[familiaId];
+            if (!familia) return;
+
+            const cores = getCorProbabilidade(familia.probabilidade);
+            const modal = document.getElementById('modalDetalhes');
+            const conteudo = document.getElementById('conteudoModal');
+
+            conteudo.innerHTML = `
+                <div class="space-y-4">
+                    <div class="flex items-center space-x-4">
+                        <div class="w-16 h-16 gradient-blue rounded-2xl flex items-center justify-center text-white font-bold text-xl">
+                            ${familia.responsavel.split(' ').map(n => n[0]).join('').substring(0, 2)}
+                        </div>
+                        <div>
+                            <h4 class="text-xl font-bold text-gray-900">${familia.responsavel}</h4>
+                            <p class="text-gray-600">${familia.endereco}</p>
+                            <p class="text-gray-600">${familia.bairro} • ${familia.telefone}</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="bg-gray-50 rounded-xl p-4">
+                            <div class="text-sm text-gray-600">Probabilidade de Voto</div>
+                            <div class="px-3 py-1 text-sm font-medium rounded-full ${cores.bg} ${cores.text} inline-block mt-1">
+                                ${familia.probabilidade}
+                            </div>
+                        </div>
+                        <div class="bg-gray-50 rounded-xl p-4">
+                            <div class="text-sm text-gray-600">Membros na Família</div>
+                            <div class="text-lg font-bold text-gray-900">${familia.membros}</div>
+                        </div>
+                    </div>
+
+                    ${familia.indicadoPor ? `
+                        <div class="bg-blue-50 rounded-xl p-4">
+                            <div class="text-sm text-blue-600 font-medium">Indicado por</div>
+                            <div class="text-blue-900 font-semibold">${dadosIndicacoes[familia.indicadoPor]?.responsavel || 'N/A'}</div>
+                            <div class="text-xs text-blue-600">em ${new Date(familia.dataIndicacao).toLocaleDateString('pt-BR')}</div>
+                        </div>
+                    ` : ''}
+
+                    ${familia.indicacoes.length > 0 ? `
+                        <div class="bg-green-50 rounded-xl p-4">
+                            <div class="text-sm text-green-600 font-medium mb-2">Indicações Realizadas (${familia.indicacoes.length})</div>
+                            <div class="space-y-2">
+                                ${familia.indicacoes.map(indicacaoId => {
+                                    const indicacao = dadosIndicacoes[indicacaoId];
+                                    return indicacao ? `
+                                        <div class="flex items-center justify-between bg-white rounded-lg p-2">
+                                            <span class="text-sm text-gray-900">${indicacao.responsavel}</span>
+                                            <span class="text-xs px-2 py-1 bg-green-100 text-green-600 rounded-full">${indicacao.probabilidade}</span>
+                                        </div>
+                                    ` : '';
+                                }).join('')}
+                            </div>
+                        </div>
+                    ` : ''}
+
+                    <div class="flex space-x-3">
+                        <button onclick="editarFamilia(${familiaId})" class="flex-1 px-4 py-2 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors">
+                            Editar Família
+                        </button>
+                        <button onclick="adicionarIndicacao(${familiaId})" class="flex-1 px-4 py-2 bg-green-500 text-white rounded-xl hover:bg-green-600 transition-colors">
+                            Nova Indicação
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        // Função para ver indicações
+        function verIndicacoes(familiaId) {
+            const familia = dadosIndicacoes[familiaId];
+            if (!familia || !familia.indicacoes.length) {
+                alert('Esta família não possui indicações.');
+                return;
+            }
+
+            // Expandir o nó se não estiver expandido
+            if (!nodosExpandidos.has(familiaId)) {
+                nodosExpandidos.add(familiaId);
+                renderizarArvore();
+            }
+
+            // Scroll suave para o nó
+            setTimeout(() => {
+                const elemento = document.querySelector(`[data-familia-id="${familiaId}"]`);
+                if (elemento) {
+                    elemento.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }, 300);
+        }
+
+        // Função para fechar modal
+        function fecharModal() {
+            const modal = document.getElementById('modalDetalhes');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        // Função para trocar família raiz
+        function trocarFamiliaRaiz(novaFamiliaId) {
+            familiaRaizAtual = parseInt(novaFamiliaId);
+            nodosExpandidos.clear(); // Limpar expansões anteriores
+            
+            const familiaAtual = dadosIndicacoes[familiaRaizAtual];
+            document.getElementById('familiaAtual').textContent = `Família ${familiaAtual.responsavel.split(' ').slice(-1)[0]}`;
+            
+            renderizarArvore();
+        }
+
+        // Funções de zoom
+        function zoomIn() {
+            zoomLevel = Math.min(zoomLevel + 0.1, 2);
+            aplicarZoom();
+        }
+
+        function zoomOut() {
+            zoomLevel = Math.max(zoomLevel - 0.1, 0.5);
+            aplicarZoom();
+        }
+
+        function resetZoom() {
+            zoomLevel = 1;
+            aplicarZoom();
+        }
+
+        function aplicarZoom() {
+            const container = document.getElementById('arvoreContainer');
+            container.style.transform = `scale(${zoomLevel})`;
+        }
+
+        // Função para exportar árvore
+        function exportarArvore() {
+            const familiaAtual = dadosIndicacoes[familiaRaizAtual];
+            let dadosExport = [];
+
+            function coletarDados(familia, nivel = 0, indicadoPor = null) {
+                dadosExport.push({
+                    nivel: nivel,
+                    nome: familia.responsavel,
+                    endereco: familia.endereco,
+                    bairro: familia.bairro,
+                    telefone: familia.telefone,
+                    probabilidade: familia.probabilidade,
+                    membros: familia.membros,
+                    indicadoPor: indicadoPor,
+                    dataIndicacao: familia.dataIndicacao,
+                    totalIndicacoes: familia.indicacoes.length
+                });
+
+                familia.indicacoes.forEach(indicacaoId => {
+                    const indicacao = dadosIndicacoes[indicacaoId];
+                    if (indicacao) {
+                        coletarDados(indicacao, nivel + 1, familia.responsavel);
+                    }
+                });
+            }
+
+            coletarDados(familiaAtual);
+
+            // Criar CSV
+            const headers = ['Nível', 'Nome', 'Endereço', 'Bairro', 'Telefone', 'Probabilidade', 'Membros', 'Indicado Por', 'Data Indicação', 'Total Indicações'];
+            const csvContent = [
+                headers.join(','),
+                ...dadosExport.map(item => [
+                    item.nivel,
+                    `"${item.nome}"`,
+                    `"${item.endereco}"`,
+                    `"${item.bairro}"`,
+                    `"${item.telefone}"`,
+                    item.probabilidade,
+                    item.membros,
+                    item.indicadoPor ? `"${item.indicadoPor}"` : '',
+                    item.dataIndicacao || '',
+                    item.totalIndicacoes
+                ].join(','))
+            ].join('\n');
+
+            // Download do arquivo
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `arvore_indicacoes_${familiaAtual.responsavel.replace(/\s+/g, '_')}.csv`;
+            link.click();
+        }
+
+        // Funções placeholder para ações
+        function editarFamilia(familiaId) {
+            alert(`Editando família: ${dadosIndicacoes[familiaId].responsavel}`);
+            fecharModal();
+        }
+
+        function adicionarIndicacao(familiaId) {
+            alert(`Adicionando nova indicação para: ${dadosIndicacoes[familiaId].responsavel}`);
+            fecharModal();
+        }
+
+        function voltarPagina() {
+            alert('Voltando para a página anterior...');
+            // window.history.back();
+        }
+
+        // Event listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            // Selector de família
+            const familiaSelector = document.getElementById('familiaSelector');
+            familiaSelector.addEventListener('change', function() {
+                trocarFamiliaRaiz(this.value);
+            });
+
+            // Fechar modal ao clicar fora
+            const modal = document.getElementById('modalDetalhes');
+            modal.addEventListener('click', function(e) {
+                if (e.target === modal) {
+                    fecharModal();
+                }
+            });
+
+            // Renderizar árvore inicial
+            renderizarArvore();
+
+            // Expandir primeiro nível automaticamente
+            setTimeout(() => {
+                const familiaRaiz = dadosIndicacoes[familiaRaizAtual];
+                if (familiaRaiz.indicacoes.length > 0) {
+                    nodosExpandidos.add(familiaRaizAtual);
+                    renderizarArvore();
+                }
+            }, 500);
+        });
+
+        // Controles de teclado
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                fecharModal();
+            }
+            if (e.key === '+' || e.key === '=') {
+                zoomIn();
+            }
+            if (e.key === '-') {
+                zoomOut();
+            }
+            if (e.key === '0') {
+                resetZoom();
+            }
+        });
+    </script>
+</body>
+</html>
