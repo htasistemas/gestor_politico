@@ -1,0 +1,459 @@
+import React, { useState, useEffect } from 'react';
+import { Users, TrendingDown, TrendingUp, Target, Crown, Eye, ChevronRight, BarChart3, Calendar, Bell, PieChart } from 'lucide-react';
+import { PieChart as RechartsPieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, LineChart, Line, Area, AreaChart } from 'recharts';
+
+const Dashboard = () => {
+  const [stats, setStats] = useState({
+    totalCadastrados: 0,
+    baixaProbabilidade: 0,
+    mediaProbabilidade: 0,
+    altaProbabilidade: 0
+  });
+
+  // Dados para os gráficos
+  const pieData = [
+    { name: 'Alta Probabilidade', value: 4704, color: '#10B981', percentage: 29.7 },
+    { name: 'Média Probabilidade', value: 7892, color: '#F59E0B', percentage: 49.8 },
+    { name: 'Baixa Probabilidade', value: 3251, color: '#EF4444', percentage: 20.5 }
+  ];
+
+  const evolutionData = [
+    { mes: 'Jan', cadastros: 8500, alta: 2100, media: 4200, baixa: 2200 },
+    { mes: 'Fev', cadastros: 10200, alta: 2800, media: 5100, baixa: 2300 },
+    { mes: 'Mar', cadastros: 12800, alta: 3500, media: 6800, baixa: 2500 },
+    { mes: 'Abr', cadastros: 13900, alta: 4100, media: 7200, baixa: 2600 },
+    { mes: 'Mai', cadastros: 15847, alta: 4704, media: 7892, baixa: 3251 }
+  ];
+
+  const [topIndicadores] = useState([
+    {
+      id: 1,
+      nome: "Maria Silva Santos",
+      totalIndicacoes: 47,
+      avatar: "MS",
+      probabilidade: "Alta",
+      cidade: "São Paulo"
+    },
+    {
+      id: 2,
+      nome: "João Carlos Oliveira",
+      totalIndicacoes: 42,
+      avatar: "JO",
+      probabilidade: "Média",
+      cidade: "Rio de Janeiro"
+    },
+    {
+      id: 3,
+      nome: "Ana Paula Costa",
+      totalIndicacoes: 38,
+      avatar: "AC",
+      probabilidade: "Alta",
+      cidade: "Belo Horizonte"
+    },
+    {
+      id: 4,
+      nome: "Roberto Lima",
+      totalIndicacoes: 35,
+      avatar: "RL",
+      probabilidade: "Média",
+      cidade: "Salvador"
+    },
+    {
+      id: 5,
+      nome: "Fernanda Rocha",
+      totalIndicacoes: 31,
+      avatar: "FR",
+      probabilidade: "Alta",
+      cidade: "Brasília"
+    }
+  ]);
+
+  // Animação dos números
+  useEffect(() => {
+    const targetStats = {
+      totalCadastrados: 15847,
+      baixaProbabilidade: 3251,
+      mediaProbabilidade: 7892,
+      altaProbabilidade: 4704
+    };
+
+    const duration = 2000;
+    const steps = 60;
+    const stepDuration = duration / steps;
+
+    let currentStep = 0;
+    const interval = setInterval(() => {
+      currentStep++;
+      const progress = currentStep / steps;
+      
+      setStats({
+        totalCadastrados: Math.floor(targetStats.totalCadastrados * progress),
+        baixaProbabilidade: Math.floor(targetStats.baixaProbabilidade * progress),
+        mediaProbabilidade: Math.floor(targetStats.mediaProbabilidade * progress),
+        altaProbabilidade: Math.floor(targetStats.altaProbabilidade * progress)
+      });
+
+      if (currentStep >= steps) {
+        clearInterval(interval);
+        setStats(targetStats);
+      }
+    }, stepDuration);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  const getProbabilityColor = (prob) => {
+    switch (prob) {
+      case 'Alta': return 'text-green-600 bg-green-100';
+      case 'Média': return 'text-yellow-600 bg-yellow-100';
+      case 'Baixa': return 'text-red-600 bg-red-100';
+      default: return 'text-gray-600 bg-gray-100';
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50">
+      {/* Header */}
+      <div className="bg-white border-b border-gray-200 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            <div className="flex items-center space-x-4">
+              <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl flex items-center justify-center">
+                <BarChart3 className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">Painel de Controle</h1>
+                <p className="text-sm text-gray-600">Acompanhe suas métricas em tempo real</p>
+              </div>
+            </div>
+            <div className="flex items-center space-x-4">
+              <div className="hidden sm:flex items-center space-x-2 text-sm text-gray-600">
+                <Calendar className="w-4 h-4" />
+                <span>Atualizado: Hoje, 14:30</span>
+              </div>
+              <button className="relative p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-colors">
+                <Bell className="w-5 h-5" />
+                <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></div>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Seção de Gráficos */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+          {/* Card de Total com número destacado */}
+          <div className="bg-white rounded-3xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300">
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center">
+                <Users className="w-6 h-6 text-white" />
+              </div>
+              <div className="text-right">
+                <div className="text-3xl font-bold text-gray-900">{stats.totalCadastrados.toLocaleString('pt-BR')}</div>
+                <div className="text-sm text-gray-600">Total Cadastrados</div>
+              </div>
+            </div>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-gray-600">Meta: 20.000</span>
+              <span className="text-green-600 bg-green-100 px-2 py-1 rounded-full font-medium">+12.5%</span>
+            </div>
+            <div className="mt-3 w-full bg-gray-200 rounded-full h-2">
+              <div className="bg-gradient-to-r from-blue-500 to-blue-600 h-2 rounded-full transition-all duration-1000" 
+                   style={{width: `${(stats.totalCadastrados / 20000) * 100}%`}}></div>
+            </div>
+          </div>
+
+          {/* Gráfico de Pizza - Distribuição de Probabilidades */}
+          <div className="bg-white rounded-3xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300">
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-purple-600 rounded-2xl flex items-center justify-center">
+                <PieChart className="w-6 h-6 text-white" />
+              </div>
+              <div className="text-right">
+                <div className="text-lg font-bold text-gray-900">Distribuição</div>
+                <div className="text-sm text-gray-600">Por Probabilidade</div>
+              </div>
+            </div>
+            
+            <div className="h-40">
+              <ResponsiveContainer width="100%" height="100%">
+                <RechartsPieChart>
+                  <Pie
+                    data={pieData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={40}
+                    outerRadius={70}
+                    paddingAngle={2}
+                    dataKey="value"
+                  >
+                    {pieData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip 
+                    formatter={(value) => [value.toLocaleString('pt-BR'), 'Pessoas']}
+                    labelStyle={{ color: '#374151' }}
+                  />
+                </RechartsPieChart>
+              </ResponsiveContainer>
+            </div>
+
+            <div className="space-y-2 mt-2">
+              {pieData.map((item, index) => (
+                <div key={index} className="flex items-center justify-between text-xs">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-3 h-3 rounded-full" style={{backgroundColor: item.color}}></div>
+                    <span className="text-gray-600">{item.name}</span>
+                  </div>
+                  <span className="font-medium text-gray-900">{item.percentage}%</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Gráfico de Evolução */}
+          <div className="bg-white rounded-3xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300">
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-green-600 rounded-2xl flex items-center justify-center">
+                <TrendingUp className="w-6 h-6 text-white" />
+              </div>
+              <div className="text-right">
+                <div className="text-lg font-bold text-gray-900">Crescimento</div>
+                <div className="text-sm text-gray-600">Últimos 5 meses</div>
+              </div>
+            </div>
+            
+            <div className="h-40">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={evolutionData}>
+                  <defs>
+                    <linearGradient id="colorGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor="#3B82F6" stopOpacity={0.05}/>
+                    </linearGradient>
+                  </defs>
+                  <Area 
+                    type="monotone" 
+                    dataKey="cadastros" 
+                    stroke="#3B82F6" 
+                    strokeWidth={3}
+                    fill="url(#colorGradient)" 
+                  />
+                  <XAxis 
+                    dataKey="mes" 
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fontSize: 12, fill: '#6B7280' }}
+                  />
+                  <YAxis hide />
+                  <Tooltip 
+                    formatter={(value) => [value.toLocaleString('pt-BR'), 'Cadastros']}
+                    labelStyle={{ color: '#374151' }}
+                    contentStyle={{ 
+                      backgroundColor: 'white', 
+                      border: '1px solid #E5E7EB',
+                      borderRadius: '12px',
+                      boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
+                    }}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+
+            <div className="flex items-center justify-between text-sm mt-2">
+              <span className="text-gray-600">Jan a Mai 2025</span>
+              <span className="text-green-600 bg-green-100 px-2 py-1 rounded-full font-medium">+86.4%</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Gráfico de Barras Detalhado */}
+        <div className="bg-white rounded-3xl p-6 shadow-lg border border-gray-100 mb-8">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-r from-indigo-500 to-indigo-600 rounded-2xl flex items-center justify-center">
+                <BarChart3 className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">Evolução Detalhada por Probabilidade</h2>
+                <p className="text-sm text-gray-600">Acompanhe o crescimento de cada categoria ao longo dos meses</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={evolutionData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" />
+                <XAxis 
+                  dataKey="mes" 
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fontSize: 14, fill: '#6B7280' }}
+                />
+                <YAxis 
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fontSize: 12, fill: '#6B7280' }}
+                />
+                <Tooltip 
+                  formatter={(value, name) => {
+                    const names = {
+                      alta: 'Alta Probabilidade',
+                      media: 'Média Probabilidade', 
+                      baixa: 'Baixa Probabilidade'
+                    };
+                    return [value.toLocaleString('pt-BR'), names[name] || name];
+                  }}
+                  contentStyle={{ 
+                    backgroundColor: 'white', 
+                    border: '1px solid #E5E7EB',
+                    borderRadius: '12px',
+                    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
+                  }}
+                />
+                <Bar dataKey="alta" stackId="a" fill="#10B981" radius={[0, 0, 0, 0]} />
+                <Bar dataKey="media" stackId="a" fill="#F59E0B" radius={[0, 0, 0, 0]} />
+                <Bar dataKey="baixa" stackId="a" fill="#EF4444" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
+          <div className="flex items-center justify-center space-x-8 mt-4">
+            <div className="flex items-center space-x-2">
+              <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+              <span className="text-sm text-gray-600">Alta Probabilidade</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
+              <span className="text-sm text-gray-600">Média Probabilidade</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+              <span className="text-sm text-gray-600">Baixa Probabilidade</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Ranking dos Top Indicadores */}
+        <div className="bg-white rounded-3xl shadow-lg border border-gray-100 overflow-hidden">
+          {/* Header da tabela */}
+          <div className="bg-gradient-to-r from-gray-50 to-blue-50 px-6 py-4 border-b border-gray-200">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-r from-amber-500 to-orange-500 rounded-2xl flex items-center justify-center">
+                <Crown className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">Top 5 Indicadores</h2>
+                <p className="text-sm text-gray-600">Pessoas que mais indicaram outras pessoas</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Lista de indicadores */}
+          <div className="divide-y divide-gray-100">
+            {topIndicadores.map((pessoa, index) => (
+              <div key={pessoa.id} className="p-6 hover:bg-gray-50 transition-colors duration-200">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-4">
+                    {/* Posição */}
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
+                      index === 0 ? 'bg-gradient-to-r from-yellow-400 to-yellow-500 text-white' :
+                      index === 1 ? 'bg-gradient-to-r from-gray-400 to-gray-500 text-white' :
+                      index === 2 ? 'bg-gradient-to-r from-amber-600 to-amber-700 text-white' :
+                      'bg-gray-100 text-gray-600'
+                    }`}>
+                      {index + 1}
+                    </div>
+
+                    {/* Avatar */}
+                    <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center text-white font-bold">
+                      {pessoa.avatar}
+                    </div>
+
+                    {/* Informações */}
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-gray-900 text-lg">{pessoa.nome}</h3>
+                      <div className="flex items-center space-x-4 mt-1">
+                        <span className="text-sm text-gray-600">{pessoa.cidade}</span>
+                        <span className={`text-xs px-2 py-1 rounded-full font-medium ${getProbabilityColor(pessoa.probabilidade)}`}>
+                          {pessoa.probabilidade} Probabilidade
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center space-x-6">
+                    {/* Total de indicações */}
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-gray-900">{pessoa.totalIndicacoes}</div>
+                      <div className="text-sm text-gray-600">indicações</div>
+                    </div>
+
+                    {/* Botão ver perfil */}
+                    <button className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-xl transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-xl">
+                      <Eye className="w-4 h-4" />
+                      <span className="font-medium">Ver Perfil</span>
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Footer da tabela */}
+          <div className="bg-gray-50 px-6 py-4 border-t border-gray-200">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-600">
+                Mostrando 5 de 1.247 indicadores ativos
+              </span>
+              <button className="text-sm text-blue-600 hover:text-blue-700 font-medium">
+                Ver todos os indicadores →
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Informações adicionais */}
+        <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 bg-gradient-to-r from-blue-500 to-blue-600 rounded-3xl p-6 text-white relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-white opacity-10 rounded-full transform translate-x-16 -translate-y-16"></div>
+            <div className="relative z-10">
+              <h3 className="text-xl font-bold mb-2">Insights Estratégicos</h3>
+              <p className="text-blue-100 mb-4">
+                Suas campanhas de indicação estão 23% acima da média nacional. 
+                Continue focando nos eleitores de alta probabilidade para maximizar resultados.
+              </p>
+              <button className="bg-white bg-opacity-20 hover:bg-opacity-30 text-white px-4 py-2 rounded-xl transition-colors">
+                Ver Relatório Completo
+              </button>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-3xl p-6 shadow-lg border border-gray-100">
+            <h3 className="text-lg font-bold text-gray-900 mb-4">Meta do Mês</h3>
+            <div className="space-y-4">
+              <div>
+                <div className="flex justify-between text-sm mb-2">
+                  <span className="text-gray-600">Novos cadastros</span>
+                  <span className="font-medium">1.847 / 2.000</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div className="bg-gradient-to-r from-blue-500 to-blue-600 h-2 rounded-full" style={{width: '92.3%'}}></div>
+                </div>
+              </div>
+              <div className="text-xs text-gray-500">
+                Faltam apenas 153 cadastros para atingir a meta!
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Dashboard;
