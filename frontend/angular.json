@@ -19,17 +19,42 @@
             "assets": [],
             "styles": ["src/styles.css"],
             "scripts": []
+          },
+          "configurations": {
+            "production": {
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.prod.ts"
+                }
+              ],
+              "optimization": true,
+              "outputHashing": "all",
+              "sourceMap": false,
+              "extractCss": true,
+              "namedChunks": false,
+              "aot": true,
+              "extractLicenses": true,
+              "statsJson": false
+            }
           }
         },
         "serve": {
           "builder": "@angular-devkit/build-angular:dev-server",
           "options": {
-            "browserTarget": "frontend:build",
-            "port": 4200
+            "browserTarget": "frontend:build"  // Certifique-se de que esta linha está correta
+          },
+          "configurations": {
+            "production": {
+              "browserTarget": "frontend:build:production"
+            }
           }
         }
       }
     }
   },
-  "defaultProject": "frontend"
+  "defaultProject": "frontend",
+  "cli": {
+    "analytics": "cfe2b453-b67b-4e1f-a9d2-c9563d52aba1"
+  }
 }
