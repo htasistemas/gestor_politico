@@ -12,12 +12,18 @@ const pool = new Pool({
 });
 
 async function init() {
-  await pool.query(`CREATE TABLE IF NOT EXISTS usuarios (
+  await pool.query(`CREATE TABLE IF NOT EXISTS login (
     id SERIAL PRIMARY KEY,
     usuario VARCHAR(255) NOT NULL UNIQUE,
     senha VARCHAR(255) NOT NULL,
     nome VARCHAR(255) NOT NULL
   )`);
+  await pool.query(
+    `INSERT INTO login (usuario, senha, nome)
+     VALUES ($1, $2, $3)
+     ON CONFLICT (usuario) DO NOTHING`,
+    ['admin@plataforma.gov', '123456', 'Administrador']
+  );
 }
 
 init().catch(err => console.error('Erro ao inicializar o banco', err));
@@ -30,7 +36,7 @@ app.post('/api/login', async (req, res) => {
   const { usuario, senha } = req.body;
   try {
     const result = await pool.query(
-      'SELECT id, usuario, nome FROM usuarios WHERE usuario=$1 AND senha=$2',
+      'SELECT id, usuario, nome FROM login WHERE usuario=$1 AND senha=$2',
       [usuario, senha]
     );
     if (result.rows.length === 1) {

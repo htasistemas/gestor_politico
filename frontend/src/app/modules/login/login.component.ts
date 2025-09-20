@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-login',
@@ -12,7 +13,7 @@ export class LoginComponent {
   erro = '';
   carregando = false;
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient, private router: Router) {}
 
   togglePassword() {
     this.verSenha = !this.verSenha;
@@ -22,12 +23,20 @@ export class LoginComponent {
     if (this.carregando) return;
     this.erro = '';
     this.carregando = true;
-    this.http.post<{ success: boolean; message?: string }>(
+    this.http.post<{ success: boolean; message?: string; user?: { nome: string; usuario: string } }>(
       'http://localhost:3000/api/login',
       { usuario: this.usuario, senha: this.senha }
     ).subscribe({
-      next: () => {
+      next: (res) => {
         this.carregando = false;
+        if (res.success) {
+          if (res.user) {
+            localStorage.setItem('usuarioLogado', JSON.stringify(res.user));
+          }
+          this.router.navigate(['/dashboard']);
+        } else {
+          this.erro = res.message || 'Credenciais inválidas';
+        }
       },
       error: (err) => {
         this.carregando = false;
