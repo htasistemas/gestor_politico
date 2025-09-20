@@ -26,6 +26,7 @@ interface PreviaFamilia {
 }
 
 @Component({
+  standalone: false,
   selector: 'app-nova-familia',
   templateUrl: './nova-familia.component.html',
   styleUrls: ['./nova-familia.component.css']
