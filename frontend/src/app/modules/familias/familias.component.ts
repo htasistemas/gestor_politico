@@ -1,7 +1,9 @@
 import { Component } from '@angular/core';
 
 @Component({
+
   standalone: false,
+
   selector: 'app-familias',
   templateUrl: './familias.component.html',
   styleUrls: ['./familias.component.css']

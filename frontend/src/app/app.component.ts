@@ -3,7 +3,6 @@ import { NavigationEnd, Router } from '@angular/router';
 import { filter } from 'rxjs';
 
 @Component({
-  standalone: false,
   selector: 'app-root',
   templateUrl: './app.component.html'
 })
