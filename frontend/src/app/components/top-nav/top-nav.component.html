@@ -1,0 +1,57 @@
+<nav class="bg-white/90 backdrop-blur border-b border-gray-200 shadow-sm">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex h-16 items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 gradient-blue rounded-xl flex items-center justify-center shadow-lg">
+          <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c1.657 0 3-1.79 3-4s-1.343-4-3-4-3 1.79-3 4 1.343 4 3 4z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 22v-2a6 6 0 016-6h4a6 6 0 016 6v2" />
+          </svg>
+        </div>
+        <div>
+          <div class="text-base font-bold text-gray-900">Gestor Político</div>
+          <div class="text-xs text-gray-500">Plataforma de gestão estratégica</div>
+        </div>
+      </div>
+
+      <div class="hidden md:flex items-center space-x-1">
+        <a
+          *ngFor="let item of menuItems"
+          [routerLink]="item.route"
+          routerLinkActive="active-nav"
+          [routerLinkActiveOptions]="{ exact: item.route === '/dashboard' }"
+          class="relative px-4 py-2 rounded-xl text-sm font-medium text-gray-600 hover:text-blue-600 hover:bg-blue-50 transition-colors flex items-center space-x-2"
+        >
+          <span class="flex items-center justify-center w-8 h-8 rounded-lg bg-blue-50 text-blue-500">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path [attr.d]="item.icon" stroke-linecap="round" stroke-linejoin="round"></path>
+            </svg>
+          </span>
+          <span>
+            <span class="block">{{ item.label }}</span>
+            <span class="block text-[11px] text-gray-400">{{ item.description }}</span>
+          </span>
+          <span class="absolute inset-x-4 -bottom-1 h-1 rounded-full bg-gradient-to-r from-blue-400 to-blue-600 opacity-0 transition-opacity" aria-hidden="true"></span>
+        </a>
+      </div>
+
+      <div class="flex items-center space-x-4">
+        <button class="relative p-2 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-colors">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-5 5v-5zM9 17H4l5 5v-5z" />
+          </svg>
+          <span class="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></span>
+        </button>
+        <div class="flex items-center space-x-3">
+          <div class="text-right">
+            <div class="text-sm font-semibold text-gray-900">Ana Martins</div>
+            <div class="text-xs text-gray-500">Coordenadora de Campanha</div>
+          </div>
+          <div class="w-10 h-10 rounded-2xl gradient-blue flex items-center justify-center text-white font-semibold">
+            AM
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</nav>

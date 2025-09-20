@@ -1,0 +1,207 @@
+<div class="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50 pb-12">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10">
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-6 mb-10">
+      <div>
+        <div class="inline-flex items-center px-3 py-1 rounded-full bg-blue-50 text-blue-600 text-xs font-semibold mb-3">
+          Gestão de famílias
+        </div>
+        <h1 class="text-3xl font-bold text-gray-900 mb-2">Famílias e núcleos sociais</h1>
+        <p class="text-gray-600 max-w-2xl">
+          Acompanhe os núcleos familiares cadastrados, identifique responsáveis estratégicos e mantenha o relacionamento ativo com as lideranças comunitárias.
+        </p>
+      </div>
+      <div class="flex items-center gap-3">
+        <button class="px-5 py-3 rounded-2xl border border-gray-200 text-gray-600 text-sm font-medium hover:bg-white transition-all">
+          Importar planilha
+        </button>
+        <button class="px-5 py-3 rounded-2xl gradient-blue text-white text-sm font-semibold shadow-lg hover:opacity-90 transition-all">
+          + Nova família
+        </button>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+      <div
+        *ngFor="let destaque of destaques"
+        class="bg-white rounded-3xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300"
+      >
+        <div class="text-sm font-semibold text-blue-500 mb-3">{{ destaque.variacao }}</div>
+        <div class="text-3xl font-bold text-gray-900 mb-2">{{ destaque.valor }}</div>
+        <div class="text-sm text-gray-500">{{ destaque.titulo }}</div>
+        <div class="mt-4 text-xs text-gray-400">{{ destaque.descricao }}</div>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-3xl shadow-lg border border-gray-100 overflow-hidden">
+      <div class="px-6 py-4 border-b border-gray-100 flex flex-wrap items-center justify-between gap-4">
+        <div class="flex items-center space-x-3">
+          <div class="w-10 h-10 gradient-blue rounded-2xl flex items-center justify-center text-white">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 7a4 4 0 110 8 4 4 0 010-8zm0-5a6 6 0 016 6v1.26a8 8 0 014 6.91V21h-2v-4a4 4 0 00-4-4h-8a4 4 0 00-4 4v4H2v-4.83a8 8 0 014-6.91V8a6 6 0 016-6z" />
+            </svg>
+          </div>
+          <div>
+            <div class="text-lg font-semibold text-gray-900">Rede familiar cadastrada</div>
+            <div class="text-sm text-gray-500">Listagem com filtros inteligentes</div>
+          </div>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <button
+            *ngFor="let filtro of filtros; let i = index"
+            class="px-4 py-2 rounded-full text-sm font-medium transition-all"
+            [ngClass]="{
+              'bg-blue-50 text-blue-600 shadow-inner': i === 0,
+              'bg-gray-50 text-gray-500 hover:bg-blue-50 hover:text-blue-600': i !== 0
+            }"
+          >
+            {{ filtro }}
+          </button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 p-6 bg-gray-50">
+        <div class="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm hover:shadow-md transition-all">
+          <div class="flex items-start justify-between">
+            <div>
+              <h2 class="text-lg font-semibold text-gray-900 mb-1">Família Sousa Lima</h2>
+              <p class="text-sm text-gray-500">Jardim Aurora • Zona Norte</p>
+            </div>
+            <span class="px-3 py-1 rounded-full bg-emerald-50 text-emerald-600 text-xs font-semibold">Alta influência</span>
+          </div>
+          <div class="mt-4 grid grid-cols-3 gap-4 text-center">
+            <div>
+              <div class="text-2xl font-bold text-gray-900">06</div>
+              <div class="text-xs text-gray-500">Membros</div>
+            </div>
+            <div>
+              <div class="text-2xl font-bold text-gray-900">02</div>
+              <div class="text-xs text-gray-500">Projetos ativos</div>
+            </div>
+            <div>
+              <div class="text-2xl font-bold text-gray-900">89%</div>
+              <div class="text-xs text-gray-500">Engajamento</div>
+            </div>
+          </div>
+          <div class="mt-5 flex items-center justify-between">
+            <div class="flex -space-x-2">
+              <div class="w-8 h-8 rounded-full bg-blue-100 border-2 border-white flex items-center justify-center text-xs font-semibold text-blue-600">
+                MS
+              </div>
+              <div class="w-8 h-8 rounded-full bg-purple-100 border-2 border-white flex items-center justify-center text-xs font-semibold text-purple-600">
+                LS
+              </div>
+              <div class="w-8 h-8 rounded-full bg-emerald-100 border-2 border-white flex items-center justify-center text-xs font-semibold text-emerald-600">
+                +4
+              </div>
+            </div>
+            <div class="flex items-center space-x-2 text-sm text-blue-600 font-medium">
+              <span>Ver detalhes</span>
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm hover:shadow-md transition-all">
+          <div class="flex items-start justify-between">
+            <div>
+              <h2 class="text-lg font-semibold text-gray-900 mb-1">Família Albuquerque</h2>
+              <p class="text-sm text-gray-500">Vila Esperança • Zona Leste</p>
+            </div>
+            <span class="px-3 py-1 rounded-full bg-blue-50 text-blue-600 text-xs font-semibold">Média influência</span>
+          </div>
+          <div class="mt-4 grid grid-cols-3 gap-4 text-center">
+            <div>
+              <div class="text-2xl font-bold text-gray-900">04</div>
+              <div class="text-xs text-gray-500">Membros</div>
+            </div>
+            <div>
+              <div class="text-2xl font-bold text-gray-900">01</div>
+              <div class="text-xs text-gray-500">Projetos ativos</div>
+            </div>
+            <div>
+              <div class="text-2xl font-bold text-gray-900">72%</div>
+              <div class="text-xs text-gray-500">Engajamento</div>
+            </div>
+          </div>
+          <div class="mt-5 flex items-center justify-between">
+            <div class="flex -space-x-2">
+              <div class="w-8 h-8 rounded-full bg-blue-100 border-2 border-white flex items-center justify-center text-xs font-semibold text-blue-600">
+                PA
+              </div>
+              <div class="w-8 h-8 rounded-full bg-pink-100 border-2 border-white flex items-center justify-center text-xs font-semibold text-pink-600">
+                TA
+              </div>
+              <div class="w-8 h-8 rounded-full bg-gray-100 border-2 border-white flex items-center justify-center text-xs font-semibold text-gray-500">
+                +2
+              </div>
+            </div>
+            <div class="flex items-center space-x-2 text-sm text-blue-600 font-medium">
+              <span>Ver detalhes</span>
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm hover:shadow-md transition-all lg:col-span-2">
+          <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+              <h2 class="text-lg font-semibold text-gray-900 mb-1">Próximas ações recomendadas</h2>
+              <p class="text-sm text-gray-500">Sugestões baseadas nos níveis de engajamento</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="flex items-center px-3 py-1 rounded-full bg-emerald-50 text-emerald-600 text-xs font-semibold">
+                <span class="w-2 h-2 rounded-full bg-emerald-500 mr-2"></span>
+                Prioridade alta
+              </span>
+              <span class="flex items-center px-3 py-1 rounded-full bg-amber-50 text-amber-600 text-xs font-semibold">
+                <span class="w-2 h-2 rounded-full bg-amber-500 mr-2"></span>
+                Prioridade média
+              </span>
+            </div>
+          </div>
+          <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="p-4 rounded-2xl border border-gray-100 hover:border-blue-200 transition-all">
+              <div class="flex items-center justify-between mb-3">
+                <div class="flex items-center space-x-3">
+                  <div class="w-10 h-10 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.59 14.37L18 16.78 19.41 15.37 17 12.95M11 5H6a2 2 0 00-2 2v13l4-2 4 2V7a2 2 0 00-2-2h1" />
+                    </svg>
+                  </div>
+                  <div>
+                    <div class="text-sm font-semibold text-gray-900">Reunião com responsáveis</div>
+                    <div class="text-xs text-gray-500">Família Sousa Lima • até 18/04</div>
+                  </div>
+                </div>
+                <span class="px-2 py-1 rounded-full bg-emerald-100 text-emerald-600 text-[11px] font-semibold">Alta</span>
+              </div>
+              <p class="text-sm text-gray-500">Confirmar presença em evento comunitário e alinhar demandas locais prioritárias.</p>
+            </div>
+
+            <div class="p-4 rounded-2xl border border-gray-100 hover:border-blue-200 transition-all">
+              <div class="flex items-center justify-between mb-3">
+                <div class="flex items-center space-x-3">
+                  <div class="w-10 h-10 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5h12M9 3v2m6 4h6M9 21l-6-6h12l-6 6z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <div class="text-sm font-semibold text-gray-900">Mapeamento de novos líderes</div>
+                    <div class="text-xs text-gray-500">Região Leste • até 22/04</div>
+                  </div>
+                </div>
+                <span class="px-2 py-1 rounded-full bg-amber-100 text-amber-600 text-[11px] font-semibold">Média</span>
+              </div>
+              <p class="text-sm text-gray-500">Identificar famílias emergentes com potencial de mobilização para próximas agendas.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
