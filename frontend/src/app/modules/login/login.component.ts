@@ -18,12 +18,12 @@ interface LoginResponse {
   templateUrl: './login.component.html'
 })
 export class LoginComponent {
-  email = '';
+  username = '';
   password = '';
   showPassword = false;
   isLoading = false;
   errorMessage = '';
-  emailError = '';
+  usernameError = '';
   passwordError = '';
 
   constructor(private router: Router, private http: HttpClient) {}
@@ -32,9 +32,9 @@ export class LoginComponent {
     this.showPassword = !this.showPassword;
   }
 
-  onEmailInput(): void {
-    if (this.emailError) {
-      this.emailError = '';
+  onUsernameInput(): void {
+    if (this.usernameError) {
+      this.usernameError = '';
     }
     if (this.errorMessage) {
       this.errorMessage = '';
@@ -60,14 +60,14 @@ export class LoginComponent {
     }
 
     this.errorMessage = '';
-    const trimmedEmail = this.email.trim();
+    const trimmedUsername = this.username.trim();
     const trimmedPassword = this.password.trim();
 
     this.isLoading = true;
 
     this.http
       .post<LoginResponse>('http://localhost:3000/api/login', {
-        usuario: trimmedEmail,
+        usuario: trimmedUsername,
         senha: trimmedPassword
       })
       .subscribe({
@@ -83,7 +83,7 @@ export class LoginComponent {
         },
         error: (error: HttpErrorResponse) => {
           if (error.status === 401) {
-            this.errorMessage = 'Email ou senha incorretos';
+            this.errorMessage = 'Usuário ou senha incorretos';
           } else if (error.error?.message) {
             this.errorMessage = error.error.message;
           } else {
@@ -95,19 +95,16 @@ export class LoginComponent {
   }
 
   private validateForm(): boolean {
-    const trimmedEmail = this.email.trim();
+    const trimmedUsername = this.username.trim();
     const trimmedPassword = this.password.trim();
     let isValid = true;
 
     this.errorMessage = '';
-    this.emailError = '';
+    this.usernameError = '';
     this.passwordError = '';
 
-    if (!trimmedEmail) {
-      this.emailError = 'Email é obrigatório';
-      isValid = false;
-    } else if (!this.isValidEmail(trimmedEmail)) {
-      this.emailError = 'Email inválido';
+    if (!trimmedUsername) {
+      this.usernameError = 'Usuário é obrigatório';
       isValid = false;
     }
 
@@ -120,10 +117,5 @@ export class LoginComponent {
     }
 
     return isValid;
-  }
-
-  private isValidEmail(email: string): boolean {
-    const emailRegex = /\S+@\S+\.\S+/;
-    return emailRegex.test(email);
   }
 }
