@@ -3,13 +3,9 @@ import { Router } from '@angular/router';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 
 interface LoginResponse {
-  success: boolean;
-  user?: {
-    id: number;
-    usuario: string;
-    nome: string;
-  };
-  message?: string;
+  id: number;
+  usuario: string;
+  nome: string;
 }
 
 @Component({
@@ -66,26 +62,23 @@ export class LoginComponent {
     this.isLoading = true;
 
     this.http
-      .post<LoginResponse>('http://localhost:3000/api/login', {
+      .post<LoginResponse>('http://localhost:8080/api/login', {
         usuario: trimmedUsername,
         senha: trimmedPassword
       })
       .subscribe({
-        next: response => {
-          if (response?.success) {
-            this.router.navigate(['/dashboard']);
-            this.isLoading = false;
-            return;
-          }
-
-          this.errorMessage = response?.message ?? 'Não foi possível acessar a plataforma.';
+        next: () => {
+          this.router.navigate(['/dashboard']);
           this.isLoading = false;
         },
         error: (error: HttpErrorResponse) => {
           if (error.status === 401) {
-            this.errorMessage = 'Usuário ou senha incorretos';
+            this.errorMessage =
+              error.error?.detail || error.error?.message || 'Usuário ou senha incorretos';
           } else if (error.error?.message) {
             this.errorMessage = error.error.message;
+          } else if (error.error?.detail) {
+            this.errorMessage = error.error.detail;
           } else {
             this.errorMessage = 'Não foi possível acessar a plataforma. Tente novamente mais tarde.';
           }

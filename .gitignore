@@ -12,6 +12,10 @@
 /package-lock.json
 /yarn.lock
 frontend/node_modules/
+# Maven
+backend-java/target/
+
+# Legacy Node backend (removido, manter por segurança caso seja recriado)
 backend/node_modules/
 
 # Environment files

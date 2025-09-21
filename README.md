@@ -1,41 +1,45 @@
 # Gestor Político
 
-Projeto para gerenciar contatos e atividades políticas. Inicialmente está sendo criada a tela de login utilizando Angular no frontend e Node.js com Express e PostgreSQL no backend.
+Aplicação para gerenciar contatos e atividades políticas. O frontend continua em Angular e o backend agora é fornecido exclusivamente por uma API Spring Boot.
 
 ## Requisitos
-- Node.js 18+
-- PostgreSQL
+- Java 17+
+- Maven 3.9+
+- PostgreSQL 13+
+- Node.js 18+ (para o frontend Angular)
 
-## Banco de Dados
-Criar um banco `gestor_politico` e a tabela `usuarios`:
+## Configuração do Banco de Dados
 
-```sql
-CREATE DATABASE gestor_politico;
-\c gestor_politico
-CREATE TABLE IF NOT EXISTS usuarios (
-  id SERIAL PRIMARY KEY,
-  usuario VARCHAR(255) NOT NULL UNIQUE,
-  senha VARCHAR(255) NOT NULL,
-  nome VARCHAR(255) NOT NULL
-);
+Crie um banco chamado `gestor_politico` e certifique-se de possuir um usuário com acesso. Por padrão a aplicação utiliza as credenciais abaixo, que podem ser sobrescritas por variáveis de ambiente:
+
+```
+SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/gestor_politico
+SPRING_DATASOURCE_USERNAME=postgres
+SPRING_DATASOURCE_PASSWORD=admin
 ```
 
-O usuário padrão do PostgreSQL deve possuir senha `admin`.
+Ao iniciar a aplicação um usuário padrão é criado automaticamente (caso não exista):
 
-## Backend
-1. Acesse a pasta `backend`.
-2. Instale dependências e execute:
+- Usuário: `admin@plataforma.gov`
+- Senha: `123456`
+
+As tabelas são gerenciadas automaticamente pelo Hibernate utilizando `spring.jpa.hibernate.ddl-auto=update`.
+
+## Backend (Spring Boot)
+
+1. Acesse a pasta `backend-java`.
+2. Compile e execute a API:
    ```bash
-   npm install
-   npm start
+   mvn spring-boot:run
    ```
+3. A API ficará disponível em `http://localhost:8080`.
 
-## Frontend
+## Frontend (Angular)
+
 1. Acesse a pasta `frontend`.
-2. Instale dependências e execute:
+2. Instale as dependências e suba o servidor de desenvolvimento:
    ```bash
    npm install
    npm start
    ```
-
-A aplicação frontend executará em `http://localhost:4200` e se comunicará com o backend em `http://localhost:3000`.
+3. A aplicação estará acessível em `http://localhost:4200` e consumirá a API em `http://localhost:8080`.
