@@ -368,4 +368,5 @@ export class NovaFamiliaComponent {
     const responsavel = familia.membros.find(membro => membro.responsavelPrincipal);
     return responsavel?.nomeCompleto?.trim() || '';
   }
+
 }
