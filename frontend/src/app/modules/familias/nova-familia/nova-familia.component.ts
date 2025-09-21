@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component } from '@angular/core';
 import { Router } from '@angular/router';
 import { FamiliasService, FamiliaPayload } from '../familias.service';
 
@@ -48,8 +48,7 @@ interface PreviaFamilia {
   templateUrl: './nova-familia.component.html',
   styleUrls: ['./nova-familia.component.css']
 })
-export class NovaFamiliaComponent implements OnInit {
-  private readonly STORAGE_KEY = 'rascunho_familia';
+export class NovaFamiliaComponent {
 
   familia = {
     endereco: '',
@@ -93,10 +92,6 @@ export class NovaFamiliaComponent implements OnInit {
     private readonly router: Router,
     private readonly familiasService: FamiliasService
   ) {}
-
-  ngOnInit(): void {
-    this.carregarRascunho();
-  }
 
   voltarPagina(): void {
     this.router.navigate(['/familias']);
@@ -154,7 +149,6 @@ export class NovaFamiliaComponent implements OnInit {
           `Família do responsável "${responsavel}" cadastrada com sucesso!\n` +
             `Membros cadastrados: ${dados.membros.length}`
         );
-        this.removerRascunho();
         this.router.navigate(['/familias']);
       },
       error: erro => {
@@ -162,21 +156,6 @@ export class NovaFamiliaComponent implements OnInit {
         window.alert('Não foi possível cadastrar a família. Tente novamente.');
       }
     });
-  }
-
-  salvarRascunho(): void {
-    if (!this.storageDisponivel()) {
-      window.alert('Não foi possível salvar o rascunho neste dispositivo.');
-      return;
-    }
-
-    const dados = this.gerarDadosFamilia(false);
-    try {
-      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(dados));
-      window.alert('Rascunho salvo com sucesso!');
-    } catch (erro) {
-      console.error('Erro ao salvar rascunho', erro);
-    }
   }
 
   obterIniciais(nome: string): string {
@@ -336,60 +315,6 @@ export class NovaFamiliaComponent implements OnInit {
     return idade >= 0 ? idade : null;
   }
 
-  private carregarRascunho(): void {
-    if (!this.storageDisponivel()) {
-      return;
-    }
-
-    try {
-      const rascunho = localStorage.getItem(this.STORAGE_KEY);
-      if (!rascunho) {
-        return;
-      }
-
-      const dados: (PreviaFamilia & { nomeFamilia?: string }) | null = JSON.parse(rascunho);
-      this.familia = {
-        endereco: dados.endereco || '',
-        bairro: dados.bairro || '',
-        telefone: dados.telefone || ''
-      };
-
-      if (dados.membros && dados.membros.length > 0) {
-        this.membros = dados.membros.map((membro, indice) => ({
-          nome: membro.nome,
-          nascimento: membro.nascimento,
-          profissao: membro.profissao,
-          parentesco: (membro.parentesco as GrauParentesco) || '',
-          responsavel:
-            typeof membro.responsavel === 'boolean'
-              ? membro.responsavel
-              : ((membro as { papel?: string }).papel === 'Responsável' || indice === 0),
-          probabilidade: membro.probabilidade,
-          telefone: membro.telefone || ''
-        }));
-
-        const responsavelIndex = this.membros.findIndex(m => m.responsavel);
-        if (responsavelIndex === -1 && this.membros.length > 0) {
-          this.membros[0].responsavel = true;
-        }
-      } else {
-        this.membros = [
-          {
-            nome: '',
-            nascimento: '',
-            profissao: '',
-            parentesco: '',
-            responsavel: true,
-            probabilidade: '',
-            telefone: ''
-          }
-        ];
-      }
-    } catch (erro) {
-      console.error('Erro ao carregar rascunho', erro);
-    }
-  }
-
   private montarPayload(): FamiliaPayload {
     const endereco = this.normalizarTexto(this.familia.endereco);
     const bairro = this.normalizarTexto(this.familia.bairro);
@@ -430,21 +355,5 @@ export class NovaFamiliaComponent implements OnInit {
     }
 
     return Boolean(valor);
-  }
-  private removerRascunho(): void {
-    if (!this.storageDisponivel()) {
-      return;
-    }
-
-    localStorage.removeItem(this.STORAGE_KEY);
-  }
-
-  private storageDisponivel(): boolean {
-    try {
-      return typeof window !== 'undefined' && typeof window.localStorage !== 'undefined';
-    } catch (erro) {
-      console.error('Storage indisponível', erro);
-      return false;
-    }
   }
 }
