@@ -8,6 +8,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -37,7 +38,7 @@ public class Familia {
   @Column(nullable = false, length = 30)
   private String telefone;
 
-  @Column(name = "criado_em")
+  @Column(name = "criado_em", nullable = false)
   private OffsetDateTime criadoEm = OffsetDateTime.now();
 
   @OneToMany(mappedBy = "familia", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
@@ -94,5 +95,12 @@ public class Familia {
   public void adicionarMembro(MembroFamilia membro) {
     membro.setFamilia(this);
     this.membros.add(membro);
+  }
+
+  @PrePersist
+  public void prePersist() {
+    if (criadoEm == null) {
+      criadoEm = OffsetDateTime.now();
+    }
   }
 }

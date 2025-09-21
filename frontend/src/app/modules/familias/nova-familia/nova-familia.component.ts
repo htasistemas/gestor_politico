@@ -143,14 +143,14 @@ export class NovaFamiliaComponent {
     const payload = this.montarPayload();
     this.familiasService.criarFamilia(payload).subscribe({
       next: resposta => {
-        if (!resposta?.success || !resposta?.familia) {
-          console.error('Cadastro de família sem confirmação do banco', resposta);
+        if (!resposta) {
+          console.error('Cadastro de família sem retorno do servidor');
           window.alert('Não foi possível confirmar o cadastro da família no banco de dados. Tente novamente.');
           return;
         }
 
-        const responsavel = this.obterResponsavelServidor(resposta.familia) || 'Responsável não informado';
-        const totalMembros = resposta.familia.membros.length;
+        const responsavel = this.obterResponsavelServidor(resposta) || 'Responsável não informado';
+        const totalMembros = resposta.membros.length;
 
         window.alert(
           `Família do responsável "${responsavel}" cadastrada com sucesso!\n` +

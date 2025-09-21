@@ -8,11 +8,13 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import java.time.LocalDate;
+import java.time.OffsetDateTime;
 
 @Entity
 @Table(name = "membro_familia")
@@ -38,7 +40,7 @@ public class MembroFamilia {
 
   @NotNull
   @Column(name = "responsavel_principal", nullable = false)
-  private Boolean responsavelPrincipal;
+  private Boolean responsavelPrincipal = Boolean.FALSE;
 
   @NotBlank
   @Column(name = "probabilidade_voto", nullable = false)
@@ -50,6 +52,9 @@ public class MembroFamilia {
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "familia_id", nullable = false)
   private Familia familia;
+
+  @Column(name = "criado_em", nullable = false)
+  private OffsetDateTime criadoEm = OffsetDateTime.now();
 
   public Long getId() {
     return id;
@@ -121,5 +126,20 @@ public class MembroFamilia {
 
   public void setFamilia(Familia familia) {
     this.familia = familia;
+  }
+
+  public OffsetDateTime getCriadoEm() {
+    return criadoEm;
+  }
+
+  public void setCriadoEm(OffsetDateTime criadoEm) {
+    this.criadoEm = criadoEm;
+  }
+
+  @PrePersist
+  public void prePersist() {
+    if (criadoEm == null) {
+      criadoEm = OffsetDateTime.now();
+    }
   }
 }

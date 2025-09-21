@@ -1,7 +1,7 @@
 package com.gestorpolitico.controller;
 
 import com.gestorpolitico.dto.LoginRequestDTO;
-import com.gestorpolitico.entity.Login;
+import com.gestorpolitico.dto.LoginResponseDTO;
 import com.gestorpolitico.service.AuthService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
@@ -20,8 +20,8 @@ public class AuthController {
   }
 
   @PostMapping("/login")
-  public ResponseEntity<Login> login(@Valid @RequestBody LoginRequestDTO request) {
-    Login login = authService.autenticar(request);
+  public ResponseEntity<LoginResponseDTO> login(@Valid @RequestBody LoginRequestDTO request) {
+    LoginResponseDTO login = authService.autenticar(request);
     return ResponseEntity.ok(login);
   }
 }

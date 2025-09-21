@@ -1,14 +1,17 @@
 package com.gestorpolitico.service;
 
 import com.gestorpolitico.dto.FamiliaRequestDTO;
+import com.gestorpolitico.dto.FamiliaResponseDTO;
 import com.gestorpolitico.dto.MembroFamiliaRequestDTO;
+import com.gestorpolitico.dto.MembroFamiliaResponseDTO;
 import com.gestorpolitico.entity.Familia;
 import com.gestorpolitico.entity.MembroFamilia;
 import com.gestorpolitico.repository.FamiliaRepository;
-import jakarta.transaction.Transactional;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 @Service
@@ -20,7 +23,7 @@ public class FamiliaService {
   }
 
   @Transactional
-  public Familia salvarFamilia(FamiliaRequestDTO dto) {
+  public FamiliaResponseDTO salvarFamilia(FamiliaRequestDTO dto) {
     if (dto.getMembros() == null || dto.getMembros().isEmpty()) {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Informe ao menos um membro da família.");
     }
@@ -41,7 +44,15 @@ public class FamiliaService {
     List<MembroFamilia> membros = dto.getMembros().stream().map(this::converterMembro).toList();
     membros.forEach(familia::adicionarMembro);
 
-    return familiaRepository.save(familia);
+    Familia salvo = familiaRepository.save(familia);
+    return converterFamilia(salvo);
+  }
+
+  @Transactional(readOnly = true)
+  public List<FamiliaResponseDTO> listarFamilias() {
+    return familiaRepository.findAllByOrderByCriadoEmDesc().stream()
+      .map(this::converterFamilia)
+      .collect(Collectors.toList());
   }
 
   private MembroFamilia converterMembro(MembroFamiliaRequestDTO dto) {
@@ -54,5 +65,30 @@ public class FamiliaService {
     membro.setProbabilidadeVoto(dto.getProbabilidadeVoto());
     membro.setTelefone(dto.getTelefone());
     return membro;
+  }
+
+  private FamiliaResponseDTO converterFamilia(Familia familia) {
+    List<MembroFamiliaResponseDTO> membros = familia.getMembros().stream()
+      .map(membro -> new MembroFamiliaResponseDTO(
+        membro.getId(),
+        membro.getNomeCompleto(),
+        membro.getDataNascimento(),
+        membro.getProfissao(),
+        membro.getParentesco(),
+        Boolean.TRUE.equals(membro.getResponsavelPrincipal()),
+        membro.getProbabilidadeVoto(),
+        membro.getTelefone(),
+        membro.getCriadoEm()
+      ))
+      .collect(Collectors.toList());
+
+    return new FamiliaResponseDTO(
+      familia.getId(),
+      familia.getEndereco(),
+      familia.getBairro(),
+      familia.getTelefone(),
+      familia.getCriadoEm(),
+      membros
+    );
   }
 }
