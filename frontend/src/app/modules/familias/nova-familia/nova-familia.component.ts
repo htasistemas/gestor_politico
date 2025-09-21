@@ -206,7 +206,7 @@ export class NovaFamiliaComponent implements OnInit {
   }
 
   obterResponsavelPrincipal(): string {
-    const responsavel = this.membros.find(membro => membro.responsavel);
+    const responsavel = this.membros.find(membro => this.normalizarResponsavel(membro.responsavel));
     return responsavel?.nome?.trim() || '';
   }
 
@@ -249,20 +249,29 @@ export class NovaFamiliaComponent implements OnInit {
   }
 
   private formularioValido(): boolean {
-    if (!this.familia.endereco || !this.familia.bairro || !this.familia.telefone) {
+    const endereco = this.normalizarTexto(this.familia.endereco);
+    const bairro = this.normalizarTexto(this.familia.bairro);
+    const telefone = this.normalizarTexto(this.familia.telefone);
+
+    if (!endereco || !bairro || !telefone) {
       window.alert('Por favor, preencha todas as informações da família.');
       return false;
     }
 
     for (let indice = 0; indice < this.membros.length; indice += 1) {
       const membro = this.membros[indice];
-      if (!membro.nome || !membro.nascimento || !membro.probabilidade || !membro.parentesco) {
+      const nome = this.normalizarTexto(membro.nome);
+      const nascimento = membro.nascimento?.trim() || '';
+      const probabilidade = this.normalizarTexto(membro.probabilidade);
+      const parentesco = this.normalizarTexto(membro.parentesco);
+
+      if (!nome || !nascimento || !probabilidade || !parentesco) {
         window.alert(`Preencha todos os campos obrigatórios do ${indice + 1}º membro da família.`);
         return false;
       }
     }
 
-    const possuiResponsavel = this.membros.some(membro => membro.responsavel);
+    const possuiResponsavel = this.membros.some(membro => this.normalizarResponsavel(membro.responsavel));
     if (!possuiResponsavel) {
       window.alert('Selecione um responsável principal para a família.');
       return false;
@@ -272,16 +281,36 @@ export class NovaFamiliaComponent implements OnInit {
   }
 
   private gerarDadosFamilia(incluirIdade = true): PreviaFamilia {
-    const membros: PreviaMembro[] = this.membros.map(membro => ({
-      ...membro,
-      idade: incluirIdade ? this.calcularIdade(membro.nascimento) : null
-    }));
+    const membros: PreviaMembro[] = this.membros.map(membro => {
+      const nome = this.normalizarTexto(membro.nome);
+      const profissao = this.normalizarTexto(membro.profissao);
+      const parentesco = this.normalizarTexto(membro.parentesco) as GrauParentesco;
+      const probabilidade = this.normalizarTexto(membro.probabilidade) as ProbabilidadeVoto;
+      const telefone = this.normalizarTexto(membro.telefone);
+      const nascimento = membro.nascimento?.trim() || '';
+      const responsavel = this.normalizarResponsavel(membro.responsavel);
+
+      return {
+        ...membro,
+        nome,
+        profissao,
+        parentesco,
+        probabilidade,
+        telefone,
+        responsavel,
+        idade: incluirIdade ? this.calcularIdade(nascimento) : null
+      };
+    });
+
+    const endereco = this.normalizarTexto(this.familia.endereco);
+    const bairro = this.normalizarTexto(this.familia.bairro);
+    const telefone = this.normalizarTexto(this.familia.telefone);
 
     return {
       responsavelPrincipal: this.obterResponsavelPrincipal(),
-      endereco: this.familia.endereco,
-      bairro: this.familia.bairro,
-      telefone: this.familia.telefone,
+      endereco,
+      bairro,
+      telefone,
       membros
     };
   }
@@ -362,20 +391,45 @@ export class NovaFamiliaComponent implements OnInit {
   }
 
   private montarPayload(): FamiliaPayload {
+    const endereco = this.normalizarTexto(this.familia.endereco);
+    const bairro = this.normalizarTexto(this.familia.bairro);
+    const telefone = this.normalizarTexto(this.familia.telefone);
+
     return {
-      endereco: this.familia.endereco,
-      bairro: this.familia.bairro,
-      telefone: this.familia.telefone,
-      membros: this.membros.map(membro => ({
-        nomeCompleto: membro.nome,
-        dataNascimento: membro.nascimento || null,
-        profissao: membro.profissao || null,
-        parentesco: membro.parentesco || 'Outro',
-        responsavelPrincipal: membro.responsavel,
-        probabilidadeVoto: membro.probabilidade,
-        telefone: membro.telefone || null
-      }))
+      endereco,
+      bairro,
+      telefone,
+      membros: this.membros.map(membro => {
+        const nome = this.normalizarTexto(membro.nome);
+        const parentesco = (this.normalizarTexto(membro.parentesco) as GrauParentesco) || 'Outro';
+        const probabilidade = this.normalizarTexto(membro.probabilidade) as ProbabilidadeVoto;
+        const telefone = this.normalizarTexto(membro.telefone);
+        const nascimento = membro.nascimento?.trim() || '';
+        const profissao = this.normalizarTexto(membro.profissao);
+
+        return {
+          nomeCompleto: nome,
+          dataNascimento: nascimento || null,
+          profissao: profissao || null,
+          parentesco,
+          responsavelPrincipal: this.normalizarResponsavel(membro.responsavel),
+          probabilidadeVoto: probabilidade,
+          telefone: telefone || null
+        };
+      })
     };
+  }
+
+  private normalizarTexto(valor: string): string {
+    return valor ? valor.trim() : '';
+  }
+
+  private normalizarResponsavel(valor: boolean | string): boolean {
+    if (typeof valor === 'string') {
+      return valor.toLowerCase() === 'true';
+    }
+
+    return Boolean(valor);
   }
   private removerRascunho(): void {
     if (!this.storageDisponivel()) {
