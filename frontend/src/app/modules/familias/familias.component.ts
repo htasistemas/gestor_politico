@@ -44,6 +44,13 @@ export class FamiliasComponent implements OnInit {
     return familia.membros.length;
   }
 
+  contarMembrosPorProbabilidade(
+    familia: FamiliaResponse,
+    probabilidade: 'Alta' | 'Média' | 'Baixa'
+  ): number {
+    return familia.membros.filter(membro => membro.probabilidadeVoto === probabilidade).length;
+  }
+
   membrosSecundarios(familia: FamiliaResponse): FamiliaResponse['membros'] {
     return familia.membros.filter(membro => !membro.responsavelPrincipal);
   }

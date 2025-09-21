@@ -100,13 +100,13 @@
               </div>
               <div>
                 <div class="text-2xl font-bold text-gray-900">
-                  {{ familia.membros.filter(m => m.probabilidadeVoto === 'Alta').length }}
+                  {{ contarMembrosPorProbabilidade(familia, 'Alta') }}
                 </div>
                 <div class="text-xs text-gray-500">Alta probabilidade</div>
               </div>
               <div>
                 <div class="text-2xl font-bold text-gray-900">
-                  {{ familia.membros.filter(m => m.probabilidadeVoto === 'Baixa').length }}
+                  {{ contarMembrosPorProbabilidade(familia, 'Baixa') }}
                 </div>
                 <div class="text-xs text-gray-500">Baixa probabilidade</div>
               </div>
