@@ -9,8 +9,10 @@ interface MembroFamilia {
   nome: string;
   nascimento: string;
   profissao: string;
+  parentesco: string;
   papel: PapelFamilia;
   probabilidade: ProbabilidadeVoto;
+  telefone: string;
 }
 
 interface PreviaMembro extends MembroFamilia {
@@ -18,7 +20,7 @@ interface PreviaMembro extends MembroFamilia {
 }
 
 interface PreviaFamilia {
-  nomeFamilia: string;
+  responsavelPrincipal: string;
   endereco: string;
   bairro: string;
   telefone: string;
@@ -35,7 +37,6 @@ export class NovaFamiliaComponent implements OnInit {
   private readonly STORAGE_KEY = 'rascunho_familia';
 
   familia = {
-    nome: '',
     endereco: '',
     bairro: '',
     telefone: ''
@@ -48,8 +49,10 @@ export class NovaFamiliaComponent implements OnInit {
       nome: '',
       nascimento: '',
       profissao: '',
+      parentesco: '',
       papel: 'Responsável',
-      probabilidade: ''
+      probabilidade: '',
+      telefone: ''
     }
   ];
 
@@ -75,8 +78,10 @@ export class NovaFamiliaComponent implements OnInit {
       nome: '',
       nascimento: '',
       profissao: '',
+      parentesco: '',
       papel: 'Membro',
-      probabilidade: ''
+      probabilidade: '',
+      telefone: ''
     });
   }
 
@@ -109,8 +114,9 @@ export class NovaFamiliaComponent implements OnInit {
 
     const dados = this.gerarDadosFamilia();
     console.table(dados);
+    const responsavel = dados.responsavelPrincipal || 'Responsável não definido';
     window.alert(
-      `Família "${dados.nomeFamilia || 'Sem identificação'}" cadastrada com sucesso!\n` +
+      `Família do responsável "${responsavel}" cadastrada com sucesso!\n` +
         `Membros cadastrados: ${dados.membros.length}`
     );
 
@@ -159,6 +165,39 @@ export class NovaFamiliaComponent implements OnInit {
     }
   }
 
+  obterResponsavelPrincipal(): string {
+    const responsavel = this.membros.find(membro => membro.papel === 'Responsável');
+    return responsavel?.nome?.trim() || '';
+  }
+
+  atualizarPapel(indice: number, novoPapel: PapelFamilia): void {
+    if (novoPapel === 'Responsável') {
+      this.membros = this.membros.map((membro, posicao) => ({
+        ...membro,
+        papel: posicao === indice ? 'Responsável' : 'Membro'
+      }));
+      return;
+    }
+
+    this.membros[indice].papel = novoPapel;
+  }
+
+  abrirWhatsApp(telefone: string): void {
+    if (!telefone) {
+      window.alert('Informe um telefone para contatar via WhatsApp.');
+      return;
+    }
+
+    const somenteNumeros = telefone.replace(/\D/g, '');
+    if (!somenteNumeros) {
+      window.alert('Telefone inválido para contato via WhatsApp.');
+      return;
+    }
+
+    const link = `https://wa.me/55${somenteNumeros}`;
+    window.open(link, '_blank');
+  }
+
   private formularioValido(): boolean {
     if (!this.familia.endereco || !this.familia.bairro || !this.familia.telefone) {
       window.alert('Por favor, preencha todas as informações da família.');
@@ -167,10 +206,16 @@ export class NovaFamiliaComponent implements OnInit {
 
     for (let indice = 0; indice < this.membros.length; indice += 1) {
       const membro = this.membros[indice];
-      if (!membro.nome || !membro.nascimento || !membro.papel || !membro.probabilidade) {
+      if (!membro.nome || !membro.nascimento || !membro.papel || !membro.probabilidade || !membro.parentesco) {
         window.alert(`Preencha todos os campos obrigatórios do ${indice + 1}º membro da família.`);
         return false;
       }
+    }
+
+    const possuiResponsavel = this.membros.some(membro => membro.papel === 'Responsável');
+    if (!possuiResponsavel) {
+      window.alert('Selecione um responsável principal para a família.');
+      return false;
     }
 
     return true;
@@ -183,7 +228,7 @@ export class NovaFamiliaComponent implements OnInit {
     }));
 
     return {
-      nomeFamilia: this.familia.nome,
+      responsavelPrincipal: this.obterResponsavelPrincipal(),
       endereco: this.familia.endereco,
       bairro: this.familia.bairro,
       telefone: this.familia.telefone,
@@ -223,9 +268,8 @@ export class NovaFamiliaComponent implements OnInit {
         return;
       }
 
-      const dados: PreviaFamilia = JSON.parse(rascunho);
+      const dados: PreviaFamilia & { nomeFamilia?: string } = JSON.parse(rascunho);
       this.familia = {
-        nome: dados.nomeFamilia || '',
         endereco: dados.endereco || '',
         bairro: dados.bairro || '',
         telefone: dados.telefone || ''
@@ -236,9 +280,28 @@ export class NovaFamiliaComponent implements OnInit {
           nome: membro.nome,
           nascimento: membro.nascimento,
           profissao: membro.profissao,
+          parentesco: membro.parentesco || '',
           papel: indice === 0 ? 'Responsável' : membro.papel || 'Membro',
-          probabilidade: membro.probabilidade
+          probabilidade: membro.probabilidade,
+          telefone: membro.telefone || ''
         }));
+
+        const responsavelIndex = this.membros.findIndex(m => m.papel === 'Responsável');
+        if (responsavelIndex === -1 && this.membros.length > 0) {
+          this.membros[0].papel = 'Responsável';
+        }
+      } else {
+        this.membros = [
+          {
+            nome: '',
+            nascimento: '',
+            profissao: '',
+            parentesco: '',
+            papel: 'Responsável',
+            probabilidade: '',
+            telefone: ''
+          }
+        ];
       }
     } catch (erro) {
       console.error('Erro ao carregar rascunho', erro);

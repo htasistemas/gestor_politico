@@ -56,15 +56,14 @@
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div class="md:col-span-2">
-          <label for="nomeFamilia" class="block text-sm font-semibold text-gray-700 mb-2">Nome da Família</label>
+          <label class="block text-sm font-semibold text-gray-700 mb-2">Responsável Principal</label>
           <input
-            id="nomeFamilia"
             type="text"
-            placeholder="Identificação ou apelido da família"
-            class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all duration-200"
-            [(ngModel)]="familia.nome"
-            name="nomeFamilia"
+            [value]="obterResponsavelPrincipal() || 'Defina o responsável entre os membros cadastrados'"
+            class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl bg-gray-50 text-gray-600 cursor-not-allowed"
+            disabled
           />
+          <p class="text-xs text-gray-500 mt-2">O responsável é definido ao selecionar o papel &quot;Responsável&quot; para um membro.</p>
         </div>
 
         <div class="md:col-span-2">
@@ -184,10 +183,22 @@
             </div>
 
             <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">Grau de Parentesco *</label>
+              <input
+                type="text"
+                class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all duration-200"
+                [(ngModel)]="membro.parentesco"
+                name="parentesco_{{ i }}"
+                placeholder="Ex.: Pai, Mãe, Filho(a), Esposo(a)"
+              />
+            </div>
+
+            <div>
               <label class="block text-sm font-semibold text-gray-700 mb-2">Papel na Família *</label>
               <select
                 class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all duration-200"
-                [(ngModel)]="membro.papel"
+                [ngModel]="membro.papel"
+                (ngModelChange)="atualizarPapel(i, $event)"
                 name="papel_{{ i }}"
               >
                 <option value="">Selecione o papel</option>
@@ -208,6 +219,31 @@
                 <option value="Média">Média Probabilidade</option>
                 <option value="Baixa">Baixa Probabilidade</option>
               </select>
+            </div>
+
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">Telefone de Contato</label>
+              <div class="flex items-center space-x-2">
+                <input
+                  type="tel"
+                  class="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all duration-200"
+                  [(ngModel)]="membro.telefone"
+                  name="telefone_{{ i }}"
+                  placeholder="(11) 99999-9999"
+                />
+                <button
+                  type="button"
+                  (click)="abrirWhatsApp(membro.telefone)"
+                  class="p-3 bg-green-100 text-green-600 rounded-xl hover:bg-green-200 transition-colors"
+                  title="Chamar no WhatsApp"
+                >
+                  <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 32 32" aria-hidden="true">
+                    <path
+                      d="M16.003 2.667c-7.364 0-13.333 5.969-13.333 13.333 0 2.352.612 4.643 1.777 6.667L2.667 29.333l6.8-1.753a13.266 13.266 0 006.536 1.72h.004c7.36 0 13.33-5.969 13.33-13.333 0-3.563-1.387-6.917-3.904-9.437-2.515-2.52-5.867-3.863-9.33-3.863zm-.004 24c-2.12 0-4.2-.567-6.016-1.64l-.432-.256-4.032 1.04 1.072-3.933-.28-.404a11.264 11.264 0 01-1.732-5.973c0-6.24 5.088-11.333 11.336-11.333 3.027 0 5.876 1.18 8.016 3.32a11.267 11.267 0 013.32 8.02c0 6.243-5.087 11.329-11.32 11.329zm6.192-8.429c-.339-.17-2.012-.993-2.324-1.105-.312-.114-.539-.17-.766.169-.226.339-.877 1.105-1.074 1.333-.198.226-.395.255-.734.085-.339-.17-1.433-.527-2.732-1.68-1.01-.9-1.69-2.017-1.888-2.356-.198-.339-.021-.522.149-.692.153-.152.339-.395.509-.593.17-.198.226-.339.339-.565.113-.226.057-.424-.028-.593-.085-.17-.766-1.848-1.05-2.528-.276-.663-.558-.572-.766-.582l-.653-.012c-.197 0-.52.074-.792.372-.272.339-1.04 1.016-1.04 2.48 0 1.463 1.064 2.876 1.213 3.074.149.197 2.095 3.2 5.077 4.486.71.306 1.264.489 1.695.624.712.227 1.36.195 1.872.118.571-.085 1.75-.715 1.997-1.403.247-.688.247-1.277.173-1.403-.074-.127-.272-.198-.61-.368z"
+                    ></path>
+                  </svg>
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -263,7 +299,10 @@
     </div>
     <div class="p-6 space-y-6">
       <div class="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-2xl border border-blue-200">
-        <h4 class="text-lg font-bold text-gray-900 mb-3">{{ previaFamilia.nomeFamilia || 'Família sem identificação' }}</h4>
+        <h4 class="text-lg font-bold text-gray-900 mb-1">
+          {{ previaFamilia.responsavelPrincipal ? 'Família de ' + previaFamilia.responsavelPrincipal : 'Responsável não definido' }}
+        </h4>
+        <p class="text-sm text-gray-600 mb-3">Responsável principal definido no cadastro de membros.</p>
         <div class="space-y-2 text-sm">
           <div class="flex items-center text-gray-600">
             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -302,20 +341,25 @@
               </div>
               <div class="flex-1">
                 <h5 class="font-semibold text-gray-900">{{ membro.nome }}</h5>
-                <div class="flex items-center space-x-3 mt-1">
-                  <span class="text-sm text-gray-600">
-                    {{ membro.profissao || 'Profissão não informada' }} •
-                    {{ membro.idade ? membro.idade + ' anos' : 'Idade não informada' }}
-                  </span>
-                  <span
-                    class="px-2 py-1 text-xs font-medium rounded-full"
-                    [ngClass]="membro.papel === 'Responsável' ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-700'"
-                  >
-                    {{ membro.papel || 'Papel não definido' }}
-                  </span>
-                </div>
-              </div>
+            <div class="flex items-center space-x-3 mt-1">
+              <span class="text-sm text-gray-600">
+                {{ membro.profissao || 'Profissão não informada' }} •
+                {{ membro.idade ? membro.idade + ' anos' : 'Idade não informada' }}
+              </span>
+              <span
+                class="px-2 py-1 text-xs font-medium rounded-full"
+                [ngClass]="membro.papel === 'Responsável' ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-700'"
+              >
+                {{ membro.papel || 'Papel não definido' }}
+              </span>
             </div>
+            <div class="flex items-center space-x-2 text-sm text-gray-500 mt-1">
+              <span>{{ membro.parentesco || 'Parentesco não informado' }}</span>
+              <span>•</span>
+              <span>{{ membro.telefone || 'Telefone não informado' }}</span>
+            </div>
+          </div>
+        </div>
             <span class="px-3 py-1 text-xs font-medium rounded-full" [ngClass]="obterClasseProbabilidade(membro.probabilidade)">
               {{ membro.probabilidade || 'Sem avaliação' }}
             </span>
