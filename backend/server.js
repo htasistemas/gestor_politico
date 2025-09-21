@@ -31,19 +31,44 @@ async function init() {
     telefone VARCHAR(30) NOT NULL,
     criado_em TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
   )`);
+  await pool.query(`DO $$
+    BEGIN
+      IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'grau_parentesco') THEN
+        CREATE TYPE grau_parentesco AS ENUM (
+          'Pai',
+          'Mãe',
+          'Filho(a)',
+          'Filha',
+          'Filho',
+          'Irmão(ã)',
+          'Primo(a)',
+          'Tio(a)',
+          'Sobrinho(a)',
+          'Cônjuge',
+          'Avô(ó)',
+          'Enteado(a)',
+          'Outro'
+        );
+      END IF;
+    END
+  $$`);
   await pool.query(`CREATE TABLE IF NOT EXISTS membro_familia (
     id SERIAL PRIMARY KEY,
     familia_id INTEGER NOT NULL REFERENCES familia(id) ON DELETE CASCADE,
     nome_completo VARCHAR(255) NOT NULL,
     data_nascimento DATE,
     profissao VARCHAR(255),
-    parentesco VARCHAR(120) NOT NULL,
-    papel_na_familia VARCHAR(50) NOT NULL,
+    parentesco grau_parentesco NOT NULL,
     responsavel_principal BOOLEAN DEFAULT FALSE,
     probabilidade_voto VARCHAR(20) NOT NULL,
     telefone VARCHAR(30),
     criado_em TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
   )`);
+  await pool.query(`ALTER TABLE membro_familia
+    DROP COLUMN IF EXISTS papel_na_familia`);
+  await pool.query(`ALTER TABLE membro_familia
+    ALTER COLUMN parentesco TYPE grau_parentesco
+    USING parentesco::grau_parentesco`);
   await pool.query(`CREATE UNIQUE INDEX IF NOT EXISTS idx_membro_familia_principal
     ON membro_familia (familia_id)
     WHERE responsavel_principal`);
@@ -70,6 +95,113 @@ app.post('/api/login', async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, message: 'Erro no servidor' });
+  }
+});
+
+app.get('/api/familias', async (_req, res) => {
+  try {
+    const resultado = await pool.query(`
+      SELECT
+        f.id,
+        f.endereco,
+        f.bairro,
+        f.telefone,
+        f.criado_em AS "criadoEm",
+        COALESCE(
+          json_agg(
+            json_build_object(
+              'id', m.id,
+              'nomeCompleto', m.nome_completo,
+              'dataNascimento', m.data_nascimento,
+              'profissao', m.profissao,
+              'parentesco', m.parentesco,
+              'responsavelPrincipal', m.responsavel_principal,
+              'probabilidadeVoto', m.probabilidade_voto,
+              'telefone', m.telefone,
+              'criadoEm', m.criado_em
+            )
+          ) FILTER (WHERE m.id IS NOT NULL),
+          '[]'::json
+        ) AS membros
+      FROM familia f
+      LEFT JOIN membro_familia m ON m.familia_id = f.id
+      GROUP BY f.id
+      ORDER BY f.criado_em DESC
+    `);
+    res.json(resultado.rows);
+  } catch (erro) {
+    console.error('Erro ao listar famílias', erro);
+    res.status(500).json({ success: false, message: 'Erro ao listar famílias' });
+  }
+});
+
+app.post('/api/familias', async (req, res) => {
+  const { endereco, bairro, telefone, membros } = req.body;
+
+  if (!endereco || !bairro || !telefone) {
+    return res.status(400).json({ success: false, message: 'Dados da família incompletos.' });
+  }
+
+  if (!Array.isArray(membros) || membros.length === 0) {
+    return res.status(400).json({ success: false, message: 'Informe ao menos um membro da família.' });
+  }
+
+  const possuiResponsavel = membros.some(membro => membro && membro.responsavelPrincipal);
+  if (!possuiResponsavel) {
+    return res.status(400).json({ success: false, message: 'Defina um responsável principal para a família.' });
+  }
+
+  const cliente = await pool.connect();
+
+  try {
+    await cliente.query('BEGIN');
+    const familiaCriada = await cliente.query(
+      `INSERT INTO familia (endereco, bairro, telefone)
+       VALUES ($1, $2, $3)
+       RETURNING id`,
+      [endereco, bairro, telefone]
+    );
+
+    const familiaId = familiaCriada.rows[0].id;
+
+    for (const membro of membros) {
+      if (!membro?.nomeCompleto || !membro?.parentesco || !membro?.probabilidadeVoto) {
+        await cliente.query('ROLLBACK');
+        return res.status(400).json({ success: false, message: 'Dados do membro incompletos.' });
+      }
+
+      await cliente.query(
+        `INSERT INTO membro_familia (
+          familia_id,
+          nome_completo,
+          data_nascimento,
+          profissao,
+          parentesco,
+          responsavel_principal,
+          probabilidade_voto,
+          telefone
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+        [
+          familiaId,
+          membro.nomeCompleto,
+          membro.dataNascimento || null,
+          membro.profissao || null,
+          membro.parentesco,
+          Boolean(membro.responsavelPrincipal),
+          membro.probabilidadeVoto,
+          membro.telefone || null
+        ]
+      );
+    }
+
+    await cliente.query('COMMIT');
+    res.status(201).json({ success: true, id: familiaId });
+  } catch (erro) {
+    await cliente.query('ROLLBACK');
+    console.error('Erro ao cadastrar família', erro);
+    res.status(500).json({ success: false, message: 'Erro ao cadastrar família.' });
+  } finally {
+    cliente.release();
   }
 });
 

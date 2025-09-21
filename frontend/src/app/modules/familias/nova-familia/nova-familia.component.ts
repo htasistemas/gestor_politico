@@ -1,16 +1,31 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
+import { FamiliasService, FamiliaPayload } from '../familias.service';
 
 type ProbabilidadeVoto = 'Alta' | 'Média' | 'Baixa' | '';
 
-type PapelFamilia = 'Responsável' | 'Membro' | '';
+type GrauParentesco =
+  | 'Pai'
+  | 'Mãe'
+  | 'Filho(a)'
+  | 'Filha'
+  | 'Filho'
+  | 'Irmão(ã)'
+  | 'Primo(a)'
+  | 'Tio(a)'
+  | 'Sobrinho(a)'
+  | 'Cônjuge'
+  | 'Avô(ó)'
+  | 'Enteado(a)'
+  | 'Outro'
+  | '';
 
 interface MembroFamilia {
   nome: string;
   nascimento: string;
   profissao: string;
-  parentesco: string;
-  papel: PapelFamilia;
+  parentesco: GrauParentesco;
+  responsavel: boolean;
   probabilidade: ProbabilidadeVoto;
   telefone: string;
 }
@@ -43,6 +58,21 @@ export class NovaFamiliaComponent implements OnInit {
   };
 
   bairros: string[] = ['Centro', 'Vila Nova', 'Jardim América', 'Santa Rita', 'São João', 'Outro'];
+  grausParentesco: GrauParentesco[] = [
+    'Pai',
+    'Mãe',
+    'Filho(a)',
+    'Filha',
+    'Filho',
+    'Irmão(ã)',
+    'Primo(a)',
+    'Tio(a)',
+    'Sobrinho(a)',
+    'Cônjuge',
+    'Avô(ó)',
+    'Enteado(a)',
+    'Outro'
+  ];
 
   membros: MembroFamilia[] = [
     {
@@ -50,7 +80,7 @@ export class NovaFamiliaComponent implements OnInit {
       nascimento: '',
       profissao: '',
       parentesco: '',
-      papel: 'Responsável',
+      responsavel: true,
       probabilidade: '',
       telefone: ''
     }
@@ -59,7 +89,10 @@ export class NovaFamiliaComponent implements OnInit {
   mostrarPrevia = false;
   previaFamilia: PreviaFamilia | null = null;
 
-  constructor(private readonly router: Router) {}
+  constructor(
+    private readonly router: Router,
+    private readonly familiasService: FamiliasService
+  ) {}
 
   ngOnInit(): void {
     this.carregarRascunho();
@@ -79,7 +112,7 @@ export class NovaFamiliaComponent implements OnInit {
       nascimento: '',
       profissao: '',
       parentesco: '',
-      papel: 'Membro',
+      responsavel: false,
       probabilidade: '',
       telefone: ''
     });
@@ -112,16 +145,23 @@ export class NovaFamiliaComponent implements OnInit {
       return;
     }
 
-    const dados = this.gerarDadosFamilia();
-    console.table(dados);
-    const responsavel = dados.responsavelPrincipal || 'Responsável não definido';
-    window.alert(
-      `Família do responsável "${responsavel}" cadastrada com sucesso!\n` +
-        `Membros cadastrados: ${dados.membros.length}`
-    );
-
-    this.removerRascunho();
-    this.router.navigate(['/familias']);
+    const payload = this.montarPayload();
+    this.familiasService.criarFamilia(payload).subscribe({
+      next: () => {
+        const dados = this.gerarDadosFamilia();
+        const responsavel = dados.responsavelPrincipal || 'Responsável não definido';
+        window.alert(
+          `Família do responsável "${responsavel}" cadastrada com sucesso!\n` +
+            `Membros cadastrados: ${dados.membros.length}`
+        );
+        this.removerRascunho();
+        this.router.navigate(['/familias']);
+      },
+      error: erro => {
+        console.error('Erro ao cadastrar família', erro);
+        window.alert('Não foi possível cadastrar a família. Tente novamente.');
+      }
+    });
   }
 
   salvarRascunho(): void {
@@ -166,20 +206,30 @@ export class NovaFamiliaComponent implements OnInit {
   }
 
   obterResponsavelPrincipal(): string {
-    const responsavel = this.membros.find(membro => membro.papel === 'Responsável');
+    const responsavel = this.membros.find(membro => membro.responsavel);
     return responsavel?.nome?.trim() || '';
   }
 
-  atualizarPapel(indice: number, novoPapel: PapelFamilia): void {
-    if (novoPapel === 'Responsável') {
+  definirResponsavel(indice: number, selecionado: boolean): void {
+    if (selecionado) {
       this.membros = this.membros.map((membro, posicao) => ({
         ...membro,
-        papel: posicao === indice ? 'Responsável' : 'Membro'
+        responsavel: posicao === indice
       }));
       return;
     }
 
-    this.membros[indice].papel = novoPapel;
+    const existeOutroResponsavel = this.membros.some(
+      (membro, posicao) => posicao !== indice && membro.responsavel
+    );
+
+    if (!existeOutroResponsavel) {
+      window.alert('A família precisa ter um responsável principal.');
+      this.membros[indice].responsavel = true;
+      return;
+    }
+
+    this.membros[indice].responsavel = false;
   }
 
   abrirWhatsApp(telefone: string): void {
@@ -206,13 +256,13 @@ export class NovaFamiliaComponent implements OnInit {
 
     for (let indice = 0; indice < this.membros.length; indice += 1) {
       const membro = this.membros[indice];
-      if (!membro.nome || !membro.nascimento || !membro.papel || !membro.probabilidade || !membro.parentesco) {
+      if (!membro.nome || !membro.nascimento || !membro.probabilidade || !membro.parentesco) {
         window.alert(`Preencha todos os campos obrigatórios do ${indice + 1}º membro da família.`);
         return false;
       }
     }
 
-    const possuiResponsavel = this.membros.some(membro => membro.papel === 'Responsável');
+    const possuiResponsavel = this.membros.some(membro => membro.responsavel);
     if (!possuiResponsavel) {
       window.alert('Selecione um responsável principal para a família.');
       return false;
@@ -268,7 +318,7 @@ export class NovaFamiliaComponent implements OnInit {
         return;
       }
 
-      const dados: PreviaFamilia & { nomeFamilia?: string } = JSON.parse(rascunho);
+      const dados: (PreviaFamilia & { nomeFamilia?: string }) | null = JSON.parse(rascunho);
       this.familia = {
         endereco: dados.endereco || '',
         bairro: dados.bairro || '',
@@ -280,15 +330,18 @@ export class NovaFamiliaComponent implements OnInit {
           nome: membro.nome,
           nascimento: membro.nascimento,
           profissao: membro.profissao,
-          parentesco: membro.parentesco || '',
-          papel: indice === 0 ? 'Responsável' : membro.papel || 'Membro',
+          parentesco: (membro.parentesco as GrauParentesco) || '',
+          responsavel:
+            typeof membro.responsavel === 'boolean'
+              ? membro.responsavel
+              : ((membro as { papel?: string }).papel === 'Responsável' || indice === 0),
           probabilidade: membro.probabilidade,
           telefone: membro.telefone || ''
         }));
 
-        const responsavelIndex = this.membros.findIndex(m => m.papel === 'Responsável');
+        const responsavelIndex = this.membros.findIndex(m => m.responsavel);
         if (responsavelIndex === -1 && this.membros.length > 0) {
-          this.membros[0].papel = 'Responsável';
+          this.membros[0].responsavel = true;
         }
       } else {
         this.membros = [
@@ -297,7 +350,7 @@ export class NovaFamiliaComponent implements OnInit {
             nascimento: '',
             profissao: '',
             parentesco: '',
-            papel: 'Responsável',
+            responsavel: true,
             probabilidade: '',
             telefone: ''
           }
@@ -308,6 +361,22 @@ export class NovaFamiliaComponent implements OnInit {
     }
   }
 
+  private montarPayload(): FamiliaPayload {
+    return {
+      endereco: this.familia.endereco,
+      bairro: this.familia.bairro,
+      telefone: this.familia.telefone,
+      membros: this.membros.map(membro => ({
+        nomeCompleto: membro.nome,
+        dataNascimento: membro.nascimento || null,
+        profissao: membro.profissao || null,
+        parentesco: membro.parentesco || 'Outro',
+        responsavelPrincipal: membro.responsavel,
+        probabilidadeVoto: membro.probabilidade,
+        telefone: membro.telefone || null
+      }))
+    };
+  }
   private removerRascunho(): void {
     if (!this.storageDisponivel()) {
       return;

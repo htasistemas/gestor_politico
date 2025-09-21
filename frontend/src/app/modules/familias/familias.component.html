@@ -24,7 +24,7 @@
       </div>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10" *ngIf="destaques.length > 0">
       <div
         *ngFor="let destaque of destaques"
         class="bg-white rounded-3xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300"
@@ -63,145 +63,80 @@
         </div>
       </div>
 
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 p-6 bg-gray-50">
-        <div class="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm hover:shadow-md transition-all">
-          <div class="flex items-start justify-between">
-            <div>
-              <h2 class="text-lg font-semibold text-gray-900 mb-1">Família Sousa Lima</h2>
-              <p class="text-sm text-gray-500">Jardim Aurora • Zona Norte</p>
-            </div>
-            <span class="px-3 py-1 rounded-full bg-emerald-50 text-emerald-600 text-xs font-semibold">Alta influência</span>
-          </div>
-          <div class="mt-4 grid grid-cols-3 gap-4 text-center">
-            <div>
-              <div class="text-2xl font-bold text-gray-900">06</div>
-              <div class="text-xs text-gray-500">Membros</div>
-            </div>
-            <div>
-              <div class="text-2xl font-bold text-gray-900">02</div>
-              <div class="text-xs text-gray-500">Projetos ativos</div>
-            </div>
-            <div>
-              <div class="text-2xl font-bold text-gray-900">89%</div>
-              <div class="text-xs text-gray-500">Engajamento</div>
-            </div>
-          </div>
-          <div class="mt-5 flex items-center justify-between">
-            <div class="flex -space-x-2">
-              <div class="w-8 h-8 rounded-full bg-blue-100 border-2 border-white flex items-center justify-center text-xs font-semibold text-blue-600">
-                MS
-              </div>
-              <div class="w-8 h-8 rounded-full bg-purple-100 border-2 border-white flex items-center justify-center text-xs font-semibold text-purple-600">
-                LS
-              </div>
-              <div class="w-8 h-8 rounded-full bg-emerald-100 border-2 border-white flex items-center justify-center text-xs font-semibold text-emerald-600">
-                +4
-              </div>
-            </div>
-            <div class="flex items-center space-x-2 text-sm text-blue-600 font-medium">
-              <span>Ver detalhes</span>
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-              </svg>
-            </div>
-          </div>
+      <div class="p-6 bg-gray-50">
+        <div *ngIf="carregando" class="text-center py-10 text-gray-500">Carregando famílias cadastradas...</div>
+
+        <div *ngIf="erroCarregamento" class="text-center py-10 text-red-500 font-semibold">
+          {{ erroCarregamento }}
         </div>
 
-        <div class="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm hover:shadow-md transition-all">
-          <div class="flex items-start justify-between">
-            <div>
-              <h2 class="text-lg font-semibold text-gray-900 mb-1">Família Albuquerque</h2>
-              <p class="text-sm text-gray-500">Vila Esperança • Zona Leste</p>
-            </div>
-            <span class="px-3 py-1 rounded-full bg-blue-50 text-blue-600 text-xs font-semibold">Média influência</span>
-          </div>
-          <div class="mt-4 grid grid-cols-3 gap-4 text-center">
-            <div>
-              <div class="text-2xl font-bold text-gray-900">04</div>
-              <div class="text-xs text-gray-500">Membros</div>
-            </div>
-            <div>
-              <div class="text-2xl font-bold text-gray-900">01</div>
-              <div class="text-xs text-gray-500">Projetos ativos</div>
-            </div>
-            <div>
-              <div class="text-2xl font-bold text-gray-900">72%</div>
-              <div class="text-xs text-gray-500">Engajamento</div>
-            </div>
-          </div>
-          <div class="mt-5 flex items-center justify-between">
-            <div class="flex -space-x-2">
-              <div class="w-8 h-8 rounded-full bg-blue-100 border-2 border-white flex items-center justify-center text-xs font-semibold text-blue-600">
-                PA
-              </div>
-              <div class="w-8 h-8 rounded-full bg-pink-100 border-2 border-white flex items-center justify-center text-xs font-semibold text-pink-600">
-                TA
-              </div>
-              <div class="w-8 h-8 rounded-full bg-gray-100 border-2 border-white flex items-center justify-center text-xs font-semibold text-gray-500">
-                +2
-              </div>
-            </div>
-            <div class="flex items-center space-x-2 text-sm text-blue-600 font-medium">
-              <span>Ver detalhes</span>
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-              </svg>
-            </div>
-          </div>
+        <div
+          *ngIf="!carregando && !erroCarregamento && familias.length === 0"
+          class="text-center py-10 text-gray-500"
+        >
+          Nenhuma família cadastrada até o momento.
         </div>
 
-        <div class="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm hover:shadow-md transition-all lg:col-span-2">
-          <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div>
-              <h2 class="text-lg font-semibold text-gray-900 mb-1">Próximas ações recomendadas</h2>
-              <p class="text-sm text-gray-500">Sugestões baseadas nos níveis de engajamento</p>
-            </div>
-            <div class="flex items-center gap-2">
-              <span class="flex items-center px-3 py-1 rounded-full bg-emerald-50 text-emerald-600 text-xs font-semibold">
-                <span class="w-2 h-2 rounded-full bg-emerald-500 mr-2"></span>
-                Prioridade alta
-              </span>
-              <span class="flex items-center px-3 py-1 rounded-full bg-amber-50 text-amber-600 text-xs font-semibold">
-                <span class="w-2 h-2 rounded-full bg-amber-500 mr-2"></span>
-                Prioridade média
-              </span>
-            </div>
-          </div>
-          <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div class="p-4 rounded-2xl border border-gray-100 hover:border-blue-200 transition-all">
-              <div class="flex items-center justify-between mb-3">
-                <div class="flex items-center space-x-3">
-                  <div class="w-10 h-10 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.59 14.37L18 16.78 19.41 15.37 17 12.95M11 5H6a2 2 0 00-2 2v13l4-2 4 2V7a2 2 0 00-2-2h1" />
-                    </svg>
-                  </div>
-                  <div>
-                    <div class="text-sm font-semibold text-gray-900">Reunião com responsáveis</div>
-                    <div class="text-xs text-gray-500">Família Sousa Lima • até 18/04</div>
-                  </div>
-                </div>
-                <span class="px-2 py-1 rounded-full bg-emerald-100 text-emerald-600 text-[11px] font-semibold">Alta</span>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4" *ngIf="familias.length > 0">
+          <div
+            *ngFor="let familia of familias"
+            class="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm hover:shadow-md transition-all"
+          >
+            <div class="flex items-start justify-between">
+              <div>
+                <h2 class="text-lg font-semibold text-gray-900 mb-1">Família de {{ obterResponsavel(familia) }}</h2>
+                <p class="text-sm text-gray-500">
+                  {{ familia.bairro }} • {{ dataCadastro(familia) || 'Data não disponível' }}
+                </p>
               </div>
-              <p class="text-sm text-gray-500">Confirmar presença em evento comunitário e alinhar demandas locais prioritárias.</p>
+              <span class="px-3 py-1 rounded-full bg-blue-50 text-blue-600 text-xs font-semibold">
+                {{ obterTotalMembros(familia) }} membros
+              </span>
             </div>
-
-            <div class="p-4 rounded-2xl border border-gray-100 hover:border-blue-200 transition-all">
-              <div class="flex items-center justify-between mb-3">
-                <div class="flex items-center space-x-3">
-                  <div class="w-10 h-10 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5h12M9 3v2m6 4h6M9 21l-6-6h12l-6 6z" />
-                    </svg>
-                  </div>
-                  <div>
-                    <div class="text-sm font-semibold text-gray-900">Mapeamento de novos líderes</div>
-                    <div class="text-xs text-gray-500">Região Leste • até 22/04</div>
-                  </div>
-                </div>
-                <span class="px-2 py-1 rounded-full bg-amber-100 text-amber-600 text-[11px] font-semibold">Média</span>
+            <div class="mt-4 grid grid-cols-3 gap-4 text-center">
+              <div>
+                <div class="text-2xl font-bold text-gray-900">{{ obterTotalMembros(familia) }}</div>
+                <div class="text-xs text-gray-500">Integrantes</div>
               </div>
-              <p class="text-sm text-gray-500">Identificar famílias emergentes com potencial de mobilização para próximas agendas.</p>
+              <div>
+                <div class="text-2xl font-bold text-gray-900">
+                  {{ familia.membros.filter(m => m.probabilidadeVoto === 'Alta').length }}
+                </div>
+                <div class="text-xs text-gray-500">Alta probabilidade</div>
+              </div>
+              <div>
+                <div class="text-2xl font-bold text-gray-900">
+                  {{ familia.membros.filter(m => m.probabilidadeVoto === 'Baixa').length }}
+                </div>
+                <div class="text-xs text-gray-500">Baixa probabilidade</div>
+              </div>
+            </div>
+            <div class="mt-5 flex items-center justify-between">
+              <div class="flex -space-x-2">
+                <ng-container *ngFor="let membro of membrosSecundarios(familia) | slice:0:2">
+                  <div
+                    class="w-8 h-8 rounded-full bg-blue-100 border-2 border-white flex items-center justify-center text-xs font-semibold text-blue-600"
+                    [ngClass]="{
+                      'bg-purple-100 text-purple-600': membro.probabilidadeVoto === 'Alta',
+                      'bg-amber-100 text-amber-600': membro.probabilidadeVoto === 'Média',
+                      'bg-gray-100 text-gray-600': membro.probabilidadeVoto === 'Baixa'
+                    }"
+                    [title]="membro.nomeCompleto"
+                  >
+                    {{ obterIniciais(membro.nomeCompleto) }}
+                  </div>
+                </ng-container>
+                <div
+                  *ngIf="membrosSecundarios(familia).length > 2"
+                  class="w-8 h-8 rounded-full bg-gray-100 border-2 border-white flex items-center justify-center text-xs font-semibold text-gray-500"
+                >
+                  +{{ membrosSecundarios(familia).length - 2 }}
+                </div>
+              </div>
+              <div class="text-sm text-gray-500 text-right">
+                <div class="font-semibold text-gray-700">Contato</div>
+                <div>{{ familia.telefone || 'Telefone não informado' }}</div>
+              </div>
             </div>
           </div>
         </div>
