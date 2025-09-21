@@ -151,7 +151,14 @@ app.post('/api/familias', async (req, res) => {
     return res.status(400).json({ success: false, message: 'Defina um responsável principal para a família.' });
   }
 
-  const cliente = await pool.connect();
+  let cliente;
+
+  try {
+    cliente = await pool.connect();
+  } catch (erro) {
+    console.error('Erro ao conectar no banco', erro);
+    return res.status(500).json({ success: false, message: 'Erro ao conectar ao banco de dados.' });
+  }
 
   try {
     await cliente.query('BEGIN');
@@ -162,6 +169,11 @@ app.post('/api/familias', async (req, res) => {
       [endereco, bairro, telefone]
     );
 
+    if (familiaCriada.rowCount !== 1) {
+      await cliente.query('ROLLBACK');
+      return res.status(500).json({ success: false, message: 'Não foi possível cadastrar a família.' });
+    }
+
     const familiaId = familiaCriada.rows[0].id;
 
     for (const membro of membros) {
@@ -170,7 +182,12 @@ app.post('/api/familias', async (req, res) => {
         return res.status(400).json({ success: false, message: 'Dados do membro incompletos.' });
       }
 
-      await cliente.query(
+      const responsavelPrincipal =
+        typeof membro.responsavelPrincipal === 'string'
+          ? membro.responsavelPrincipal.toLowerCase() === 'true'
+          : Boolean(membro.responsavelPrincipal);
+
+      const membroCriado = await cliente.query(
         `INSERT INTO membro_familia (
           familia_id,
           nome_completo,
@@ -187,15 +204,50 @@ app.post('/api/familias', async (req, res) => {
           membro.dataNascimento || null,
           membro.profissao || null,
           membro.parentesco,
-          Boolean(membro.responsavelPrincipal),
+          responsavelPrincipal,
           membro.probabilidadeVoto,
           membro.telefone || null
         ]
       );
+
+      if (membroCriado.rowCount !== 1) {
+        await cliente.query('ROLLBACK');
+        return res.status(500).json({ success: false, message: 'Erro ao cadastrar membro da família.' });
+      }
     }
 
     await cliente.query('COMMIT');
-    res.status(201).json({ success: true, id: familiaId });
+    const familiaCompleta = await cliente.query(
+      `SELECT
+         f.id,
+         f.endereco,
+         f.bairro,
+         f.telefone,
+         f.criado_em AS "criadoEm",
+         COALESCE(
+           json_agg(
+             json_build_object(
+               'id', m.id,
+               'nomeCompleto', m.nome_completo,
+               'dataNascimento', m.data_nascimento,
+               'profissao', m.profissao,
+               'parentesco', m.parentesco,
+               'responsavelPrincipal', m.responsavel_principal,
+               'probabilidadeVoto', m.probabilidade_voto,
+               'telefone', m.telefone,
+               'criadoEm', m.criado_em
+             )
+           ) FILTER (WHERE m.id IS NOT NULL),
+           '[]'::json
+         ) AS membros
+       FROM familia f
+       LEFT JOIN membro_familia m ON m.familia_id = f.id
+       WHERE f.id = $1
+       GROUP BY f.id`,
+      [familiaId]
+    );
+
+    res.status(201).json({ success: true, id: familiaId, familia: familiaCompleta.rows[0] });
   } catch (erro) {
     await cliente.query('ROLLBACK');
     console.error('Erro ao cadastrar família', erro);

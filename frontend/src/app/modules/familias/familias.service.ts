@@ -40,6 +40,12 @@ export interface FamiliaResponse {
   membros: FamiliaMembroResponse[];
 }
 
+export interface FamiliaCreateResponse {
+  success: boolean;
+  id: number;
+  familia?: FamiliaResponse;
+}
+
 @Injectable({ providedIn: 'root' })
 export class FamiliasService {
   private readonly apiUrl = 'http://localhost:3000/api/familias';
@@ -50,7 +56,7 @@ export class FamiliasService {
     return this.http.get<FamiliaResponse[]>(this.apiUrl);
   }
 
-  criarFamilia(payload: FamiliaPayload): Observable<{ success: boolean; id: number }> {
-    return this.http.post<{ success: boolean; id: number }>(this.apiUrl, payload);
+  criarFamilia(payload: FamiliaPayload): Observable<FamiliaCreateResponse> {
+    return this.http.post<FamiliaCreateResponse>(this.apiUrl, payload);
   }
 }
