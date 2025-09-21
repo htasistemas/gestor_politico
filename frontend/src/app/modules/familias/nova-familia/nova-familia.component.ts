@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
-import { FamiliasService, FamiliaPayload } from '../familias.service';
+import { FamiliasService, FamiliaPayload, FamiliaResponse } from '../familias.service';
 
 type ProbabilidadeVoto = 'Alta' | 'Média' | 'Baixa' | '';
 
@@ -142,12 +142,19 @@ export class NovaFamiliaComponent {
 
     const payload = this.montarPayload();
     this.familiasService.criarFamilia(payload).subscribe({
-      next: () => {
-        const dados = this.gerarDadosFamilia();
-        const responsavel = dados.responsavelPrincipal || 'Responsável não definido';
+      next: resposta => {
+        if (!resposta?.success || !resposta?.familia) {
+          console.error('Cadastro de família sem confirmação do banco', resposta);
+          window.alert('Não foi possível confirmar o cadastro da família no banco de dados. Tente novamente.');
+          return;
+        }
+
+        const responsavel = this.obterResponsavelServidor(resposta.familia) || 'Responsável não informado';
+        const totalMembros = resposta.familia.membros.length;
+
         window.alert(
           `Família do responsável "${responsavel}" cadastrada com sucesso!\n` +
-            `Membros cadastrados: ${dados.membros.length}`
+            `Membros cadastrados: ${totalMembros}`
         );
         this.router.navigate(['/familias']);
       },
@@ -356,4 +363,10 @@ export class NovaFamiliaComponent {
 
     return Boolean(valor);
   }
+
+  private obterResponsavelServidor(familia: FamiliaResponse): string {
+    const responsavel = familia.membros.find(membro => membro.responsavelPrincipal);
+    return responsavel?.nomeCompleto?.trim() || '';
+  }
+
 }
