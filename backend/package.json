@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "update": "psql -U postgres -d gestor_politico -f ./schema.sql",
     "start": "node server.js",
     "test": "echo 'No tests'"
   },
