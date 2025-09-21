@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { buildApiUrl } from '../shared/api-url.util';
 
 interface LoginResponse {
   id: number;
@@ -62,7 +63,7 @@ export class LoginComponent {
     this.isLoading = true;
 
     this.http
-      .post<LoginResponse>('http://localhost:8080/api/login', {
+      .post<LoginResponse>(buildApiUrl('login'), {
         usuario: trimmedUsername,
         senha: trimmedPassword
       })

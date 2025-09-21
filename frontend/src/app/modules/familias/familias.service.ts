@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { buildApiUrl } from '../shared/api-url.util';
 
 export interface FamiliaMembroPayload {
   nomeCompleto: string;
@@ -42,7 +43,7 @@ export interface FamiliaResponse {
 
 @Injectable({ providedIn: 'root' })
 export class FamiliasService {
-  private readonly apiUrl = 'http://localhost:8080/api/familias';
+  private readonly apiUrl = buildApiUrl('familias');
 
   constructor(private readonly http: HttpClient) {}
 
