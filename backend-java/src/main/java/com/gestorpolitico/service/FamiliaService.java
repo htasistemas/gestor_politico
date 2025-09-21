@@ -41,7 +41,9 @@ public class FamiliaService {
     familia.setBairro(dto.getBairro());
     familia.setTelefone(dto.getTelefone());
 
-    List<MembroFamilia> membros = dto.getMembros().stream().map(this::converterMembro).toList();
+    List<MembroFamilia> membros = dto.getMembros().stream()
+      .map(this::converterMembro)
+      .collect(Collectors.toList());
     membros.forEach(familia::adicionarMembro);
 
     Familia salvo = familiaRepository.save(familia);
