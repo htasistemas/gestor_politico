@@ -16,11 +16,12 @@ import com.gestorpolitico.repository.CidadeRepository;
 import com.gestorpolitico.repository.FamiliaRepository;
 import com.gestorpolitico.repository.MembroFamiliaRepository;
 import com.gestorpolitico.repository.RegiaoRepository;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import java.text.Normalizer;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.math.BigDecimal;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -188,12 +189,16 @@ public class FamiliaService {
     endereco.setBairro(bairro);
 
     String enderecoCompleto = montarEnderecoCompleto(dto, cidade, bairro);
-    geocodingService
-      .buscarCoordenadas(enderecoCompleto)
-      .ifPresent(coordenada -> {
-        endereco.setLatitude(coordenada.latitude());
-        endereco.setLongitude(coordenada.longitude());
-      });
+      geocodingService
+              .buscarCoordenadas(enderecoCompleto)
+              .ifPresent(coordenada -> {
+                  endereco.setLatitude(
+                          coordenada.latitude() != null ? BigDecimal.valueOf(coordenada.latitude()) : null
+                  );
+                  endereco.setLongitude(
+                          coordenada.longitude() != null ? BigDecimal.valueOf(coordenada.longitude()) : null
+                  );
+              });
 
     return endereco;
   }
@@ -227,8 +232,9 @@ public class FamiliaService {
           bairro != null ? bairro.getRegiao() : null,
           cidade.getNome(),
           cidade.getUf(),
-          endereco.getLatitude(),
-          endereco.getLongitude()
+          endereco.getLatitude() != null ? endereco.getLatitude().doubleValue() : null,
+          endereco.getLongitude() != null ? endereco.getLongitude().doubleValue() : null
+
         );
         return new MembroFamiliaResponseDTO(
           membro.getId(),

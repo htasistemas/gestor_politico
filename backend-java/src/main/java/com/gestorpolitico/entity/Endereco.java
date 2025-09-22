@@ -13,6 +13,8 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
+import java.math.BigDecimal;
+
 @Entity
 @Table(name = "enderecos")
 public class Endereco {
@@ -44,10 +46,10 @@ public class Endereco {
   private Cidade cidade;
 
   @Column(precision = 10, scale = 7)
-  private Double latitude;
+  private BigDecimal latitude;
 
   @Column(precision = 10, scale = 7)
-  private Double longitude;
+  private BigDecimal longitude;
 
   public Long getId() {
     return id;
@@ -97,19 +99,19 @@ public class Endereco {
     this.cidade = cidade;
   }
 
-  public Double getLatitude() {
+  public BigDecimal getLatitude() {
     return latitude;
   }
 
-  public void setLatitude(Double latitude) {
+  public void setLatitude(BigDecimal latitude) {
     this.latitude = latitude;
   }
 
-  public Double getLongitude() {
+  public BigDecimal getLongitude() {
     return longitude;
   }
 
-  public void setLongitude(Double longitude) {
+  public void setLongitude(BigDecimal longitude) {
     this.longitude = longitude;
   }
 }
