@@ -1,0 +1,163 @@
+<div class="max-w-5xl mx-auto py-10">
+  <div class="bg-white rounded-3xl shadow-xl p-8">
+    <div class="flex items-center justify-between mb-8">
+      <div>
+        <h1 class="text-2xl font-bold text-gray-900">Cadastro de Pessoa</h1>
+        <p class="text-sm text-gray-500">Preencha os dados abaixo para cadastrar uma nova pessoa na base.</p>
+      </div>
+      <svg class="w-12 h-12 text-blue-500" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 14c3.866 0 7-1.79 7-4V7c0-2.21-3.134-4-7-4S5 4.79 5 7v3c0 2.21 3.134 4 7 4z" />
+        <path stroke-linecap="round" stroke-linejoin="round" d="M5 10v4c0 2.21 3.134 4 7 4s7-1.79 7-4v-4" />
+      </svg>
+    </div>
+
+    <form [formGroup]="formulario" (ngSubmit)="enviar()" class="space-y-6">
+      <div *ngIf="mensagemSucesso" class="p-4 rounded-xl bg-green-50 border border-green-200 text-green-700">
+        {{ mensagemSucesso }}
+      </div>
+
+      <div class="grid md:grid-cols-2 gap-6">
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Nome completo *</label>
+          <input
+            type="text"
+            formControlName="nome"
+            class="mt-1 w-full rounded-xl border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+            placeholder="Digite o nome"
+          />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700">CPF *</label>
+          <input
+            type="text"
+            formControlName="cpf"
+            class="mt-1 w-full rounded-xl border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+            placeholder="Somente números"
+          />
+        </div>
+      </div>
+
+      <div class="grid md:grid-cols-3 gap-6">
+        <div>
+          <label class="block text-sm font-medium text-gray-700">CEP</label>
+          <div class="mt-1 flex rounded-xl shadow-sm">
+            <input
+              type="text"
+              formControlName="cep"
+              class="flex-1 rounded-l-xl border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+              placeholder="00000-000"
+            />
+            <button
+              type="button"
+              (click)="buscarCep()"
+              class="px-4 rounded-r-xl bg-blue-600 text-white font-medium hover:bg-blue-700 transition"
+            >
+              {{ carregandoCep ? 'Buscando...' : 'Buscar CEP' }}
+            </button>
+          </div>
+          <p *ngIf="cepNaoEncontrado" class="mt-1 text-xs text-red-500">CEP não encontrado. Informe os dados manualmente.</p>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Rua *</label>
+          <input
+            type="text"
+            formControlName="rua"
+            class="mt-1 w-full rounded-xl border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+            placeholder="Nome da rua"
+          />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Número *</label>
+          <input
+            type="text"
+            formControlName="numero"
+            class="mt-1 w-full rounded-xl border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+            placeholder="Número"
+          />
+        </div>
+      </div>
+
+      <div class="grid md:grid-cols-2 gap-6">
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Cidade *</label>
+          <select
+            formControlName="cidadeId"
+            class="mt-1 w-full rounded-xl border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+          >
+            <option [ngValue]="null">Selecione</option>
+            <option *ngFor="let cidade of cidades" [ngValue]="cidade.id">{{ cidade.nome }} - {{ cidade.uf }}</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Região</label>
+          <select
+            formControlName="regiaoNome"
+            class="mt-1 w-full rounded-xl border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+            (change)="onRegiaoSelecionada($event.target.value)"
+          >
+            <option value="">Todas as regiões</option>
+            <option *ngFor="let regiao of regioes" [value]="regiao.nome">{{ regiao.nome }} ({{ regiao.quantidadeBairros }})</option>
+            <option value="__nova__">Cadastrar nova região</option>
+          </select>
+        </div>
+      </div>
+
+      <div *ngIf="criandoNovaRegiao" class="grid md:grid-cols-2 gap-6">
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Nome da nova região *</label>
+          <input
+            type="text"
+            formControlName="novaRegiao"
+            class="mt-1 w-full rounded-xl border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+            placeholder="Informe o nome da região"
+          />
+        </div>
+        <div class="flex items-end">
+          <p class="text-xs text-gray-500">A região será criada e poderá receber novos bairros nas configurações.</p>
+        </div>
+      </div>
+
+      <div class="grid md:grid-cols-2 gap-6">
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Bairro</label>
+          <select
+            *ngIf="!criandoNovoBairro"
+            formControlName="bairroId"
+            class="mt-1 w-full rounded-xl border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+            (change)="onBairroSelecionado($event.target.value)"
+          >
+            <option [ngValue]="null">Selecione um bairro</option>
+            <option *ngFor="let bairro of bairros" [value]="bairro.id">{{ bairro.nome }}</option>
+            <option value="__novo__">Cadastrar novo bairro</option>
+          </select>
+          <input
+            *ngIf="criandoNovoBairro"
+            type="text"
+            formControlName="novoBairro"
+            class="mt-1 w-full rounded-xl border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+            placeholder="Informe o nome do bairro"
+          />
+        </div>
+        <div class="flex items-end">
+          <p class="text-xs text-gray-500">Selecione um bairro existente ou cadastre um novo caso não esteja na lista.</p>
+        </div>
+      </div>
+
+      <div class="flex justify-end space-x-4">
+        <button
+          type="button"
+          class="px-4 py-2 rounded-xl border border-gray-300 text-gray-600 hover:bg-gray-100"
+          (click)="limparFormulario()"
+        >
+          Limpar
+        </button>
+        <button
+          type="submit"
+          class="px-6 py-2 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 transition"
+        >
+          Salvar pessoa
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

@@ -1,0 +1,23 @@
+:host {
+  display: block;
+}
+
+h2 {
+  font-weight: 600;
+}
+
+select,
+input {
+  padding: 0.75rem 1rem;
+  border-width: 1px;
+  outline: none;
+}
+
+select:focus,
+input:focus {
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+button {
+  transition: all 0.2s ease;
+}
