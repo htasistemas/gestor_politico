@@ -147,11 +147,13 @@
           >
             <option [ngValue]="null">Selecione a região</option>
             <option *ngFor="let regiao of enderecoFamilia.regioes" [ngValue]="regiao.nome">{{ regiao.nome }}</option>
-            <option [ngValue]="valorNovaRegiao">Cadastrar nova região</option>
+            <option *ngIf="ehAdministrador || novaRegiaoGeradaPorCep" [ngValue]="valorNovaRegiao">
+              Cadastrar nova região
+            </option>
           </select>
         </div>
 
-        <div *ngIf="enderecoFamilia.regiaoSelecionada === valorNovaRegiao">
+        <div *ngIf="enderecoFamilia.regiaoSelecionada === valorNovaRegiao && (ehAdministrador || novaRegiaoGeradaPorCep)">
           <label class="block text-sm font-semibold text-gray-700 mb-2">Nova Região *</label>
           <input
             type="text"
@@ -172,11 +174,13 @@
           >
             <option value="">Selecione o bairro</option>
             <option *ngFor="let bairro of enderecoFamilia.bairros" [value]="bairro.id">{{ bairro.nome }}</option>
-            <option [value]="valorNovoBairro">Cadastrar novo bairro</option>
+            <option *ngIf="ehAdministrador || novoBairroGeradoPorCep" [value]="valorNovoBairro">
+              Cadastrar novo bairro
+            </option>
           </select>
         </div>
 
-        <div *ngIf="enderecoFamilia.bairroSelecionado === valorNovoBairro">
+        <div *ngIf="enderecoFamilia.bairroSelecionado === valorNovoBairro && (ehAdministrador || novoBairroGeradoPorCep)">
           <label class="block text-sm font-semibold text-gray-700 mb-2">Novo Bairro *</label>
           <input
             type="text"

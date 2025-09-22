@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 import { FamiliasService, FamiliaMembroPayload, FamiliaPayload, FamiliaResponse } from '../familias.service';
 import { Bairro, Cidade, LocalidadesService, Regiao } from '../../shared/services/localidades.service';
 import { ViaCepResponse, ViaCepService } from '../../shared/services/via-cep.service';
+import { AuthService } from '../../shared/services/auth.service';
 
 const VALOR_NOVA_REGIAO = '__nova__';
 const VALOR_NOVO_BAIRRO = '__novo__';
@@ -83,12 +84,15 @@ interface PreviaFamilia {
 export class NovaFamiliaComponent implements OnInit {
   readonly valorNovaRegiao = VALOR_NOVA_REGIAO;
   readonly valorNovoBairro = VALOR_NOVO_BAIRRO;
+  readonly ehAdministrador: boolean;
 
   familia = {
     telefone: ''
   };
 
   enderecoFamilia: FamiliaEnderecoForm = this.criarEnderecoFamilia();
+  novaRegiaoGeradaPorCep = false;
+  novoBairroGeradoPorCep = false;
 
   cidades: Cidade[] = [];
   private readonly regioesCache = new Map<number, Regiao[]>();
@@ -119,8 +123,10 @@ export class NovaFamiliaComponent implements OnInit {
     private readonly router: Router,
     private readonly familiasService: FamiliasService,
     private readonly localidadesService: LocalidadesService,
-    private readonly viaCepService: ViaCepService
+    private readonly viaCepService: ViaCepService,
+    private readonly authService: AuthService
   ) {
+    this.ehAdministrador = this.authService.ehAdministrador();
     this.membros = [this.criarMembro(true)];
   }
 
@@ -186,6 +192,8 @@ export class NovaFamiliaComponent implements OnInit {
       this.enderecoFamilia.novaRegiao = '';
       this.enderecoFamilia.bairroSelecionado = null;
       this.enderecoFamilia.novoBairro = '';
+      this.novaRegiaoGeradaPorCep = false;
+      this.novoBairroGeradoPorCep = false;
       return;
     }
 
@@ -195,21 +203,37 @@ export class NovaFamiliaComponent implements OnInit {
   aoAlterarRegiaoFamilia(valor: string | null): void {
     this.enderecoFamilia.regiaoSelecionada = valor && valor !== '' ? valor : null;
     if (this.enderecoFamilia.regiaoSelecionada === this.valorNovaRegiao) {
+      if (!this.ehAdministrador && !this.novaRegiaoGeradaPorCep) {
+        window.alert(
+          'A criação de novas regiões está restrita a administradores ou ao preenchimento automático pelo CEP.'
+        );
+        this.enderecoFamilia.regiaoSelecionada = null;
+        return;
+      }
       this.enderecoFamilia.novaRegiao = '';
       this.enderecoFamilia.bairroSelecionado = this.valorNovoBairro;
       this.enderecoFamilia.bairros = [];
     } else {
       this.enderecoFamilia.novaRegiao = '';
       this.aplicarBairrosFamilia();
+      this.novaRegiaoGeradaPorCep = false;
     }
   }
 
   aoAlterarBairroFamilia(valor: string | null): void {
     this.enderecoFamilia.bairroSelecionado = valor && valor !== '' ? valor : null;
     if (this.enderecoFamilia.bairroSelecionado === this.valorNovoBairro) {
+      if (!this.ehAdministrador && !this.novoBairroGeradoPorCep) {
+        window.alert(
+          'A criação de novos bairros está restrita a administradores ou ao preenchimento automático pelo CEP.'
+        );
+        this.enderecoFamilia.bairroSelecionado = null;
+        return;
+      }
       this.enderecoFamilia.novoBairro = '';
     } else {
       this.enderecoFamilia.novoBairro = '';
+      this.novoBairroGeradoPorCep = false;
     }
   }
 
@@ -218,6 +242,8 @@ export class NovaFamiliaComponent implements OnInit {
     if (this.enderecoFamilia.preenchimentoManual) {
       this.enderecoFamilia.erroCep = null;
     }
+    this.novoBairroGeradoPorCep = false;
+    this.novaRegiaoGeradaPorCep = false;
   }
 
   buscarCepFamilia(): void {
@@ -254,6 +280,8 @@ export class NovaFamiliaComponent implements OnInit {
     this.enderecoFamilia.novaRegiao = '';
     this.enderecoFamilia.bairroSelecionado = null;
     this.enderecoFamilia.novoBairro = '';
+    this.novaRegiaoGeradaPorCep = false;
+    this.novoBairroGeradoPorCep = false;
     this.carregarRegioesFamilia(cidadeId);
     this.carregarBairrosFamilia(cidadeId);
   }
@@ -358,6 +386,7 @@ export class NovaFamiliaComponent implements OnInit {
       this.aplicarBairrosFamilia();
       this.enderecoFamilia.bairroSelecionado = this.valorNovoBairro;
       this.enderecoFamilia.novoBairro = '';
+      this.novoBairroGeradoPorCep = true;
       return;
     }
 
@@ -370,11 +399,14 @@ export class NovaFamiliaComponent implements OnInit {
       this.aplicarBairrosFamilia();
       this.enderecoFamilia.bairroSelecionado = String(bairroEncontrado.id);
       this.enderecoFamilia.novoBairro = '';
+      this.novoBairroGeradoPorCep = false;
+      this.novaRegiaoGeradaPorCep = false;
     } else {
       this.enderecoFamilia.regiaoSelecionada = null;
       this.aplicarBairrosFamilia();
       this.enderecoFamilia.bairroSelecionado = this.valorNovoBairro;
       this.enderecoFamilia.novoBairro = nomeBairro;
+      this.novoBairroGeradoPorCep = true;
     }
   }
 
