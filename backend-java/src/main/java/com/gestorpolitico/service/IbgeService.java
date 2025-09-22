@@ -12,6 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.util.UriComponentsBuilder;
 import reactor.core.publisher.Mono;
 
 @Service
@@ -48,7 +49,10 @@ public class IbgeService {
   }
 
   private Optional<MunicipioDTO> localizarMunicipio(Cidade cidade) {
-    String queryUrl = MUNICIPIOS_URL + "?nome=" + cidade.getNome();
+    String queryUrl = UriComponentsBuilder
+      .fromHttpUrl(MUNICIPIOS_URL)
+      .queryParam("nome", cidade.getNome())
+      .toUriString();
     return webClient
       .get()
       .uri(queryUrl)

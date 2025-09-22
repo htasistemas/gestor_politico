@@ -2,13 +2,12 @@ package com.gestorpolitico.service;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.util.UriComponentsBuilder;
 import reactor.core.publisher.Mono;
 
 @Service
@@ -27,16 +26,15 @@ public class GeocodingService {
       return Optional.empty();
     }
 
-    String query = URLEncoder.encode(enderecoCompleto, StandardCharsets.UTF_8);
-
     return webClient
       .get()
-      .uri(uriBuilder -> uriBuilder
-        .path(NOMINATIM_URL)
-        .queryParam("q", query)
+      .uri(UriComponentsBuilder
+        .fromHttpUrl(NOMINATIM_URL)
+        .queryParam("q", enderecoCompleto)
         .queryParam("format", "json")
         .queryParam("limit", "1")
-        .build()
+        .build(true)
+        .toUri()
       )
       .retrieve()
       .bodyToMono(NominatimResponse[].class)
