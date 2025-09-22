@@ -24,6 +24,10 @@ export class ConfiguracoesComponent implements OnInit {
   mensagemImportacao: string | null = null;
   carregandoImportacao = false;
 
+  get possuiRegioesNaoCadastradas(): boolean {
+    return this.regioes.some(regiao => regiao.id === null);
+  }
+
   regiaoForm = this.fb.group({
     nome: ['', [Validators.required, Validators.minLength(3)]]
   });

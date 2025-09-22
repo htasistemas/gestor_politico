@@ -84,7 +84,7 @@
               {{ regiao.nome }}
             </option>
           </select>
-          <p class="mt-1 text-xs text-gray-400" *ngIf="regioes.some(r => r.id === null)">
+          <p class="mt-1 text-xs text-gray-400" *ngIf="possuiRegioesNaoCadastradas">
             Regiões exibidas em cinza ainda não foram cadastradas oficialmente. Crie-as antes de vincular bairros.
           </p>
         </div>

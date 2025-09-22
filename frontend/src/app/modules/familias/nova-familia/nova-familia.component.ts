@@ -93,6 +93,14 @@ export class NovaFamiliaComponent implements OnInit {
   private readonly regioesCache = new Map<number, Regiao[]>();
   private readonly bairrosCache = new Map<number, Bairro[]>();
 
+  get bairrosDisponiveisFamilia(): string[] {
+    const nomes = new Set<string>();
+    this.bairrosCache.forEach(lista => {
+      lista.forEach(bairro => nomes.add(bairro.nome));
+    });
+    return Array.from(nomes).sort((a, b) => a.localeCompare(b, 'pt-BR'));
+  }
+
   grausParentesco: GrauParentesco[] = [
     'Pai',
     'Mãe',
@@ -642,7 +650,7 @@ export class NovaFamiliaComponent implements OnInit {
     };
   }
 
-  private obterResponsavelPrincipal(): string {
+  obterResponsavelPrincipal(): string {
     const responsavel = this.membros.find(membro => this.normalizarResponsavel(membro.responsavel));
     return responsavel?.nome?.trim() || '';
   }
