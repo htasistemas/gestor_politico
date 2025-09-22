@@ -85,8 +85,8 @@ export class TopNavComponent implements OnDestroy {
 
     if (usuario?.perfil === 'ADMINISTRADOR') {
       itensBase.push({
-        label: 'Configurações',
-        description: 'Importar bairros e regiões',
+        label: 'Configurações de região',
+        description: 'Importar bairros e definir regiões',
         icon: 'M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 4.34l1.63 1.27a.5.5 0 01-.03.79l-1.94 1.12c-.14.77-',
         route: '/configuracoes'
       });

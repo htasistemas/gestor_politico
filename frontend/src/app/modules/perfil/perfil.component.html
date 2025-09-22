@@ -6,6 +6,13 @@
     </div>
 
     <div class="px-8 py-6 space-y-6" *ngIf="!carregando; else carregandoTemplate">
+      <div class="flex flex-wrap items-center gap-3" *ngIf="perfilUsuario">
+        <span class="px-3 py-1 rounded-full bg-blue-50 text-blue-600 text-xs font-semibold">
+          {{ perfilUsuario === 'ADMINISTRADOR' ? 'Administrador' : 'Usuário' }}
+        </span>
+        <span class="text-xs text-gray-500">Perfil de acesso definido pelo administrador.</span>
+      </div>
+
       <div *ngIf="mensagemSucesso" class="p-3 rounded-2xl bg-green-50 text-green-700 text-sm">
         {{ mensagemSucesso }}
       </div>
