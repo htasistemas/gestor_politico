@@ -5,12 +5,20 @@ import { buildApiUrl } from '../shared/api-url.util';
 
 export interface FamiliaMembroPayload {
   nomeCompleto: string;
+  cpf: string;
   dataNascimento: string | null;
   profissao: string | null;
   parentesco: string;
   responsavelPrincipal: boolean;
   probabilidadeVoto: string;
   telefone: string | null;
+  cep: string | null;
+  rua: string;
+  numero: string;
+  cidadeId: number;
+  bairroId: number | null;
+  novoBairro: string | null;
+  novaRegiao: string | null;
 }
 
 export interface FamiliaPayload {
@@ -20,15 +28,31 @@ export interface FamiliaPayload {
   membros: FamiliaMembroPayload[];
 }
 
+export interface EnderecoMembroResponse {
+  id: number;
+  rua: string;
+  numero: string;
+  cep: string | null;
+  bairro: string | null;
+  regiao: string | null;
+  cidade: string;
+  uf: string;
+  latitude: number | null;
+  longitude: number | null;
+}
+
 export interface FamiliaMembroResponse {
   id: number;
   nomeCompleto: string;
+  cpf: string;
   dataNascimento: string | null;
   profissao: string | null;
   parentesco: string;
   responsavelPrincipal: boolean;
   probabilidadeVoto: string;
   telefone: string | null;
+  cep: string | null;
+  endereco: EnderecoMembroResponse;
   criadoEm: string;
 }
 
