@@ -12,6 +12,9 @@ export interface FamiliaMembroPayload {
   responsavelPrincipal: boolean;
   probabilidadeVoto: string;
   telefone: string | null;
+}
+
+export interface FamiliaPayload {
   cep: string | null;
   rua: string;
   numero: string;
@@ -19,16 +22,11 @@ export interface FamiliaMembroPayload {
   bairroId: number | null;
   novoBairro: string | null;
   novaRegiao: string | null;
-}
-
-export interface FamiliaPayload {
-  endereco: string;
-  bairro: string;
   telefone: string;
   membros: FamiliaMembroPayload[];
 }
 
-export interface EnderecoMembroResponse {
+export interface EnderecoFamiliaResponse {
   id: number;
   rua: string;
   numero: string;
@@ -51,8 +49,6 @@ export interface FamiliaMembroResponse {
   responsavelPrincipal: boolean;
   probabilidadeVoto: string;
   telefone: string | null;
-  cep: string | null;
-  endereco: EnderecoMembroResponse;
   criadoEm: string;
 }
 
@@ -62,6 +58,7 @@ export interface FamiliaResponse {
   bairro: string;
   telefone: string;
   criadoEm: string;
+  enderecoDetalhado: EnderecoFamiliaResponse;
   membros: FamiliaMembroResponse[];
 }
 
