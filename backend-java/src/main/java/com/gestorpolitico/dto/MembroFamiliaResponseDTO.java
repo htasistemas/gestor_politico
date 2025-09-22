@@ -13,8 +13,6 @@ public class MembroFamiliaResponseDTO {
   private boolean responsavelPrincipal;
   private String probabilidadeVoto;
   private String telefone;
-  private String cep;
-  private EnderecoResponseDTO endereco;
   private OffsetDateTime criadoEm;
 
   public MembroFamiliaResponseDTO() {
@@ -30,8 +28,6 @@ public class MembroFamiliaResponseDTO {
     boolean responsavelPrincipal,
     String probabilidadeVoto,
     String telefone,
-    String cep,
-    EnderecoResponseDTO endereco,
     OffsetDateTime criadoEm
   ) {
     this.id = id;
@@ -43,8 +39,6 @@ public class MembroFamiliaResponseDTO {
     this.responsavelPrincipal = responsavelPrincipal;
     this.probabilidadeVoto = probabilidadeVoto;
     this.telefone = telefone;
-    this.cep = cep;
-    this.endereco = endereco;
     this.criadoEm = criadoEm;
   }
 
@@ -118,22 +112,6 @@ public class MembroFamiliaResponseDTO {
 
   public void setTelefone(String telefone) {
     this.telefone = telefone;
-  }
-
-  public String getCep() {
-    return cep;
-  }
-
-  public void setCep(String cep) {
-    this.cep = cep;
-  }
-
-  public EnderecoResponseDTO getEndereco() {
-    return endereco;
-  }
-
-  public void setEndereco(EnderecoResponseDTO endereco) {
-    this.endereco = endereco;
   }
 
   public OffsetDateTime getCriadoEm() {

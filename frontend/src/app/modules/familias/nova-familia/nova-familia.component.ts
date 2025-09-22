@@ -34,6 +34,20 @@ interface MembroFamiliaForm {
   responsavel: boolean;
   probabilidade: ProbabilidadeVoto;
   telefone: string;
+}
+
+interface PreviaMembro {
+  nome: string;
+  cpf: string;
+  idade: number | null;
+  profissao: string;
+  parentesco: GrauParentesco;
+  responsavel: boolean;
+  probabilidade: ProbabilidadeVoto;
+  telefone: string;
+}
+
+interface FamiliaEnderecoForm {
   cep: string;
   rua: string;
   numero: string;
@@ -49,26 +63,13 @@ interface MembroFamiliaForm {
   bairros: Bairro[];
 }
 
-interface PreviaMembro {
-  nome: string;
-  cpf: string;
-  idade: number | null;
-  profissao: string;
-  parentesco: GrauParentesco;
-  responsavel: boolean;
-  probabilidade: ProbabilidadeVoto;
-  telefone: string;
-  cep: string;
-  endereco: string;
+interface PreviaFamilia {
+  responsavelPrincipal: string;
+  enderecoCompleto: string;
   bairro: string;
   regiao: string;
   cidade: string;
-}
-
-interface PreviaFamilia {
-  responsavelPrincipal: string;
-  endereco: string;
-  bairro: string;
+  cep: string;
   telefone: string;
   membros: PreviaMembro[];
 }
@@ -84,22 +85,14 @@ export class NovaFamiliaComponent implements OnInit {
   readonly valorNovoBairro = VALOR_NOVO_BAIRRO;
 
   familia = {
-    endereco: '',
-    bairro: '',
     telefone: ''
   };
+
+  enderecoFamilia: FamiliaEnderecoForm = this.criarEnderecoFamilia();
 
   cidades: Cidade[] = [];
   private readonly regioesCache = new Map<number, Regiao[]>();
   private readonly bairrosCache = new Map<number, Bairro[]>();
-
-  get bairrosDisponiveisFamilia(): string[] {
-    const nomes = new Set<string>();
-    this.bairrosCache.forEach(lista => {
-      lista.forEach(bairro => nomes.add(bairro.nome));
-    });
-    return Array.from(nomes).sort((a, b) => a.localeCompare(b, 'pt-BR'));
-  }
 
   grausParentesco: GrauParentesco[] = [
     'Pai',
@@ -136,7 +129,7 @@ export class NovaFamiliaComponent implements OnInit {
       this.cidades = cidades;
       const cidadePadrao = cidades.length > 0 ? cidades[0].id : null;
       if (cidadePadrao !== null) {
-        this.membros.forEach(membro => this.definirCidade(membro, cidadePadrao));
+        this.aoAlterarCidadeFamilia(cidadePadrao);
       }
     });
   }
@@ -150,12 +143,7 @@ export class NovaFamiliaComponent implements OnInit {
   }
 
   adicionarMembro(): void {
-    const novoMembro = this.criarMembro(false);
-    const cidadePadrao = this.cidades.length > 0 ? this.cidades[0].id : null;
-    if (cidadePadrao !== null) {
-      this.definirCidade(novoMembro, cidadePadrao);
-    }
-    this.membros.push(novoMembro);
+    this.membros.push(this.criarMembro(false));
   }
 
   removerMembro(indice: number): void {
@@ -189,75 +177,205 @@ export class NovaFamiliaComponent implements OnInit {
     this.membros[indice].responsavel = false;
   }
 
-  aoAlterarCidade(indice: number, cidadeId: number | null): void {
-    const membro = this.membros[indice];
+  aoAlterarCidadeFamilia(cidadeId: number | null): void {
     if (cidadeId === null) {
-      membro.cidadeId = null;
-      membro.regioes = [];
-      membro.bairros = [];
-      membro.regiaoSelecionada = null;
-      membro.bairroSelecionado = null;
+      this.enderecoFamilia.cidadeId = null;
+      this.enderecoFamilia.regioes = [];
+      this.enderecoFamilia.bairros = [];
+      this.enderecoFamilia.regiaoSelecionada = null;
+      this.enderecoFamilia.novaRegiao = '';
+      this.enderecoFamilia.bairroSelecionado = null;
+      this.enderecoFamilia.novoBairro = '';
       return;
     }
-    this.definirCidade(membro, cidadeId);
+
+    this.definirCidadeFamilia(cidadeId);
   }
 
-  aoAlterarRegiao(indice: number, valor: string | null): void {
-    const membro = this.membros[indice];
-    membro.regiaoSelecionada = valor && valor !== '' ? valor : null;
-    if (membro.regiaoSelecionada === this.valorNovaRegiao) {
-      membro.novaRegiao = '';
-      membro.bairroSelecionado = this.valorNovoBairro;
-      membro.bairros = [];
+  aoAlterarRegiaoFamilia(valor: string | null): void {
+    this.enderecoFamilia.regiaoSelecionada = valor && valor !== '' ? valor : null;
+    if (this.enderecoFamilia.regiaoSelecionada === this.valorNovaRegiao) {
+      this.enderecoFamilia.novaRegiao = '';
+      this.enderecoFamilia.bairroSelecionado = this.valorNovoBairro;
+      this.enderecoFamilia.bairros = [];
     } else {
-      membro.novaRegiao = '';
-      this.aplicarBairrosAoMembro(membro);
+      this.enderecoFamilia.novaRegiao = '';
+      this.aplicarBairrosFamilia();
     }
   }
 
-  aoAlterarBairro(indice: number, valor: string | null): void {
-    const membro = this.membros[indice];
-    membro.bairroSelecionado = valor && valor !== '' ? valor : null;
-    if (membro.bairroSelecionado === this.valorNovoBairro) {
-      membro.novoBairro = '';
+  aoAlterarBairroFamilia(valor: string | null): void {
+    this.enderecoFamilia.bairroSelecionado = valor && valor !== '' ? valor : null;
+    if (this.enderecoFamilia.bairroSelecionado === this.valorNovoBairro) {
+      this.enderecoFamilia.novoBairro = '';
     } else {
-      membro.novoBairro = '';
+      this.enderecoFamilia.novoBairro = '';
     }
   }
 
-  alternarPreenchimentoManual(indice: number): void {
-    const membro = this.membros[indice];
-    membro.preenchimentoManual = !membro.preenchimentoManual;
-    if (membro.preenchimentoManual) {
-      membro.erroCep = null;
+  alternarPreenchimentoManualFamilia(): void {
+    this.enderecoFamilia.preenchimentoManual = !this.enderecoFamilia.preenchimentoManual;
+    if (this.enderecoFamilia.preenchimentoManual) {
+      this.enderecoFamilia.erroCep = null;
     }
   }
 
-  buscarCep(indice: number): void {
-    const membro = this.membros[indice];
-    const cepLimpo = membro.cep.replace(/\D/g, '');
+  buscarCepFamilia(): void {
+    const cepLimpo = this.enderecoFamilia.cep.replace(/\D/g, '');
     if (cepLimpo.length !== 8) {
-      membro.erroCep = 'Informe um CEP válido com 8 dígitos.';
+      this.enderecoFamilia.erroCep = 'Informe um CEP válido com 8 dígitos.';
       return;
     }
 
-    membro.carregandoCep = true;
-    membro.erroCep = null;
+    this.enderecoFamilia.carregandoCep = true;
+    this.enderecoFamilia.erroCep = null;
     this.viaCepService.buscarCep(cepLimpo).subscribe({
       next: resposta => {
-        membro.carregandoCep = false;
+        this.enderecoFamilia.carregandoCep = false;
         if (!resposta) {
-          membro.erroCep = 'CEP não encontrado. Preencha manualmente.';
-          membro.preenchimentoManual = true;
+          this.enderecoFamilia.erroCep = 'CEP não encontrado. Preencha manualmente.';
+          this.enderecoFamilia.preenchimentoManual = true;
           return;
-        }
-        this.aplicarDadosViaCep(membro, resposta);
-      },
-      error: () => {
-        membro.carregandoCep = false;
-        membro.erroCep = 'Não foi possível consultar o CEP. Tente novamente.';
       }
+      this.aplicarDadosViaCepFamilia(resposta);
+    },
+    error: () => {
+      this.enderecoFamilia.carregandoCep = false;
+      this.enderecoFamilia.erroCep = 'Não foi possível consultar o CEP. Tente novamente.';
+    }
+  });
+}
+
+  private definirCidadeFamilia(cidadeId: number): void {
+    this.enderecoFamilia.cidadeId = cidadeId;
+    this.enderecoFamilia.regioes = [];
+    this.enderecoFamilia.bairros = [];
+    this.enderecoFamilia.regiaoSelecionada = null;
+    this.enderecoFamilia.novaRegiao = '';
+    this.enderecoFamilia.bairroSelecionado = null;
+    this.enderecoFamilia.novoBairro = '';
+    this.carregarRegioesFamilia(cidadeId);
+    this.carregarBairrosFamilia(cidadeId);
+  }
+
+  private aplicarDadosViaCepFamilia(resposta: ViaCepResponse): void {
+    if (resposta.cep) {
+      this.enderecoFamilia.cep = resposta.cep;
+    }
+    if (resposta.logradouro) {
+      this.enderecoFamilia.rua = resposta.logradouro;
+    }
+
+    this.enderecoFamilia.preenchimentoManual = false;
+    this.enderecoFamilia.erroCep = null;
+
+    const cidadeEncontrada = this.cidades.find(cidade => {
+      const mesmoNome = this.normalizarTexto(cidade.nome) === this.normalizarTexto(resposta.localidade ?? '');
+      const mesmaUf = cidade.uf.toUpperCase() === (resposta.uf ?? '').toUpperCase();
+      return mesmoNome && mesmaUf;
     });
+
+    if (!cidadeEncontrada) {
+      this.enderecoFamilia.preenchimentoManual = true;
+      this.enderecoFamilia.erroCep = 'Cidade do CEP não cadastrada. Preencha manualmente.';
+      return;
+    }
+
+    this.definirCidadeFamilia(cidadeEncontrada.id);
+    this.carregarBairrosFamilia(cidadeEncontrada.id, () => {
+      this.definirBairroFamiliaPorNome(resposta.bairro);
+    });
+  }
+
+  private carregarRegioesFamilia(cidadeId: number): void {
+    const cache = this.regioesCache.get(cidadeId);
+    if (cache) {
+      this.enderecoFamilia.regioes = cache;
+      return;
+    }
+
+    this.localidadesService.listarRegioes(cidadeId).subscribe(regioes => {
+      const ordenadas = [...regioes].sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
+      this.regioesCache.set(cidadeId, ordenadas);
+      this.enderecoFamilia.regioes = ordenadas;
+    });
+  }
+
+  private carregarBairrosFamilia(cidadeId: number, callback?: () => void): void {
+    const cache = this.bairrosCache.get(cidadeId);
+    if (cache) {
+      this.aplicarBairrosFamilia();
+      callback?.();
+      return;
+    }
+
+    this.localidadesService.listarBairros(cidadeId).subscribe(bairros => {
+      const ordenados = [...bairros].sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
+      this.bairrosCache.set(cidadeId, ordenados);
+      this.aplicarBairrosFamilia();
+      callback?.();
+    });
+  }
+
+  private aplicarBairrosFamilia(): void {
+    const cidadeId = this.enderecoFamilia.cidadeId;
+    if (!cidadeId) {
+      this.enderecoFamilia.bairros = [];
+      this.enderecoFamilia.bairroSelecionado = null;
+      return;
+    }
+
+    const todos = this.bairrosCache.get(cidadeId) ?? [];
+    if (!this.enderecoFamilia.regiaoSelecionada || this.enderecoFamilia.regiaoSelecionada === this.valorNovaRegiao) {
+      this.enderecoFamilia.bairros = [...todos];
+    } else {
+      const regiaoNormalizada = this.normalizarTexto(this.enderecoFamilia.regiaoSelecionada);
+      this.enderecoFamilia.bairros = todos.filter(bairro => {
+        if (!bairro.regiao) {
+          return false;
+        }
+        return this.normalizarTexto(bairro.regiao) === regiaoNormalizada;
+      });
+    }
+
+    if (this.enderecoFamilia.bairroSelecionado && this.enderecoFamilia.bairroSelecionado !== this.valorNovoBairro) {
+      const existe = this.enderecoFamilia.bairros.some(bairro => String(bairro.id) === this.enderecoFamilia.bairroSelecionado);
+      if (!existe) {
+        this.enderecoFamilia.bairroSelecionado = null;
+      }
+    }
+  }
+
+  private definirBairroFamiliaPorNome(nomeBairro: string | undefined): void {
+    const cidadeId = this.enderecoFamilia.cidadeId;
+    if (!cidadeId) {
+      return;
+    }
+
+    const todos = this.bairrosCache.get(cidadeId) ?? [];
+    if (!nomeBairro) {
+      this.enderecoFamilia.regiaoSelecionada = null;
+      this.aplicarBairrosFamilia();
+      this.enderecoFamilia.bairroSelecionado = this.valorNovoBairro;
+      this.enderecoFamilia.novoBairro = '';
+      return;
+    }
+
+    const bairroNormalizado = this.normalizarTexto(nomeBairro);
+    const bairroEncontrado = todos.find(bairro => this.normalizarTexto(bairro.nome) === bairroNormalizado);
+
+    if (bairroEncontrado) {
+      this.enderecoFamilia.regiaoSelecionada = bairroEncontrado.regiao ?? null;
+      this.enderecoFamilia.novaRegiao = '';
+      this.aplicarBairrosFamilia();
+      this.enderecoFamilia.bairroSelecionado = String(bairroEncontrado.id);
+      this.enderecoFamilia.novoBairro = '';
+    } else {
+      this.enderecoFamilia.regiaoSelecionada = null;
+      this.aplicarBairrosFamilia();
+      this.enderecoFamilia.bairroSelecionado = this.valorNovoBairro;
+      this.enderecoFamilia.novoBairro = nomeBairro;
+    }
   }
 
   visualizarPrevia(): void {
@@ -352,7 +470,12 @@ export class NovaFamiliaComponent implements OnInit {
       parentesco: '',
       responsavel: responsavelPrincipal,
       probabilidade: '',
-      telefone: '',
+      telefone: ''
+    };
+  }
+
+  private criarEnderecoFamilia(): FamiliaEnderecoForm {
+    return {
       cep: '',
       rua: '',
       numero: '',
@@ -369,144 +492,39 @@ export class NovaFamiliaComponent implements OnInit {
     };
   }
 
-  private definirCidade(membro: MembroFamiliaForm, cidadeId: number): void {
-    membro.cidadeId = cidadeId;
-    membro.regioes = [];
-    membro.bairros = [];
-    membro.regiaoSelecionada = null;
-    membro.novaRegiao = '';
-    membro.bairroSelecionado = null;
-    membro.novoBairro = '';
-
-    this.carregarRegioes(cidadeId, membro);
-    this.carregarBairrosCidade(cidadeId, membro);
-  }
-
-  private carregarRegioes(cidadeId: number, membro: MembroFamiliaForm): void {
-    const cache = this.regioesCache.get(cidadeId);
-    if (cache) {
-      membro.regioes = cache;
-      return;
-    }
-
-    this.localidadesService.listarRegioes(cidadeId).subscribe(regioes => {
-      const ordenadas = [...regioes].sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
-      this.regioesCache.set(cidadeId, ordenadas);
-      membro.regioes = ordenadas;
-    });
-  }
-
-  private carregarBairrosCidade(cidadeId: number, membro: MembroFamiliaForm, callback?: () => void): void {
-    const cache = this.bairrosCache.get(cidadeId);
-    if (cache) {
-      this.aplicarBairrosAoMembro(membro);
-      callback?.();
-      return;
-    }
-
-    this.localidadesService.listarBairros(cidadeId).subscribe(bairros => {
-      const ordenados = [...bairros].sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
-      this.bairrosCache.set(cidadeId, ordenados);
-      this.aplicarBairrosAoMembro(membro);
-      callback?.();
-    });
-  }
-
-  private aplicarBairrosAoMembro(membro: MembroFamiliaForm): void {
-    if (!membro.cidadeId) {
-      membro.bairros = [];
-      membro.bairroSelecionado = null;
-      return;
-    }
-
-    const todos = this.bairrosCache.get(membro.cidadeId) ?? [];
-    if (!membro.regiaoSelecionada || membro.regiaoSelecionada === this.valorNovaRegiao) {
-      membro.bairros = [...todos];
-    } else {
-      const regiaoNormalizada = this.normalizarTexto(membro.regiaoSelecionada);
-      membro.bairros = todos.filter(bairro => {
-        if (!bairro.regiao) {
-          return false;
-        }
-        return this.normalizarTexto(bairro.regiao) === regiaoNormalizada;
-      });
-    }
-
-    if (membro.bairroSelecionado && membro.bairroSelecionado !== this.valorNovoBairro) {
-      const existe = membro.bairros.some(bairro => String(bairro.id) === membro.bairroSelecionado);
-      if (!existe) {
-        membro.bairroSelecionado = null;
-      }
-    }
-  }
-
-  private aplicarDadosViaCep(membro: MembroFamiliaForm, resposta: ViaCepResponse): void {
-    if (resposta.cep) {
-      membro.cep = resposta.cep;
-    }
-    if (resposta.logradouro) {
-      membro.rua = resposta.logradouro;
-    }
-
-    membro.preenchimentoManual = false;
-    membro.erroCep = null;
-
-    const cidadeEncontrada = this.cidades.find(cidade => {
-      const mesmoNome = this.normalizarTexto(cidade.nome) === this.normalizarTexto(resposta.localidade);
-      const mesmaUf = cidade.uf.toUpperCase() === (resposta.uf ?? '').toUpperCase();
-      return mesmoNome && mesmaUf;
-    });
-
-    if (!cidadeEncontrada) {
-      membro.preenchimentoManual = true;
-      membro.erroCep = 'Cidade do CEP não cadastrada. Preencha manualmente.';
-      return;
-    }
-
-    this.definirCidade(membro, cidadeEncontrada.id);
-    this.carregarBairrosCidade(cidadeEncontrada.id, membro, () => {
-      this.definirBairroPorNome(membro, resposta.bairro);
-    });
-  }
-
-  private definirBairroPorNome(membro: MembroFamiliaForm, nomeBairro: string | undefined): void {
-    if (!membro.cidadeId) {
-      return;
-    }
-
-    const todos = this.bairrosCache.get(membro.cidadeId) ?? [];
-    if (!nomeBairro) {
-      membro.bairroSelecionado = this.valorNovoBairro;
-      membro.novoBairro = '';
-      membro.regiaoSelecionada = null;
-      this.aplicarBairrosAoMembro(membro);
-      return;
-    }
-
-    const bairroNormalizado = this.normalizarTexto(nomeBairro);
-    const bairroEncontrado = todos.find(bairro => this.normalizarTexto(bairro.nome) === bairroNormalizado);
-
-    if (bairroEncontrado) {
-      membro.regiaoSelecionada = bairroEncontrado.regiao ?? null;
-      membro.novaRegiao = '';
-      this.aplicarBairrosAoMembro(membro);
-      membro.bairroSelecionado = String(bairroEncontrado.id);
-      membro.novoBairro = '';
-    } else {
-      membro.regiaoSelecionada = null;
-      this.aplicarBairrosAoMembro(membro);
-      membro.bairroSelecionado = this.valorNovoBairro;
-      membro.novoBairro = nomeBairro;
-    }
-  }
 
   private formularioValido(): boolean {
-    const endereco = this.normalizarTexto(this.familia.endereco);
-    const bairro = this.normalizarTexto(this.familia.bairro);
     const telefone = this.normalizarTexto(this.familia.telefone);
+    const rua = this.normalizarTexto(this.enderecoFamilia.rua);
+    const numero = this.normalizarTexto(this.enderecoFamilia.numero);
+    const cidadeId = this.enderecoFamilia.cidadeId;
+    const bairroSelecionado = this.enderecoFamilia.bairroSelecionado;
+    const novoBairro = this.normalizarTexto(this.enderecoFamilia.novoBairro);
+    const regiaoSelecionada = this.enderecoFamilia.regiaoSelecionada;
+    const novaRegiao = this.normalizarTexto(this.enderecoFamilia.novaRegiao);
 
-    if (!endereco || !bairro || !telefone) {
-      window.alert('Por favor, preencha todas as informações da família.');
+    if (!rua || !numero || !telefone) {
+      window.alert('Por favor, preencha rua, número e telefone da família.');
+      return false;
+    }
+
+    if (cidadeId === null) {
+      window.alert('Selecione a cidade do endereço da família.');
+      return false;
+    }
+
+    if (!bairroSelecionado) {
+      window.alert('Selecione um bairro para o endereço da família ou cadastre um novo.');
+      return false;
+    }
+
+    if (bairroSelecionado === this.valorNovoBairro && !novoBairro) {
+      window.alert('Informe o nome do novo bairro da família.');
+      return false;
+    }
+
+    if (regiaoSelecionada === this.valorNovaRegiao && !novaRegiao) {
+      window.alert('Informe o nome da nova região da família.');
       return false;
     }
 
@@ -517,8 +535,6 @@ export class NovaFamiliaComponent implements OnInit {
       const probabilidade = this.normalizarTexto(membro.probabilidade);
       const parentesco = this.normalizarTexto(membro.parentesco);
       const cpf = membro.cpf.replace(/\D/g, '');
-      const rua = this.normalizarTexto(membro.rua);
-      const numero = this.normalizarTexto(membro.numero);
 
       if (!nome || !nascimento || !probabilidade || !parentesco) {
         window.alert(`Preencha todos os campos obrigatórios do ${indice + 1}º membro da família.`);
@@ -528,37 +544,6 @@ export class NovaFamiliaComponent implements OnInit {
       if (cpf.length !== 11) {
         window.alert(`Informe um CPF válido para o ${indice + 1}º membro da família.`);
         return false;
-      }
-
-      if (!membro.cidadeId) {
-        window.alert(`Selecione a cidade do ${indice + 1}º membro da família.`);
-        return false;
-      }
-
-      if (!rua || !numero) {
-        window.alert(`Informe rua e número do endereço do ${indice + 1}º membro da família.`);
-        return false;
-      }
-
-      if (!membro.bairroSelecionado) {
-        window.alert(`Selecione um bairro ou cadastre um novo para o ${indice + 1}º membro da família.`);
-        return false;
-      }
-
-      if (membro.bairroSelecionado === this.valorNovoBairro) {
-        const novoBairro = this.normalizarTexto(membro.novoBairro);
-        if (!novoBairro) {
-          window.alert(`Informe o nome do novo bairro para o ${indice + 1}º membro da família.`);
-          return false;
-        }
-      }
-
-      if (membro.regiaoSelecionada === this.valorNovaRegiao) {
-        const novaRegiao = this.normalizarTexto(membro.novaRegiao);
-        if (!novaRegiao) {
-          window.alert(`Informe o nome da nova região para o ${indice + 1}º membro da família.`);
-          return false;
-        }
       }
     }
 
@@ -574,25 +559,31 @@ export class NovaFamiliaComponent implements OnInit {
   private montarPayload(): FamiliaPayload {
     const membros = this.membros.map(membro => this.mapearMembroPayload(membro));
 
+    const bairroSelecionado = this.enderecoFamilia.bairroSelecionado;
+    const bairroId =
+      bairroSelecionado && bairroSelecionado !== this.valorNovoBairro ? Number(bairroSelecionado) : null;
+    const novoBairro =
+      bairroSelecionado === this.valorNovoBairro ? this.enderecoFamilia.novoBairro.trim() || null : null;
+    const regiaoSelecionada = this.enderecoFamilia.regiaoSelecionada;
+    const novaRegiao =
+      regiaoSelecionada === this.valorNovaRegiao
+        ? this.enderecoFamilia.novaRegiao.trim() || null
+        : regiaoSelecionada?.trim() || null;
+
     return {
-      endereco: this.familia.endereco.trim(),
-      bairro: this.familia.bairro.trim(),
+      cep: this.enderecoFamilia.cep ? this.enderecoFamilia.cep.trim() : null,
+      rua: this.enderecoFamilia.rua.trim(),
+      numero: this.enderecoFamilia.numero.trim(),
+      cidadeId: this.enderecoFamilia.cidadeId!,
+      bairroId,
+      novoBairro,
+      novaRegiao,
       telefone: this.familia.telefone.trim(),
       membros
     };
   }
 
   private mapearMembroPayload(membro: MembroFamiliaForm): FamiliaMembroPayload {
-    const bairroSelecionado =
-      membro.bairroSelecionado && membro.bairroSelecionado !== this.valorNovoBairro
-        ? Number(membro.bairroSelecionado)
-        : null;
-    const novoBairro = membro.bairroSelecionado === this.valorNovoBairro ? membro.novoBairro.trim() || null : null;
-    const regiao =
-      membro.regiaoSelecionada === this.valorNovaRegiao
-        ? membro.novaRegiao.trim() || null
-        : membro.regiaoSelecionada?.trim() || null;
-
     return {
       nomeCompleto: membro.nome.trim(),
       cpf: membro.cpf.replace(/\D/g, ''),
@@ -601,51 +592,36 @@ export class NovaFamiliaComponent implements OnInit {
       parentesco: membro.parentesco,
       responsavelPrincipal: membro.responsavel,
       probabilidadeVoto: membro.probabilidade,
-      telefone: membro.telefone ? membro.telefone.trim() : null,
-      cep: membro.cep ? membro.cep.trim() : null,
-      rua: membro.rua.trim(),
-      numero: membro.numero.trim(),
-      cidadeId: membro.cidadeId!,
-      bairroId: bairroSelecionado,
-      novoBairro,
-      novaRegiao: regiao
+      telefone: membro.telefone ? membro.telefone.trim() : null
     };
   }
 
   private gerarDadosFamilia(incluirIdade = true): PreviaFamilia {
-    const membros: PreviaMembro[] = this.membros.map(membro => {
-      const cidade = this.obterCidadePorId(membro.cidadeId);
-      const cidadeDescricao = cidade ? `${cidade.nome} - ${cidade.uf}` : 'Cidade não informada';
-      const bairroDescricao = this.obterDescricaoBairro(membro) || 'Bairro não informado';
-      const regiaoDescricao = this.obterDescricaoRegiao(membro);
-      const endereco = `${membro.rua.trim()}, ${membro.numero.trim()}`;
+    const membros: PreviaMembro[] = this.membros.map(membro => ({
+      nome: this.normalizarTexto(membro.nome),
+      cpf: this.formatarCpf(membro.cpf),
+      idade: incluirIdade ? this.calcularIdade(membro.nascimento) : null,
+      profissao: this.normalizarTexto(membro.profissao),
+      parentesco: this.normalizarTexto(membro.parentesco) as GrauParentesco,
+      responsavel: this.normalizarResponsavel(membro.responsavel),
+      probabilidade: this.normalizarTexto(membro.probabilidade) as ProbabilidadeVoto,
+      telefone: this.normalizarTexto(membro.telefone)
+    }));
 
-      return {
-        nome: this.normalizarTexto(membro.nome),
-        cpf: this.formatarCpf(membro.cpf),
-        idade: incluirIdade ? this.calcularIdade(membro.nascimento) : null,
-        profissao: this.normalizarTexto(membro.profissao),
-        parentesco: this.normalizarTexto(membro.parentesco) as GrauParentesco,
-        responsavel: this.normalizarResponsavel(membro.responsavel),
-        probabilidade: this.normalizarTexto(membro.probabilidade) as ProbabilidadeVoto,
-        telefone: this.normalizarTexto(membro.telefone),
-        cep: membro.cep,
-        endereco,
-        bairro: bairroDescricao,
-        regiao: regiaoDescricao,
-        cidade: cidadeDescricao
-      };
-    });
-
-    const endereco = this.normalizarTexto(this.familia.endereco);
-    const bairro = this.normalizarTexto(this.familia.bairro);
-    const telefone = this.normalizarTexto(this.familia.telefone);
+    const endereco = `${this.enderecoFamilia.rua.trim()}, ${this.enderecoFamilia.numero.trim()}`;
+    const bairro = this.obterDescricaoBairroFamilia() || 'Bairro não informado';
+    const regiao = this.obterDescricaoRegiaoFamilia();
+    const cidade = this.obterDescricaoCidadeFamilia() || 'Cidade não informada';
+    const cep = this.enderecoFamilia.cep.trim();
 
     return {
       responsavelPrincipal: this.obterResponsavelPrincipal(),
-      endereco,
+      enderecoCompleto: endereco,
       bairro,
-      telefone,
+      regiao,
+      cidade,
+      cep,
+      telefone: this.familia.telefone.trim(),
       membros
     };
   }
@@ -655,23 +631,29 @@ export class NovaFamiliaComponent implements OnInit {
     return responsavel?.nome?.trim() || '';
   }
 
-  private obterDescricaoBairro(membro: MembroFamiliaForm): string {
-    if (membro.bairroSelecionado === this.valorNovoBairro) {
-      return membro.novoBairro.trim();
+  private obterDescricaoBairroFamilia(): string {
+    if (this.enderecoFamilia.bairroSelecionado === this.valorNovoBairro) {
+      return this.enderecoFamilia.novoBairro.trim();
     }
-    if (!membro.cidadeId || !membro.bairroSelecionado) {
+    const cidadeId = this.enderecoFamilia.cidadeId;
+    if (cidadeId === null || !this.enderecoFamilia.bairroSelecionado) {
       return '';
     }
-    const todos = this.bairrosCache.get(membro.cidadeId) ?? [];
-    const bairro = todos.find(item => String(item.id) === membro.bairroSelecionado);
+    const todos = this.bairrosCache.get(cidadeId) ?? [];
+    const bairro = todos.find(item => String(item.id) === this.enderecoFamilia.bairroSelecionado);
     return bairro?.nome ?? '';
   }
 
-  private obterDescricaoRegiao(membro: MembroFamiliaForm): string {
-    if (membro.regiaoSelecionada === this.valorNovaRegiao) {
-      return membro.novaRegiao.trim();
+  private obterDescricaoRegiaoFamilia(): string {
+    if (this.enderecoFamilia.regiaoSelecionada === this.valorNovaRegiao) {
+      return this.enderecoFamilia.novaRegiao.trim();
     }
-    return membro.regiaoSelecionada?.trim() || '';
+    return this.enderecoFamilia.regiaoSelecionada?.trim() || '';
+  }
+
+  private obterDescricaoCidadeFamilia(): string {
+    const cidade = this.obterCidadePorId(this.enderecoFamilia.cidadeId);
+    return cidade ? `${cidade.nome} - ${cidade.uf}` : '';
   }
 
   private obterCidadePorId(cidadeId: number | null): Cidade | undefined {

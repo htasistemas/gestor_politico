@@ -68,10 +68,22 @@ public class FamiliaService {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Defina um responsável principal para a família.");
     }
 
+    Cidade cidade = cidadeRepository
+      .findById(dto.getCidadeId())
+      .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Cidade não encontrada"));
+
+    Bairro bairro = resolverBairroFamilia(dto, cidade);
+    if (bairro == null && (dto.getNovoBairro() == null || dto.getNovoBairro().isBlank())) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Informe o bairro da família.");
+    }
+
+    Endereco endereco = construirEnderecoFamilia(dto, cidade, bairro);
+
     Familia familia = new Familia();
-    familia.setEndereco(dto.getEndereco());
-    familia.setBairro(dto.getBairro());
+    familia.setEndereco(montarEnderecoResumo(dto));
+    familia.setBairro(bairro != null ? bairro.getNome() : dto.getNovoBairro().trim());
     familia.setTelefone(dto.getTelefone());
+    familia.setEnderecoDetalhado(endereco);
 
     Set<String> cpfsInformados = new HashSet<>();
     List<MembroFamilia> membros = dto.getMembros().stream()
@@ -103,13 +115,6 @@ public class FamiliaService {
         throw new ResponseStatusException(HttpStatus.CONFLICT, "CPF já cadastrado em outra família.");
       });
 
-    Cidade cidade = cidadeRepository
-      .findById(dto.getCidadeId())
-      .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Cidade não encontrada"));
-
-    Bairro bairro = resolverBairro(dto, cidade);
-    Endereco endereco = construirEndereco(dto, cidade, bairro);
-
     MembroFamilia membro = new MembroFamilia();
     membro.setNomeCompleto(dto.getNomeCompleto());
     membro.setCpf(cpfNormalizado);
@@ -119,11 +124,10 @@ public class FamiliaService {
     membro.setResponsavelPrincipal(Boolean.TRUE.equals(dto.getResponsavelPrincipal()));
     membro.setProbabilidadeVoto(dto.getProbabilidadeVoto());
     membro.setTelefone(dto.getTelefone());
-    membro.setEndereco(endereco);
     return membro;
   }
 
-  private Bairro resolverBairro(MembroFamiliaRequestDTO dto, Cidade cidade) {
+  private Bairro resolverBairroFamilia(FamiliaRequestDTO dto, Cidade cidade) {
     if (dto.getBairroId() != null) {
       Bairro bairro = bairroRepository
         .findById(dto.getBairroId())
@@ -180,7 +184,7 @@ public class FamiliaService {
       });
   }
 
-  private Endereco construirEndereco(MembroFamiliaRequestDTO dto, Cidade cidade, Bairro bairro) {
+  private Endereco construirEnderecoFamilia(FamiliaRequestDTO dto, Cidade cidade, Bairro bairro) {
     Endereco endereco = new Endereco();
     endereco.setRua(dto.getRua());
     endereco.setNumero(dto.getNumero());
@@ -203,7 +207,7 @@ public class FamiliaService {
     return endereco;
   }
 
-  private String montarEnderecoCompleto(MembroFamiliaRequestDTO dto, Cidade cidade, Bairro bairro) {
+  private String montarEnderecoCompleto(FamiliaRequestDTO dto, Cidade cidade, Bairro bairro) {
     StringBuilder builder = new StringBuilder();
     builder.append(dto.getRua()).append(", ").append(dto.getNumero());
     if (bairro != null) {
@@ -218,39 +222,35 @@ public class FamiliaService {
   }
 
   private FamiliaResponseDTO converterFamilia(Familia familia) {
-    List<MembroFamiliaResponseDTO> membros = familia.getMembros().stream()
-      .map(membro -> {
-        Endereco endereco = membro.getEndereco();
-        Bairro bairro = endereco.getBairro();
-        Cidade cidade = endereco.getCidade();
-        EnderecoResponseDTO enderecoDTO = new EnderecoResponseDTO(
-          endereco.getId(),
-          endereco.getRua(),
-          endereco.getNumero(),
-          endereco.getCep(),
-          bairro != null ? bairro.getNome() : null,
-          bairro != null ? bairro.getRegiao() : null,
-          cidade.getNome(),
-          cidade.getUf(),
-          endereco.getLatitude() != null ? endereco.getLatitude().doubleValue() : null,
-          endereco.getLongitude() != null ? endereco.getLongitude().doubleValue() : null
+    Endereco endereco = familia.getEnderecoDetalhado();
+    Bairro bairro = endereco.getBairro();
+    Cidade cidade = endereco.getCidade();
+    EnderecoResponseDTO enderecoDTO = new EnderecoResponseDTO(
+      endereco.getId(),
+      endereco.getRua(),
+      endereco.getNumero(),
+      endereco.getCep(),
+      bairro != null ? bairro.getNome() : null,
+      bairro != null ? bairro.getRegiao() : null,
+      cidade.getNome(),
+      cidade.getUf(),
+      endereco.getLatitude() != null ? endereco.getLatitude().doubleValue() : null,
+      endereco.getLongitude() != null ? endereco.getLongitude().doubleValue() : null
+    );
 
-        );
-        return new MembroFamiliaResponseDTO(
-          membro.getId(),
-          membro.getNomeCompleto(),
-          membro.getCpf(),
-          membro.getDataNascimento(),
-          membro.getProfissao(),
-          membro.getParentesco(),
-          Boolean.TRUE.equals(membro.getResponsavelPrincipal()),
-          membro.getProbabilidadeVoto(),
-          membro.getTelefone(),
-          endereco.getCep(),
-          enderecoDTO,
-          membro.getCriadoEm()
-        );
-      })
+    List<MembroFamiliaResponseDTO> membros = familia.getMembros().stream()
+      .map(membro -> new MembroFamiliaResponseDTO(
+        membro.getId(),
+        membro.getNomeCompleto(),
+        membro.getCpf(),
+        membro.getDataNascimento(),
+        membro.getProfissao(),
+        membro.getParentesco(),
+        Boolean.TRUE.equals(membro.getResponsavelPrincipal()),
+        membro.getProbabilidadeVoto(),
+        membro.getTelefone(),
+        membro.getCriadoEm()
+      ))
       .collect(Collectors.toList());
 
     return new FamiliaResponseDTO(
@@ -259,8 +259,13 @@ public class FamiliaService {
       familia.getBairro(),
       familia.getTelefone(),
       familia.getCriadoEm(),
+      enderecoDTO,
       membros
     );
+  }
+
+  private String montarEnderecoResumo(FamiliaRequestDTO dto) {
+    return dto.getRua().trim() + ", " + dto.getNumero().trim();
   }
 
   private String normalizarCpf(String cpf) {

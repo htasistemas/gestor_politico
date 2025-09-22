@@ -38,6 +38,7 @@ CREATE TABLE IF NOT EXISTS familia (
   endereco VARCHAR(255) NOT NULL,
   bairro VARCHAR(120) NOT NULL,
   telefone VARCHAR(30) NOT NULL,
+  endereco_id BIGINT NOT NULL REFERENCES enderecos (id) ON DELETE CASCADE,
   criado_em TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -52,6 +53,5 @@ CREATE TABLE IF NOT EXISTS membro_familia (
   probabilidade_voto VARCHAR(255) NOT NULL,
   telefone VARCHAR(30),
   familia_id BIGINT NOT NULL REFERENCES familia (id) ON DELETE CASCADE,
-  endereco_id BIGINT NOT NULL REFERENCES enderecos (id) ON DELETE CASCADE,
   criado_em TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );

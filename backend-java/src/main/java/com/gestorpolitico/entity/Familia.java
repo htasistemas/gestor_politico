@@ -7,7 +7,9 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotBlank;
@@ -40,6 +42,10 @@ public class Familia {
 
   @Column(name = "criado_em", nullable = false)
   private OffsetDateTime criadoEm = OffsetDateTime.now();
+
+  @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+  @JoinColumn(name = "endereco_id", nullable = false)
+  private Endereco enderecoDetalhado;
 
   @OneToMany(mappedBy = "familia", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
   private List<MembroFamilia> membros = new ArrayList<>();
@@ -82,6 +88,14 @@ public class Familia {
 
   public void setCriadoEm(OffsetDateTime criadoEm) {
     this.criadoEm = criadoEm;
+  }
+
+  public Endereco getEnderecoDetalhado() {
+    return enderecoDetalhado;
+  }
+
+  public void setEnderecoDetalhado(Endereco enderecoDetalhado) {
+    this.enderecoDetalhado = enderecoDetalhado;
   }
 
   public List<MembroFamilia> getMembros() {
