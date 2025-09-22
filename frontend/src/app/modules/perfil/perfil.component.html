@@ -1,0 +1,80 @@
+<div class="max-w-3xl mx-auto py-10 px-4 sm:px-6 lg:px-8">
+  <div class="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden">
+    <div class="px-8 py-6 border-b border-gray-100 bg-gradient-to-r from-blue-500/10 to-blue-100/40">
+      <h1 class="text-2xl font-bold text-gray-900">Configurações do Perfil</h1>
+      <p class="text-sm text-gray-600 mt-1">Atualize suas informações pessoais e defina uma nova senha.</p>
+    </div>
+
+    <div class="px-8 py-6 space-y-6" *ngIf="!carregando; else carregandoTemplate">
+      <div *ngIf="mensagemSucesso" class="p-3 rounded-2xl bg-green-50 text-green-700 text-sm">
+        {{ mensagemSucesso }}
+      </div>
+      <div *ngIf="mensagemErro" class="p-3 rounded-2xl bg-red-50 text-red-600 text-sm">
+        {{ mensagemErro }}
+      </div>
+
+      <form class="space-y-6" (ngSubmit)="salvar()" [formGroup]="formulario">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <label class="flex flex-col space-y-2">
+            <span class="text-sm font-medium text-gray-700">Nome completo</span>
+            <input
+              type="text"
+              class="input"
+              formControlName="nome"
+              placeholder="Digite seu nome"
+            />
+            <span class="erro" *ngIf="formulario.get('nome')?.invalid && formulario.get('nome')?.touched">
+              Informe um nome com pelo menos 3 caracteres.
+            </span>
+          </label>
+
+          <label class="flex flex-col space-y-2">
+            <span class="text-sm font-medium text-gray-700">E-mail de acesso</span>
+            <input
+              type="email"
+              class="input"
+              formControlName="usuario"
+              placeholder="seu@email.com"
+            />
+            <span class="erro" *ngIf="formulario.get('usuario')?.invalid && formulario.get('usuario')?.touched">
+              Informe um e-mail válido.
+            </span>
+          </label>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <label class="flex flex-col space-y-2">
+            <span class="text-sm font-medium text-gray-700">Nova senha</span>
+            <input
+              type="password"
+              class="input"
+              formControlName="senha"
+              placeholder="Informe apenas se desejar alterar"
+            />
+            <span class="text-xs text-gray-500">A senha deve possuir ao menos 6 caracteres.</span>
+            <span class="erro" *ngIf="formulario.get('senha')?.invalid && formulario.get('senha')?.touched">
+              Informe uma senha com pelo menos 6 caracteres.
+            </span>
+          </label>
+        </div>
+
+        <div class="flex justify-end">
+          <button
+            type="submit"
+            class="px-6 py-3 rounded-2xl bg-blue-600 text-white font-semibold shadow hover:bg-blue-700 disabled:opacity-60"
+            [disabled]="salvando"
+          >
+            {{ salvando ? 'Salvando...' : 'Salvar alterações' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<ng-template #carregandoTemplate>
+  <div class="px-8 py-12 flex items-center justify-center">
+    <div class="w-10 h-10 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+    <span class="ml-3 text-sm text-gray-600">Carregando informações do perfil...</span>
+  </div>
+</ng-template>

@@ -2,12 +2,15 @@ package com.gestorpolitico.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 
 @Entity
 @Table(name = "login")
@@ -28,6 +31,11 @@ public class Login {
   @NotBlank
   @Column(nullable = false)
   private String nome;
+
+  @NotNull
+  @Enumerated(EnumType.STRING)
+  @Column(nullable = false, length = 20)
+  private PerfilUsuario perfil = PerfilUsuario.USUARIO;
 
   public Long getId() {
     return id;
@@ -59,5 +67,13 @@ public class Login {
 
   public void setNome(String nome) {
     this.nome = nome;
+  }
+
+  public PerfilUsuario getPerfil() {
+    return perfil;
+  }
+
+  public void setPerfil(PerfilUsuario perfil) {
+    this.perfil = perfil;
   }
 }

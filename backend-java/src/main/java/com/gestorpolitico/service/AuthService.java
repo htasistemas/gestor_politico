@@ -22,6 +22,6 @@ public class AuthService {
     Login login = loginRepository.findByUsuarioAndSenha(dto.getUsuario(), dto.getSenha())
       .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Credenciais inválidas"));
 
-    return new LoginResponseDTO(login.getId(), login.getUsuario(), login.getNome());
+    return new LoginResponseDTO(login.getId(), login.getUsuario(), login.getNome(), login.getPerfil());
   }
 }

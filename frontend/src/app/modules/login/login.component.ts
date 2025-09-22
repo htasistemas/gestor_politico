@@ -1,20 +1,14 @@
-    import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { buildApiUrl } from '../shared/api-url.util';
-
-interface LoginResponse {
-  id: number;
-  usuario: string;
-  nome: string;
-}
+import { HttpErrorResponse } from '@angular/common/http';
+import { AuthService } from '../shared/services/auth.service';
 
 @Component({
   standalone: false,
   selector: 'app-login',
   templateUrl: './login.component.html'
 })
-export class LoginComponent {
+export class LoginComponent implements OnInit {
   username = '';
   password = '';
   showPassword = false;
@@ -23,7 +17,13 @@ export class LoginComponent {
   usernameError = '';
   passwordError = '';
 
-  constructor(private router: Router, private http: HttpClient) {}
+  constructor(private router: Router, private authService: AuthService) {}
+
+  ngOnInit(): void {
+    if (this.authService.estaAutenticado()) {
+      this.router.navigate(['/dashboard']);
+    }
+  }
 
   togglePassword(): void {
     this.showPassword = !this.showPassword;
@@ -62,11 +62,8 @@ export class LoginComponent {
 
     this.isLoading = true;
 
-    this.http
-      .post<LoginResponse>(buildApiUrl('login'), {
-        usuario: trimmedUsername,
-        senha: trimmedPassword
-      })
+    this.authService
+      .login(trimmedUsername, trimmedPassword)
       .subscribe({
         next: () => {
           this.router.navigate(['/dashboard']);
