@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { FormBuilder, Validators } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { finalize } from 'rxjs';
-import { AuthService } from '../shared/services/auth.service';
+import { AuthService, PerfilUsuario } from '../shared/services/auth.service';
 import { UsuariosService } from '../shared/services/usuarios.service';
 
 @Component({
@@ -16,6 +16,7 @@ export class PerfilComponent implements OnInit {
   salvando = false;
   mensagemSucesso = '';
   mensagemErro = '';
+  perfilUsuario: PerfilUsuario | null = null;
 
   formulario = this.fb.group({
     nome: ['', [Validators.required, Validators.minLength(3)]],
@@ -36,12 +37,14 @@ export class PerfilComponent implements OnInit {
       return;
     }
 
+    this.perfilUsuario = usuario.perfil;
     this.usuariosService.buscarPorId(usuario.id).subscribe({
       next: dados => {
         this.formulario.patchValue({
           nome: dados.nome,
           usuario: dados.usuario
         });
+        this.perfilUsuario = dados.perfil;
         this.carregando = false;
       },
         error: (erro: HttpErrorResponse) => {
@@ -84,6 +87,7 @@ export class PerfilComponent implements OnInit {
         next: usuarioAtualizado => {
           this.formulario.patchValue({ senha: '' });
           this.mensagemSucesso = 'Dados atualizados com sucesso!';
+          this.perfilUsuario = usuarioAtualizado.perfil ?? this.perfilUsuario;
           this.authService.atualizarUsuarioLocal({
             nome: usuarioAtualizado.nome,
             usuario: usuarioAtualizado.usuario
