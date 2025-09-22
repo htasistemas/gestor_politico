@@ -33,10 +33,25 @@ CREATE TABLE IF NOT EXISTS enderecos (
   longitude NUMERIC(10, 7)
 );
 
-CREATE TABLE IF NOT EXISTS pessoas (
+CREATE TABLE IF NOT EXISTS familia (
   id BIGSERIAL PRIMARY KEY,
-  nome VARCHAR(255) NOT NULL,
-  cpf VARCHAR(14) NOT NULL UNIQUE,
+  endereco VARCHAR(255) NOT NULL,
+  bairro VARCHAR(120) NOT NULL,
+  telefone VARCHAR(30) NOT NULL,
+  criado_em TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS membro_familia (
+  id BIGSERIAL PRIMARY KEY,
+  nome_completo VARCHAR(255) NOT NULL,
+  cpf VARCHAR(11) NOT NULL UNIQUE,
+  data_nascimento DATE,
+  profissao VARCHAR(255),
+  parentesco VARCHAR(255) NOT NULL,
+  responsavel_principal BOOLEAN NOT NULL DEFAULT FALSE,
+  probabilidade_voto VARCHAR(255) NOT NULL,
+  telefone VARCHAR(30),
+  familia_id BIGINT NOT NULL REFERENCES familia (id) ON DELETE CASCADE,
   endereco_id BIGINT NOT NULL REFERENCES enderecos (id) ON DELETE CASCADE,
   criado_em TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );

@@ -1,25 +1,56 @@
 package com.gestorpolitico.service;
 
+import com.gestorpolitico.dto.EnderecoResponseDTO;
 import com.gestorpolitico.dto.FamiliaRequestDTO;
 import com.gestorpolitico.dto.FamiliaResponseDTO;
 import com.gestorpolitico.dto.MembroFamiliaRequestDTO;
 import com.gestorpolitico.dto.MembroFamiliaResponseDTO;
+import com.gestorpolitico.entity.Bairro;
+import com.gestorpolitico.entity.Cidade;
+import com.gestorpolitico.entity.Endereco;
 import com.gestorpolitico.entity.Familia;
 import com.gestorpolitico.entity.MembroFamilia;
+import com.gestorpolitico.entity.Regiao;
+import com.gestorpolitico.repository.BairroRepository;
+import com.gestorpolitico.repository.CidadeRepository;
 import com.gestorpolitico.repository.FamiliaRepository;
+import com.gestorpolitico.repository.MembroFamiliaRepository;
+import com.gestorpolitico.repository.RegiaoRepository;
+import jakarta.transaction.Transactional;
+import java.text.Normalizer;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class FamiliaService {
   private final FamiliaRepository familiaRepository;
+  private final CidadeRepository cidadeRepository;
+  private final BairroRepository bairroRepository;
+  private final RegiaoRepository regiaoRepository;
+  private final MembroFamiliaRepository membroFamiliaRepository;
+  private final GeocodingService geocodingService;
 
-  public FamiliaService(FamiliaRepository familiaRepository) {
+  public FamiliaService(
+    FamiliaRepository familiaRepository,
+    CidadeRepository cidadeRepository,
+    BairroRepository bairroRepository,
+    RegiaoRepository regiaoRepository,
+    MembroFamiliaRepository membroFamiliaRepository,
+    GeocodingService geocodingService
+  ) {
     this.familiaRepository = familiaRepository;
+    this.cidadeRepository = cidadeRepository;
+    this.bairroRepository = bairroRepository;
+    this.regiaoRepository = regiaoRepository;
+    this.membroFamiliaRepository = membroFamiliaRepository;
+    this.geocodingService = geocodingService;
   }
 
   @Transactional
@@ -41,8 +72,9 @@ public class FamiliaService {
     familia.setBairro(dto.getBairro());
     familia.setTelefone(dto.getTelefone());
 
+    Set<String> cpfsInformados = new HashSet<>();
     List<MembroFamilia> membros = dto.getMembros().stream()
-      .map(this::converterMembro)
+      .map(membro -> converterMembro(membro, cpfsInformados))
       .collect(Collectors.toList());
     membros.forEach(familia::adicionarMembro);
 
@@ -57,31 +89,162 @@ public class FamiliaService {
       .collect(Collectors.toList());
   }
 
-  private MembroFamilia converterMembro(MembroFamiliaRequestDTO dto) {
+  private MembroFamilia converterMembro(MembroFamiliaRequestDTO dto, Set<String> cpfsInformados) {
+    String cpfNormalizado = normalizarCpf(dto.getCpf());
+
+    if (!cpfsInformados.add(cpfNormalizado)) {
+      throw new ResponseStatusException(HttpStatus.CONFLICT, "CPF duplicado entre os membros informados.");
+    }
+
+    membroFamiliaRepository
+      .findByCpf(cpfNormalizado)
+      .ifPresent(existente -> {
+        throw new ResponseStatusException(HttpStatus.CONFLICT, "CPF já cadastrado em outra família.");
+      });
+
+    Cidade cidade = cidadeRepository
+      .findById(dto.getCidadeId())
+      .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Cidade não encontrada"));
+
+    Bairro bairro = resolverBairro(dto, cidade);
+    Endereco endereco = construirEndereco(dto, cidade, bairro);
+
     MembroFamilia membro = new MembroFamilia();
     membro.setNomeCompleto(dto.getNomeCompleto());
+    membro.setCpf(cpfNormalizado);
     membro.setDataNascimento(dto.getDataNascimento());
     membro.setProfissao(dto.getProfissao());
     membro.setParentesco(dto.getParentesco());
     membro.setResponsavelPrincipal(Boolean.TRUE.equals(dto.getResponsavelPrincipal()));
     membro.setProbabilidadeVoto(dto.getProbabilidadeVoto());
     membro.setTelefone(dto.getTelefone());
+    membro.setEndereco(endereco);
     return membro;
+  }
+
+  private Bairro resolverBairro(MembroFamiliaRequestDTO dto, Cidade cidade) {
+    if (dto.getBairroId() != null) {
+      Bairro bairro = bairroRepository
+        .findById(dto.getBairroId())
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bairro não encontrado"));
+      if (!bairro.getCidade().getId().equals(cidade.getId())) {
+        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Bairro não pertence à cidade informada");
+      }
+      if (dto.getNovaRegiao() != null && !dto.getNovaRegiao().isBlank()) {
+        String regiaoNome = dto.getNovaRegiao().trim();
+        garantirRegiao(cidade, regiaoNome);
+        bairro.setRegiao(regiaoNome);
+        bairroRepository.save(bairro);
+      }
+      return bairro;
+    }
+
+    if (dto.getNovoBairro() == null || dto.getNovoBairro().isBlank()) {
+      return null;
+    }
+
+    String nomeBairro = dto.getNovoBairro().trim();
+    String normalizado = normalizarTexto(nomeBairro);
+    Optional<Bairro> existente = bairroRepository.findByCidadeIdAndNomeNormalizado(cidade.getId(), normalizado);
+    if (existente.isPresent()) {
+      Bairro bairroExistente = existente.get();
+      if (dto.getNovaRegiao() != null && !dto.getNovaRegiao().isBlank()) {
+        String regiaoNome = dto.getNovaRegiao().trim();
+        garantirRegiao(cidade, regiaoNome);
+        bairroExistente.setRegiao(regiaoNome);
+        bairroRepository.save(bairroExistente);
+      }
+      return bairroExistente;
+    }
+
+    Bairro bairro = new Bairro();
+    bairro.setCidade(cidade);
+    bairro.setNome(nomeBairro);
+    if (dto.getNovaRegiao() != null && !dto.getNovaRegiao().isBlank()) {
+      String regiaoNome = dto.getNovaRegiao().trim();
+      garantirRegiao(cidade, regiaoNome);
+      bairro.setRegiao(regiaoNome);
+    }
+    return bairroRepository.save(bairro);
+  }
+
+  private void garantirRegiao(Cidade cidade, String regiaoNome) {
+    regiaoRepository
+      .findByCidadeIdAndNomeIgnoreCase(cidade.getId(), regiaoNome)
+      .orElseGet(() -> {
+        Regiao regiao = new Regiao();
+        regiao.setCidade(cidade);
+        regiao.setNome(regiaoNome.trim());
+        return regiaoRepository.save(regiao);
+      });
+  }
+
+  private Endereco construirEndereco(MembroFamiliaRequestDTO dto, Cidade cidade, Bairro bairro) {
+    Endereco endereco = new Endereco();
+    endereco.setRua(dto.getRua());
+    endereco.setNumero(dto.getNumero());
+    endereco.setCep(dto.getCep());
+    endereco.setCidade(cidade);
+    endereco.setBairro(bairro);
+
+    String enderecoCompleto = montarEnderecoCompleto(dto, cidade, bairro);
+    geocodingService
+      .buscarCoordenadas(enderecoCompleto)
+      .ifPresent(coordenada -> {
+        endereco.setLatitude(coordenada.latitude());
+        endereco.setLongitude(coordenada.longitude());
+      });
+
+    return endereco;
+  }
+
+  private String montarEnderecoCompleto(MembroFamiliaRequestDTO dto, Cidade cidade, Bairro bairro) {
+    StringBuilder builder = new StringBuilder();
+    builder.append(dto.getRua()).append(", ").append(dto.getNumero());
+    if (bairro != null) {
+      builder.append(", ").append(bairro.getNome());
+    }
+    builder.append(", ").append(cidade.getNome()).append(" - ").append(cidade.getUf());
+    if (dto.getCep() != null && !dto.getCep().isBlank()) {
+      builder.append(", CEP ").append(dto.getCep());
+    }
+    builder.append(", Brasil");
+    return builder.toString();
   }
 
   private FamiliaResponseDTO converterFamilia(Familia familia) {
     List<MembroFamiliaResponseDTO> membros = familia.getMembros().stream()
-      .map(membro -> new MembroFamiliaResponseDTO(
-        membro.getId(),
-        membro.getNomeCompleto(),
-        membro.getDataNascimento(),
-        membro.getProfissao(),
-        membro.getParentesco(),
-        Boolean.TRUE.equals(membro.getResponsavelPrincipal()),
-        membro.getProbabilidadeVoto(),
-        membro.getTelefone(),
-        membro.getCriadoEm()
-      ))
+      .map(membro -> {
+        Endereco endereco = membro.getEndereco();
+        Bairro bairro = endereco.getBairro();
+        Cidade cidade = endereco.getCidade();
+        EnderecoResponseDTO enderecoDTO = new EnderecoResponseDTO(
+          endereco.getId(),
+          endereco.getRua(),
+          endereco.getNumero(),
+          endereco.getCep(),
+          bairro != null ? bairro.getNome() : null,
+          bairro != null ? bairro.getRegiao() : null,
+          cidade.getNome(),
+          cidade.getUf(),
+          endereco.getLatitude(),
+          endereco.getLongitude()
+        );
+        return new MembroFamiliaResponseDTO(
+          membro.getId(),
+          membro.getNomeCompleto(),
+          membro.getCpf(),
+          membro.getDataNascimento(),
+          membro.getProfissao(),
+          membro.getParentesco(),
+          Boolean.TRUE.equals(membro.getResponsavelPrincipal()),
+          membro.getProbabilidadeVoto(),
+          membro.getTelefone(),
+          endereco.getCep(),
+          enderecoDTO,
+          membro.getCriadoEm()
+        );
+      })
       .collect(Collectors.toList());
 
     return new FamiliaResponseDTO(
@@ -92,5 +255,16 @@ public class FamiliaService {
       familia.getCriadoEm(),
       membros
     );
+  }
+
+  private String normalizarCpf(String cpf) {
+    return cpf.replaceAll("\\D", "");
+  }
+
+  private String normalizarTexto(String valor) {
+    String semAcento = Normalizer
+      .normalize(valor, Normalizer.Form.NFD)
+      .replaceAll("\\p{InCombiningDiacriticalMarks}+", "");
+    return semAcento.toUpperCase(Locale.ROOT).replaceAll("\\s+", " ").trim();
   }
 }

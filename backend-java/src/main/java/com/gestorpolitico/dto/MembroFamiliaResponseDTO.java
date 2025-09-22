@@ -6,12 +6,15 @@ import java.time.OffsetDateTime;
 public class MembroFamiliaResponseDTO {
   private Long id;
   private String nomeCompleto;
+  private String cpf;
   private LocalDate dataNascimento;
   private String profissao;
   private String parentesco;
   private boolean responsavelPrincipal;
   private String probabilidadeVoto;
   private String telefone;
+  private String cep;
+  private EnderecoResponseDTO endereco;
   private OffsetDateTime criadoEm;
 
   public MembroFamiliaResponseDTO() {
@@ -20,22 +23,28 @@ public class MembroFamiliaResponseDTO {
   public MembroFamiliaResponseDTO(
     Long id,
     String nomeCompleto,
+    String cpf,
     LocalDate dataNascimento,
     String profissao,
     String parentesco,
     boolean responsavelPrincipal,
     String probabilidadeVoto,
     String telefone,
+    String cep,
+    EnderecoResponseDTO endereco,
     OffsetDateTime criadoEm
   ) {
     this.id = id;
     this.nomeCompleto = nomeCompleto;
+    this.cpf = cpf;
     this.dataNascimento = dataNascimento;
     this.profissao = profissao;
     this.parentesco = parentesco;
     this.responsavelPrincipal = responsavelPrincipal;
     this.probabilidadeVoto = probabilidadeVoto;
     this.telefone = telefone;
+    this.cep = cep;
+    this.endereco = endereco;
     this.criadoEm = criadoEm;
   }
 
@@ -53,6 +62,14 @@ public class MembroFamiliaResponseDTO {
 
   public void setNomeCompleto(String nomeCompleto) {
     this.nomeCompleto = nomeCompleto;
+  }
+
+  public String getCpf() {
+    return cpf;
+  }
+
+  public void setCpf(String cpf) {
+    this.cpf = cpf;
   }
 
   public LocalDate getDataNascimento() {
@@ -101,6 +118,22 @@ public class MembroFamiliaResponseDTO {
 
   public void setTelefone(String telefone) {
     this.telefone = telefone;
+  }
+
+  public String getCep() {
+    return cep;
+  }
+
+  public void setCep(String cep) {
+    this.cep = cep;
+  }
+
+  public EnderecoResponseDTO getEndereco() {
+    return endereco;
+  }
+
+  public void setEndereco(EnderecoResponseDTO endereco) {
+    this.endereco = endereco;
   }
 
   public OffsetDateTime getCriadoEm() {
