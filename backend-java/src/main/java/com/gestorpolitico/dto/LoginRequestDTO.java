@@ -1,12 +1,10 @@
 package com.gestorpolitico.dto;
 
-import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 public class LoginRequestDTO {
   @NotBlank(message = "O usuário é obrigatório.")
-  @Email(message = "Informe um e-mail válido.")
   private String usuario;
 
   @NotBlank(message = "A senha é obrigatória.")
