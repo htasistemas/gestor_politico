@@ -36,20 +36,22 @@ public class LocalidadeController {
 
   @GetMapping("/cidades/{cidadeId}/bairros")
   public ResponseEntity<List<BairroResponseDTO>> listarBairros(
-    @PathVariable Long cidadeId,
+    @PathVariable("cidadeId") Long cidadeId,
     @RequestParam(required = false) String regiao
   ) {
     return ResponseEntity.ok(localidadeService.listarBairros(cidadeId, regiao));
   }
 
   @GetMapping("/cidades/{cidadeId}/regioes")
-  public ResponseEntity<List<RegiaoResponseDTO>> listarRegioes(@PathVariable Long cidadeId) {
+  public ResponseEntity<List<RegiaoResponseDTO>> listarRegioes(
+    @PathVariable("cidadeId") Long cidadeId
+  ) {
     return ResponseEntity.ok(localidadeService.listarRegioes(cidadeId));
   }
 
   @PostMapping("/cidades/{cidadeId}/regioes")
   public ResponseEntity<RegiaoResponseDTO> criarRegiao(
-    @PathVariable Long cidadeId,
+    @PathVariable("cidadeId") Long cidadeId,
     @Valid @RequestBody RegiaoRequestDTO dto
   ) {
     return ResponseEntity.ok(localidadeService.criarRegiao(cidadeId, dto));
@@ -57,7 +59,7 @@ public class LocalidadeController {
 
   @PutMapping("/regioes/{regiaoId}/bairros")
   public ResponseEntity<Void> atribuirRegiao(
-    @PathVariable Long regiaoId,
+    @PathVariable("regiaoId") Long regiaoId,
     @Valid @RequestBody RegiaoAtribuicaoRequestDTO dto
   ) {
     localidadeService.atribuirRegiao(regiaoId, dto.getBairrosIds());
@@ -73,7 +75,9 @@ public class LocalidadeController {
   }
 
   @PostMapping("/cidades/{cidadeId}/importar-bairros")
-  public ResponseEntity<ImportacaoBairrosResponseDTO> importarBairros(@PathVariable Long cidadeId) {
+  public ResponseEntity<ImportacaoBairrosResponseDTO> importarBairros(
+    @PathVariable("cidadeId") Long cidadeId
+  ) {
     return ResponseEntity.ok(localidadeService.importarBairros(cidadeId));
   }
 }
