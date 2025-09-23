@@ -12,6 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 import org.springframework.web.util.UriComponentsBuilder;
 import reactor.core.publisher.Mono;
 
@@ -34,17 +35,17 @@ public class IbgeService {
     }
 
     String url = MUNICIPIOS_URL + "/" + municipio.get().id() + "/distritos";
-    return webClient
+    Mono<List<DistritoDTO>> distritosRequisicao = webClient
       .get()
       .uri(url)
       .retrieve()
       .bodyToMono(DistritoDTO[].class)
-      .onErrorResume(throwable -> {
-        LOGGER.warn("Erro ao consultar distritos do IBGE: {}", throwable.getMessage());
-        return Mono.just(new DistritoDTO[0]);
-      })
-      .map(Arrays::asList)
-      .blockOptional()
+      .map(Arrays::asList);
+
+    return executarRequisicao(
+      distritosRequisicao,
+      String.format("Erro ao consultar distritos do IBGE para %s-%s", cidade.getNome(), cidade.getUf())
+    )
       .orElse(List.of());
   }
 
@@ -53,22 +54,22 @@ public class IbgeService {
       .fromHttpUrl(MUNICIPIOS_URL)
       .queryParam("nome", cidade.getNome())
       .toUriString();
-    return webClient
+    Mono<MunicipioDTO> municipioRequisicao = webClient
       .get()
       .uri(queryUrl)
       .retrieve()
       .bodyToMono(MunicipioDTO[].class)
-      .onErrorResume(throwable -> {
-        LOGGER.warn("Erro ao consultar município no IBGE: {}", throwable.getMessage());
-        return Mono.just(new MunicipioDTO[0]);
-      })
       .map(resultados -> Arrays
         .stream(resultados)
         .filter(municipio -> correspondeMunicipio(municipio, cidade))
         .findFirst()
         .orElse(null)
-      )
-      .blockOptional();
+      );
+
+    return executarRequisicao(
+      municipioRequisicao,
+      String.format("Erro ao consultar município no IBGE para %s-%s", cidade.getNome(), cidade.getUf())
+    );
   }
 
   private boolean correspondeMunicipio(MunicipioDTO municipio, Cidade cidade) {
@@ -94,6 +95,22 @@ public class IbgeService {
       .toUpperCase(Locale.ROOT)
       .replaceAll("\\s+", " ")
       .trim();
+  }
+
+  private <T> Optional<T> executarRequisicao(Mono<T> requisicao, String mensagemErro) {
+    try {
+      return requisicao.blockOptional();
+    } catch (WebClientResponseException excecaoResposta) {
+      LOGGER.warn(
+        "{} - status {}: {}",
+        mensagemErro,
+        excecaoResposta.getStatusCode(),
+        excecaoResposta.getMessage()
+      );
+    } catch (RuntimeException excecaoGenerica) {
+      LOGGER.warn("{}: {}", mensagemErro, excecaoGenerica.getMessage());
+    }
+    return Optional.empty();
   }
 
   @JsonIgnoreProperties(ignoreUnknown = true)
