@@ -81,7 +81,7 @@ public class IbgeService {
       return false;
     }
     String nomeMunicipio = normalizar(municipio.nome());
-    String nomeCidade = normalizar(cidade.getNome());
+    String nomeCidade = removerSufixoUf(normalizar(cidade.getNome()), cidade.getUf());
     return nomeMunicipio.equals(nomeCidade);
   }
 
@@ -95,6 +95,20 @@ public class IbgeService {
       .toUpperCase(Locale.ROOT)
       .replaceAll("\\s+", " ")
       .trim();
+  }
+
+  private String removerSufixoUf(String nomeCidade, String uf) {
+    if (nomeCidade == null || nomeCidade.isBlank()) {
+      return "";
+    }
+    if (uf == null || uf.isBlank()) {
+      return nomeCidade;
+    }
+    String sufixoUf = " " + uf.toUpperCase(Locale.ROOT).trim();
+    if (nomeCidade.endsWith(sufixoUf)) {
+      return nomeCidade.substring(0, nomeCidade.length() - sufixoUf.length()).trim();
+    }
+    return nomeCidade;
   }
 
   private <T> Optional<T> executarRequisicao(Mono<T> requisicao, String mensagemErro) {
