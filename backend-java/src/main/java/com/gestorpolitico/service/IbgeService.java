@@ -50,9 +50,14 @@ public class IbgeService {
   }
 
   private Optional<MunicipioDTO> localizarMunicipio(Cidade cidade) {
+    DadosCidade dadosCidade = extrairDadosCidade(cidade);
+    String nomeParaConsulta = prepararNomeParaConsulta(dadosCidade.nomeCidade());
+    if (nomeParaConsulta.isBlank()) {
+      return Optional.empty();
+    }
     String queryUrl = UriComponentsBuilder
       .fromHttpUrl(MUNICIPIOS_URL)
-      .queryParam("nome", cidade.getNome())
+      .queryParam("nome", nomeParaConsulta)
       .toUriString();
     Mono<MunicipioDTO> municipioRequisicao = webClient
       .get()
@@ -61,28 +66,63 @@ public class IbgeService {
       .bodyToMono(MunicipioDTO[].class)
       .map(resultados -> Arrays
         .stream(resultados)
-        .filter(municipio -> correspondeMunicipio(municipio, cidade))
+        .filter(municipio -> correspondeMunicipio(municipio, dadosCidade))
         .findFirst()
         .orElse(null)
       );
 
     return executarRequisicao(
       municipioRequisicao,
-      String.format("Erro ao consultar município no IBGE para %s-%s", cidade.getNome(), cidade.getUf())
+      String.format(
+        "Erro ao consultar município no IBGE para %s-%s",
+        dadosCidade.nomeCidade(),
+        dadosCidade.uf()
+      )
     );
   }
 
-  private boolean correspondeMunicipio(MunicipioDTO municipio, Cidade cidade) {
+  private boolean correspondeMunicipio(MunicipioDTO municipio, DadosCidade dadosCidade) {
     if (municipio == null || municipio.microrregiao() == null) {
       return false;
     }
     String ufRetornada = municipio.microrregiao().mesorregiao().uf().sigla();
-    if (!ufRetornada.equalsIgnoreCase(cidade.getUf())) {
+    if (!ufRetornada.equalsIgnoreCase(dadosCidade.uf())) {
       return false;
     }
     String nomeMunicipio = normalizar(municipio.nome());
-    String nomeCidade = removerSufixoUf(normalizar(cidade.getNome()), cidade.getUf());
+    String nomeCidade = normalizar(dadosCidade.nomeCidade());
     return nomeMunicipio.equals(nomeCidade);
+  }
+
+  private DadosCidade extrairDadosCidade(Cidade cidade) {
+    if (cidade == null) {
+      return new DadosCidade("", "");
+    }
+
+    String nome = cidade.getNome() == null ? "" : cidade.getNome().trim();
+    String uf = cidade.getUf() == null ? "" : cidade.getUf().trim();
+
+    int indiceSeparador = nome.lastIndexOf('-');
+    if (indiceSeparador >= 0) {
+      String parteUf = nome.substring(indiceSeparador + 1).trim();
+      if (!parteUf.isBlank()) {
+        uf = parteUf;
+      }
+      nome = nome.substring(0, indiceSeparador).trim();
+    }
+
+    return new DadosCidade(nome, uf.toUpperCase(Locale.ROOT));
+  }
+
+  private String prepararNomeParaConsulta(String nomeCidade) {
+    if (nomeCidade == null || nomeCidade.isBlank()) {
+      return "";
+    }
+    return Normalizer
+      .normalize(nomeCidade, Normalizer.Form.NFD)
+      .replaceAll("\\p{InCombiningDiacriticalMarks}+", "")
+      .replaceAll("\\s+", " ")
+      .trim();
   }
 
   private String normalizar(String valor) {
@@ -95,20 +135,6 @@ public class IbgeService {
       .toUpperCase(Locale.ROOT)
       .replaceAll("\\s+", " ")
       .trim();
-  }
-
-  private String removerSufixoUf(String nomeCidade, String uf) {
-    if (nomeCidade == null || nomeCidade.isBlank()) {
-      return "";
-    }
-    if (uf == null || uf.isBlank()) {
-      return nomeCidade;
-    }
-    String sufixoUf = " " + uf.toUpperCase(Locale.ROOT).trim();
-    if (nomeCidade.endsWith(sufixoUf)) {
-      return nomeCidade.substring(0, nomeCidade.length() - sufixoUf.length()).trim();
-    }
-    return nomeCidade;
   }
 
   private <T> Optional<T> executarRequisicao(Mono<T> requisicao, String mensagemErro) {
@@ -145,4 +171,6 @@ public class IbgeService {
 
   @JsonIgnoreProperties(ignoreUnknown = true)
   public record UfDTO(@JsonProperty("sigla") String sigla) {}
+
+  private record DadosCidade(String nomeCidade, String uf) {}
 }
