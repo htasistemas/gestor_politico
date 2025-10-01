@@ -19,15 +19,21 @@
       </div>
 
       <div class="relative">
-        <div *ngIf="carregando" class="absolute inset-0 z-10 flex items-center justify-center bg-white/80 rounded-3xl">
+        <div
+          *ngIf="carregando"
+          class="absolute inset-0 z-10 flex items-center justify-center bg-white/80 rounded-3xl pointer-events-none"
+        >
           <div class="text-gray-600 font-medium">Carregando mapa e famílias...</div>
         </div>
-        <div *ngIf="erroCarregamento" class="absolute inset-0 z-10 flex items-center justify-center bg-red-50 rounded-3xl">
+        <div
+          *ngIf="erroCarregamento"
+          class="absolute inset-0 z-10 flex items-center justify-center bg-red-50 rounded-3xl pointer-events-none"
+        >
           <div class="text-red-600 font-semibold">{{ erroCarregamento }}</div>
         </div>
         <div
           *ngIf="!carregando && !erroCarregamento && familiasLocalizadas.length === 0"
-          class="absolute inset-0 z-10 flex items-center justify-center bg-white/90 rounded-3xl text-gray-500 text-center px-6"
+          class="absolute inset-0 z-10 flex items-center justify-center bg-white/90 rounded-3xl text-gray-500 text-center px-6 pointer-events-none"
         >
           Nenhuma família possui latitude e longitude cadastradas até o momento.
         </div>
