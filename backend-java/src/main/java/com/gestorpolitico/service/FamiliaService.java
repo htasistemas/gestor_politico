@@ -88,7 +88,6 @@ public class FamiliaService {
     Familia familia = new Familia();
     familia.setEndereco(montarEnderecoResumo(dto));
     familia.setBairro(bairro.getNome());
-    familia.setTelefone(dto.getTelefone());
     familia.setEnderecoDetalhado(endereco);
 
     List<MembroFamilia> membros = dto.getMembros().stream()
@@ -352,7 +351,6 @@ public class FamiliaService {
       familia.getId(),
       familia.getEndereco(),
       familia.getBairro(),
-      familia.getTelefone(),
       familia.getCriadoEm(),
       enderecoDTO,
       membros

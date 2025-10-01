@@ -8,7 +8,6 @@ public class FamiliaResponseDTO {
   private Long id;
   private String endereco;
   private String bairro;
-  private String telefone;
   private OffsetDateTime criadoEm;
   private EnderecoResponseDTO enderecoDetalhado;
   private List<MembroFamiliaResponseDTO> membros = new ArrayList<>();
@@ -20,7 +19,6 @@ public class FamiliaResponseDTO {
     Long id,
     String endereco,
     String bairro,
-    String telefone,
     OffsetDateTime criadoEm,
     EnderecoResponseDTO enderecoDetalhado,
     List<MembroFamiliaResponseDTO> membros
@@ -28,7 +26,6 @@ public class FamiliaResponseDTO {
     this.id = id;
     this.endereco = endereco;
     this.bairro = bairro;
-    this.telefone = telefone;
     this.criadoEm = criadoEm;
     this.enderecoDetalhado = enderecoDetalhado;
     if (membros != null) {
@@ -58,14 +55,6 @@ public class FamiliaResponseDTO {
 
   public void setBairro(String bairro) {
     this.bairro = bairro;
-  }
-
-  public String getTelefone() {
-    return telefone;
-  }
-
-  public void setTelefone(String telefone) {
-    this.telefone = telefone;
   }
 
   public OffsetDateTime getCriadoEm() {

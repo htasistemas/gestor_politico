@@ -19,7 +19,6 @@ export interface FamiliaPayload {
   numero: string;
   cidadeId: number;
   novaRegiao: string | null;
-  telefone: string;
   membros: FamiliaMembroPayload[];
 }
 
@@ -52,7 +51,6 @@ export interface FamiliaResponse {
   id: number;
   endereco: string;
   bairro: string;
-  telefone: string;
   criadoEm: string;
   enderecoDetalhado: EnderecoFamiliaResponse;
   membros: FamiliaMembroResponse[];
