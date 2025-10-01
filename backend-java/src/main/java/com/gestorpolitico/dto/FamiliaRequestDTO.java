@@ -22,11 +22,6 @@ public class FamiliaRequestDTO {
   @NotNull(message = "Selecione a cidade da família.")
   private Long cidadeId;
 
-  private Long bairroId;
-
-  @Size(max = 150, message = "O bairro deve ter no máximo 150 caracteres.")
-  private String novoBairro;
-
   @Size(max = 120, message = "A região deve ter no máximo 120 caracteres.")
   private String novaRegiao;
 
@@ -71,22 +66,6 @@ public class FamiliaRequestDTO {
 
   public void setCidadeId(Long cidadeId) {
     this.cidadeId = cidadeId;
-  }
-
-  public Long getBairroId() {
-    return bairroId;
-  }
-
-  public void setBairroId(Long bairroId) {
-    this.bairroId = bairroId;
-  }
-
-  public String getNovoBairro() {
-    return novoBairro;
-  }
-
-  public void setNovoBairro(String novoBairro) {
-    this.novoBairro = novoBairro;
   }
 
   public String getNovaRegiao() {

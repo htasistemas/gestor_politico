@@ -3,21 +3,23 @@ package com.gestorpolitico.service;
 import com.gestorpolitico.dto.AtualizarRegiaoBairrosRequestDTO;
 import com.gestorpolitico.dto.BairroResponseDTO;
 import com.gestorpolitico.dto.CidadeResponseDTO;
-import com.gestorpolitico.dto.ImportacaoBairrosResponseDTO;
 import com.gestorpolitico.dto.RegiaoRequestDTO;
 import com.gestorpolitico.dto.RegiaoResponseDTO;
 import com.gestorpolitico.entity.Bairro;
 import com.gestorpolitico.entity.Cidade;
+import com.gestorpolitico.entity.Endereco;
+import com.gestorpolitico.entity.Familia;
 import com.gestorpolitico.entity.Regiao;
 import com.gestorpolitico.repository.BairroRepository;
 import com.gestorpolitico.repository.CidadeRepository;
+import com.gestorpolitico.repository.FamiliaRepository;
 import com.gestorpolitico.repository.RegiaoRepository;
 import jakarta.transaction.Transactional;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -28,18 +30,18 @@ public class LocalidadeService {
   private final CidadeRepository cidadeRepository;
   private final BairroRepository bairroRepository;
   private final RegiaoRepository regiaoRepository;
-  private final IbgeService ibgeService;
+  private final FamiliaRepository familiaRepository;
 
   public LocalidadeService(
     CidadeRepository cidadeRepository,
     BairroRepository bairroRepository,
     RegiaoRepository regiaoRepository,
-    IbgeService ibgeService
+    FamiliaRepository familiaRepository
   ) {
     this.cidadeRepository = cidadeRepository;
     this.bairroRepository = bairroRepository;
     this.regiaoRepository = regiaoRepository;
-    this.ibgeService = ibgeService;
+    this.familiaRepository = familiaRepository;
   }
 
   public List<CidadeResponseDTO> listarCidades() {
@@ -169,63 +171,40 @@ public class LocalidadeService {
   }
 
   @Transactional
-  public ImportacaoBairrosResponseDTO importarBairros(Long cidadeId) {
-    Cidade cidade = cidadeRepository
-      .findById(cidadeId)
-      .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Cidade não encontrada"));
+  public void unificarBairros(Long bairroPrincipalId, List<Long> bairrosDuplicadosIds) {
+    if (bairrosDuplicadosIds == null || bairrosDuplicadosIds.isEmpty()) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Selecione os bairros duplicados para unificação");
+    }
 
-    List<Bairro> existentes = bairroRepository.findByCidadeIdOrderByNomeAsc(cidadeId);
-    Map<String, Bairro> indexPorNome = existentes
-      .stream()
-      .collect(Collectors.toMap(bairro -> normalizar(bairro.getNome()), bairro -> bairro));
+    Bairro principal = bairroRepository
+      .findById(bairroPrincipalId)
+      .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bairro principal não encontrado"));
 
-    int inseridos = 0;
-    int ignorados = 0;
+    List<Bairro> duplicados = bairroRepository.findAllById(bairrosDuplicadosIds);
+    duplicados.removeIf(bairro -> Objects.equals(bairro.getId(), principal.getId()));
 
-    for (IbgeService.DistritoDTO distrito : ibgeService.buscarBairros(cidade)) {
-      String nomeNormalizado = normalizar(distrito.nome());
-      if (nomeNormalizado.isEmpty()) {
-        continue;
+    if (duplicados.isEmpty()) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Informe ao menos um bairro duplicado válido");
+    }
+
+    for (Bairro bairro : duplicados) {
+      if (!Objects.equals(bairro.getCidade().getId(), principal.getCidade().getId())) {
+        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Bairros de cidades diferentes não podem ser unificados");
       }
-      if (indexPorNome.containsKey(nomeNormalizado)) {
-        ignorados++;
-        continue;
+    }
+
+    Set<Long> idsDuplicados = duplicados.stream().map(Bairro::getId).collect(Collectors.toSet());
+
+    List<Familia> familias = familiaRepository.findByEnderecoDetalhadoBairroIdIn(idsDuplicados);
+    for (Familia familia : familias) {
+      Endereco endereco = familia.getEnderecoDetalhado();
+      if (endereco != null && endereco.getBairro() != null && idsDuplicados.contains(endereco.getBairro().getId())) {
+        endereco.setBairro(principal);
       }
-
-      Bairro bairro = new Bairro();
-      bairro.setCidade(cidade);
-      bairro.setNome(formatarNome(distrito.nome()));
-      bairroRepository.save(bairro);
-      indexPorNome.put(nomeNormalizado, bairro);
-      inseridos++;
+      familia.setBairro(principal.getNome());
     }
+    familiaRepository.saveAll(familias);
 
-    return new ImportacaoBairrosResponseDTO(cidadeId, inseridos, ignorados);
-  }
-
-  private String normalizar(String valor) {
-    if (valor == null) {
-      return "";
-    }
-    String semAcento = java.text.Normalizer
-      .normalize(valor, java.text.Normalizer.Form.NFD)
-      .replaceAll("\\p{InCombiningDiacriticalMarks}+", "");
-    return semAcento
-      .toUpperCase(Locale.ROOT)
-      .replaceAll("[^A-Z0-9 ]", "")
-      .replaceAll("\\s+", " ")
-      .trim();
-  }
-
-  private String formatarNome(String valor) {
-    if (valor == null) {
-      return "";
-    }
-    String lower = valor.toLowerCase(Locale.ROOT);
-    String[] partes = lower.split("\\s+");
-    return java.util.Arrays
-      .stream(partes)
-      .map(parte -> parte.isBlank() ? parte : Character.toUpperCase(parte.charAt(0)) + parte.substring(1))
-      .collect(Collectors.joining(" "));
+    bairroRepository.deleteAll(duplicados);
   }
 }

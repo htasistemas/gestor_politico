@@ -21,12 +21,6 @@ export interface Regiao {
   quantidadeBairros: number;
 }
 
-export interface ImportacaoBairrosResposta {
-  cidadeId: number;
-  bairrosInseridos: number;
-  bairrosIgnorados: number;
-}
-
 @Injectable({ providedIn: 'root' })
 export class LocalidadesService {
   constructor(private readonly http: HttpClient) {}
@@ -63,7 +57,7 @@ export class LocalidadesService {
     return this.http.put<void>(buildApiUrl('/bairros/regiao'), payload);
   }
 
-  importarBairros(cidadeId: number): Observable<ImportacaoBairrosResposta> {
-    return this.http.post<ImportacaoBairrosResposta>(buildApiUrl(`/cidades/${cidadeId}/importar-bairros`), {});
+  unificarBairros(payload: { bairroPrincipalId: number; bairrosDuplicadosIds: number[] }): Observable<void> {
+    return this.http.post<void>(buildApiUrl('/bairros/unificar'), payload);
   }
 }

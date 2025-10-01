@@ -33,6 +33,8 @@ public class GeocodingService {
         .queryParam("q", enderecoCompleto)
         .queryParam("format", "json")
         .queryParam("limit", "1")
+        .queryParam("addressdetails", "0")
+        .queryParam("countrycodes", "br")
         .build(true)
         .toUri()
       )

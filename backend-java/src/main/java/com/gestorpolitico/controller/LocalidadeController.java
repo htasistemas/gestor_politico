@@ -3,22 +3,22 @@ package com.gestorpolitico.controller;
 import com.gestorpolitico.dto.AtualizarRegiaoBairrosRequestDTO;
 import com.gestorpolitico.dto.BairroResponseDTO;
 import com.gestorpolitico.dto.CidadeResponseDTO;
-import com.gestorpolitico.dto.ImportacaoBairrosResponseDTO;
 import com.gestorpolitico.dto.RegiaoAtribuicaoRequestDTO;
 import com.gestorpolitico.dto.RegiaoRequestDTO;
 import com.gestorpolitico.dto.RegiaoResponseDTO;
+import com.gestorpolitico.dto.UnificarBairrosRequestDTO;
 import com.gestorpolitico.service.LocalidadeService;
 import jakarta.validation.Valid;
 import java.util.List;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.PostMapping;
 
 @RestController
 @RequestMapping("/api")
@@ -74,10 +74,9 @@ public class LocalidadeController {
     return ResponseEntity.noContent().build();
   }
 
-  @PostMapping("/cidades/{cidadeId}/importar-bairros")
-  public ResponseEntity<ImportacaoBairrosResponseDTO> importarBairros(
-    @PathVariable("cidadeId") Long cidadeId
-  ) {
-    return ResponseEntity.ok(localidadeService.importarBairros(cidadeId));
+  @PostMapping("/bairros/unificar")
+  public ResponseEntity<Void> unificarBairros(@Valid @RequestBody UnificarBairrosRequestDTO dto) {
+    localidadeService.unificarBairros(dto.getBairroPrincipalId(), dto.getBairrosDuplicadosIds());
+    return ResponseEntity.noContent().build();
   }
 }

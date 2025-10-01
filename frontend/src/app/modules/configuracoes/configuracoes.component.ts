@@ -1,11 +1,9 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, Validators } from '@angular/forms';
-import { finalize } from 'rxjs';
 import {
   LocalidadesService,
   Bairro,
   Cidade,
-  ImportacaoBairrosResposta,
   Regiao
 } from '../shared/services/localidades.service';
 
@@ -21,8 +19,8 @@ export class ConfiguracoesComponent implements OnInit {
   bairros: Bairro[] = [];
 
   cidadeSelecionadaId: number | null = null;
-  mensagemImportacao: string | null = null;
-  carregandoImportacao = false;
+  mensagemUnificacao: string | null = null;
+  processandoUnificacao = false;
 
   get possuiRegioesNaoCadastradas(): boolean {
     return this.regioes.some(regiao => regiao.id === null);
@@ -42,6 +40,11 @@ export class ConfiguracoesComponent implements OnInit {
     bairrosIds: [[] as number[]]
   });
 
+  unificacaoForm = this.fb.group({
+    bairroPrincipalId: [null as number | null, Validators.required],
+    bairrosDuplicadosIds: [[] as number[]]
+  });
+
   constructor(
     private readonly localidadesService: LocalidadesService,
     private readonly fb: FormBuilder
@@ -58,10 +61,11 @@ export class ConfiguracoesComponent implements OnInit {
 
   selecionarCidade(cidadeId: number): void {
     this.cidadeSelecionadaId = cidadeId;
-    this.mensagemImportacao = null;
+    this.mensagemUnificacao = null;
     this.regiaoForm.reset();
     this.atribuicaoForm.reset();
     this.regiaoLivreForm.reset();
+    this.unificacaoForm.reset();
     this.carregarRegioes();
     this.carregarBairros();
   }
@@ -84,25 +88,6 @@ export class ConfiguracoesComponent implements OnInit {
     this.localidadesService.listarBairros(this.cidadeSelecionadaId).subscribe(bairros => {
       this.bairros = bairros;
     });
-  }
-
-  importarBairros(): void {
-    if (!this.cidadeSelecionadaId) {
-      return;
-    }
-
-    this.carregandoImportacao = true;
-    this.localidadesService
-      .importarBairros(this.cidadeSelecionadaId)
-      .pipe(finalize(() => (this.carregandoImportacao = false)))
-      .subscribe((resposta: ImportacaoBairrosResposta) => {
-        this.mensagemImportacao =
-          resposta.bairrosInseridos > 0
-            ? `${resposta.bairrosInseridos} bairros importados com sucesso. ${resposta.bairrosIgnorados} já existiam.`
-            : 'Nenhum novo bairro encontrado para importação.';
-        this.carregarBairros();
-        this.carregarRegioes();
-      });
   }
 
   criarRegiao(): void {
@@ -130,6 +115,20 @@ export class ConfiguracoesComponent implements OnInit {
     } else {
       this.regiaoLivreForm.patchValue({ bairrosIds: ids });
     }
+  }
+
+  atualizarDuplicados(event: Event): void {
+    const options = Array.from((event.target as HTMLSelectElement).selectedOptions);
+    const ids = options.map(option => Number(option.value));
+    this.unificacaoForm.patchValue({ bairrosDuplicadosIds: ids });
+  }
+
+  aoAlterarBairroPrincipal(): void {
+    const principalId = this.unificacaoForm.value.bairroPrincipalId ?? null;
+    const duplicados = (this.unificacaoForm.value.bairrosDuplicadosIds ?? []).filter(
+      id => id !== principalId
+    );
+    this.unificacaoForm.patchValue({ bairrosDuplicadosIds: duplicados });
   }
 
   atribuirRegiaoExistente(): void {
@@ -189,6 +188,39 @@ export class ConfiguracoesComponent implements OnInit {
         this.regiaoLivreForm.reset();
         this.carregarBairros();
         this.carregarRegioes();
+      });
+  }
+
+  unificarBairros(): void {
+    if (this.unificacaoForm.invalid) {
+      this.unificacaoForm.markAllAsTouched();
+      return;
+    }
+
+    const bairroPrincipalId = this.unificacaoForm.value.bairroPrincipalId;
+    const bairrosDuplicadosIds = this.unificacaoForm.value.bairrosDuplicadosIds ?? [];
+
+    if (!bairroPrincipalId || bairrosDuplicadosIds.length === 0) {
+      window.alert('Selecione o bairro principal e ao menos um duplicado para unificar.');
+      return;
+    }
+
+    this.mensagemUnificacao = null;
+    this.processandoUnificacao = true;
+    this.localidadesService
+      .unificarBairros({ bairroPrincipalId, bairrosDuplicadosIds })
+      .subscribe({
+        next: () => {
+          this.processandoUnificacao = false;
+          this.mensagemUnificacao = 'Bairros unificados com sucesso.';
+          this.unificacaoForm.reset();
+          this.carregarBairros();
+          this.carregarRegioes();
+        },
+        error: () => {
+          this.processandoUnificacao = false;
+          window.alert('Não foi possível unificar os bairros selecionados. Tente novamente.');
+        }
       });
   }
 }
