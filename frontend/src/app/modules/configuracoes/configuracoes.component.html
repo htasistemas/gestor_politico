@@ -3,37 +3,22 @@
     <div class="flex items-center justify-between mb-6">
       <div>
         <h1 class="text-2xl font-bold text-gray-900">Configurações de Localidades</h1>
-        <p class="text-sm text-gray-500">Importe bairros de fontes oficiais e gerencie as regiões da cidade selecionada.</p>
+        <p class="text-sm text-gray-500">Gerencie bairros e regiões da cidade selecionada.</p>
       </div>
       <svg class="w-12 h-12 text-indigo-500" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h7" />
       </svg>
     </div>
 
-    <div class="grid md:grid-cols-3 gap-6">
-      <div class="md:col-span-2">
-        <label class="block text-sm font-medium text-gray-700">Cidade em edição</label>
-        <select
-          class="mt-1 w-full rounded-xl border-gray-200 focus:border-indigo-500 focus:ring-indigo-500"
-          [ngModel]="cidadeSelecionadaId"
-          (ngModelChange)="selecionarCidade($event)"
-        >
-          <option *ngFor="let cidade of cidades" [ngValue]="cidade.id">{{ cidade.nome }} - {{ cidade.uf }}</option>
-        </select>
-      </div>
-      <div class="flex items-end">
-        <button
-          class="w-full px-4 py-3 rounded-xl bg-indigo-600 text-white font-semibold hover:bg-indigo-700 transition"
-          type="button"
-          (click)="importarBairros()"
-        >
-          {{ carregandoImportacao ? 'Importando...' : 'Importar bairros' }}
-        </button>
-      </div>
-    </div>
-
-    <div *ngIf="mensagemImportacao" class="mt-4 p-4 rounded-xl bg-blue-50 border border-blue-200 text-blue-700">
-      {{ mensagemImportacao }}
+    <div>
+      <label class="block text-sm font-medium text-gray-700">Cidade em edição</label>
+      <select
+        class="mt-1 w-full rounded-xl border-gray-200 focus:border-indigo-500 focus:ring-indigo-500"
+        [ngModel]="cidadeSelecionadaId"
+        (ngModelChange)="selecionarCidade($event)"
+      >
+        <option *ngFor="let cidade of cidades" [ngValue]="cidade.id">{{ cidade.nome }} - {{ cidade.uf }}</option>
+      </select>
     </div>
   </div>
 
@@ -110,6 +95,51 @@
         </div>
       </form>
     </div>
+  </div>
+
+  <div class="bg-white rounded-3xl shadow-xl p-8 space-y-6">
+    <h2 class="text-xl font-semibold text-gray-900">Unificar bairros duplicados</h2>
+    <form [formGroup]="unificacaoForm" (ngSubmit)="unificarBairros()" class="space-y-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-700">Bairro principal *</label>
+        <select
+          formControlName="bairroPrincipalId"
+          class="mt-1 w-full rounded-xl border-gray-200 focus:border-indigo-500 focus:ring-indigo-500"
+          (change)="aoAlterarBairroPrincipal()"
+        >
+          <option [ngValue]="null">Selecione o bairro principal</option>
+          <option *ngFor="let bairro of bairros" [ngValue]="bairro.id">
+            {{ bairro.nome }} <span *ngIf="bairro.regiao" class="text-gray-400">- {{ bairro.regiao }}</span>
+          </option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700">Bairros duplicados *</label>
+        <select
+          multiple
+          class="mt-1 w-full h-40 rounded-xl border-gray-200 focus:border-indigo-500 focus:ring-indigo-500"
+          (change)="atualizarDuplicados($event)"
+        >
+          <option
+            *ngFor="let bairro of bairros"
+            [value]="bairro.id"
+            [disabled]="bairro.id === unificacaoForm.value.bairroPrincipalId"
+          >
+            {{ bairro.nome }} <span *ngIf="bairro.regiao" class="text-gray-400">- {{ bairro.regiao }}</span>
+          </option>
+        </select>
+        <p class="mt-1 text-xs text-gray-400">Os bairros selecionados terão seus registros migrados para o bairro principal.</p>
+      </div>
+      <div class="flex flex-wrap items-center gap-4 justify-end">
+        <span *ngIf="mensagemUnificacao" class="text-sm text-green-600">{{ mensagemUnificacao }}</span>
+        <button
+          type="submit"
+          class="px-4 py-2 rounded-xl bg-red-600 text-white font-semibold hover:bg-red-700 transition"
+        >
+          {{ processandoUnificacao ? 'Unificando...' : 'Unificar bairros' }}
+        </button>
+      </div>
+    </form>
   </div>
 
   <div class="bg-white rounded-3xl shadow-xl p-8 space-y-6">

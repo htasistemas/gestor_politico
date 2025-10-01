@@ -591,11 +591,6 @@ export class NovaFamiliaComponent implements OnInit {
   private montarPayload(): FamiliaPayload {
     const membros = this.membros.map(membro => this.mapearMembroPayload(membro));
 
-    const bairroSelecionado = this.enderecoFamilia.bairroSelecionado;
-    const bairroId =
-      bairroSelecionado && bairroSelecionado !== this.valorNovoBairro ? Number(bairroSelecionado) : null;
-    const novoBairro =
-      bairroSelecionado === this.valorNovoBairro ? this.enderecoFamilia.novoBairro.trim() || null : null;
     const regiaoSelecionada = this.enderecoFamilia.regiaoSelecionada;
     const novaRegiao =
       regiaoSelecionada === this.valorNovaRegiao
@@ -607,8 +602,6 @@ export class NovaFamiliaComponent implements OnInit {
       rua: this.enderecoFamilia.rua.trim(),
       numero: this.enderecoFamilia.numero.trim(),
       cidadeId: this.enderecoFamilia.cidadeId!,
-      bairroId,
-      novoBairro,
       novaRegiao,
       telefone: this.familia.telefone.trim(),
       membros
