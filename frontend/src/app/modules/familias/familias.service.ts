@@ -19,6 +19,7 @@ export interface FamiliaPayload {
   numero: string;
   cidadeId: number;
   novaRegiao: string | null;
+  telefone: string;
   membros: FamiliaMembroPayload[];
 }
 

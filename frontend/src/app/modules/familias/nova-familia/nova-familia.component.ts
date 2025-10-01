@@ -57,6 +57,7 @@ interface FamiliaEnderecoForm {
   novaRegiao: string;
   bairroSelecionado: string | null;
   novoBairro: string;
+  telefone: string;
   regiaoBloqueada: boolean;
   atualizandoRegiao: boolean;
   carregandoCep: boolean;
@@ -72,6 +73,7 @@ interface PreviaFamilia {
   regiao: string;
   cidade: string;
   cep: string;
+  telefone: string;
   membros: PreviaMembro[];
 }
 
@@ -175,6 +177,10 @@ export class NovaFamiliaComponent implements OnInit {
               : membro.parentesco
         };
       });
+      const telefoneResponsavel = this.membros[indice].telefone?.trim();
+      if (telefoneResponsavel && !this.enderecoFamilia.telefone.trim()) {
+        this.atualizarTelefoneFamilia(telefoneResponsavel);
+      }
       return;
     }
 
@@ -713,6 +719,7 @@ export class NovaFamiliaComponent implements OnInit {
       novaRegiao: '',
       bairroSelecionado: null,
       novoBairro: '',
+      telefone: '',
       regiaoBloqueada: false,
       atualizandoRegiao: false,
       carregandoCep: false,
@@ -731,6 +738,8 @@ export class NovaFamiliaComponent implements OnInit {
     const novoBairro = this.normalizarTexto(this.enderecoFamilia.novoBairro);
     const regiaoSelecionada = this.enderecoFamilia.regiaoSelecionada;
     const novaRegiao = this.normalizarTexto(this.enderecoFamilia.novaRegiao);
+    const telefoneFamilia = this.enderecoFamilia.telefone.trim();
+    const telefoneSanitizado = this.obterTelefoneLimpo(telefoneFamilia);
 
     if (!rua || !numero) {
       window.alert('Por favor, preencha rua e número da família.');
@@ -754,6 +763,11 @@ export class NovaFamiliaComponent implements OnInit {
 
     if (regiaoSelecionada === this.valorNovaRegiao && !novaRegiao) {
       window.alert('Informe o nome da nova região da família.');
+      return false;
+    }
+
+    if (!telefoneSanitizado) {
+      window.alert('Informe um telefone de contato válido para a família.');
       return false;
     }
 
@@ -788,6 +802,10 @@ export class NovaFamiliaComponent implements OnInit {
       regiaoSelecionada === this.valorNovaRegiao
         ? this.enderecoFamilia.novaRegiao.trim() || null
         : regiaoSelecionada?.trim() || null;
+    const telefoneSanitizado = this.obterTelefoneLimpo(this.enderecoFamilia.telefone);
+    if (!telefoneSanitizado) {
+      throw new Error('Telefone da família inválido.');
+    }
 
     return {
       cep: this.enderecoFamilia.cep ? this.enderecoFamilia.cep.trim() : null,
@@ -795,6 +813,7 @@ export class NovaFamiliaComponent implements OnInit {
       numero: this.enderecoFamilia.numero.trim(),
       cidadeId: this.enderecoFamilia.cidadeId!,
       novaRegiao,
+      telefone: telefoneSanitizado,
       membros
     };
   }
@@ -814,6 +833,10 @@ export class NovaFamiliaComponent implements OnInit {
   atualizarTelefoneMembro(indice: number, valor: string): void {
     const telefoneFormatado = this.aplicarMascaraTelefone(valor);
     this.membros[indice].telefone = telefoneFormatado;
+  }
+
+  atualizarTelefoneFamilia(valor: string): void {
+    this.enderecoFamilia.telefone = this.aplicarMascaraTelefone(valor);
   }
 
   private aplicarMascaraTelefone(valor: string): string {
@@ -885,6 +908,7 @@ export class NovaFamiliaComponent implements OnInit {
     const regiao = this.obterDescricaoRegiaoFamilia();
     const cidade = this.obterDescricaoCidadeFamilia() || 'Cidade não informada';
     const cep = this.enderecoFamilia.cep.trim();
+    const telefone = this.enderecoFamilia.telefone.trim();
 
     return {
       responsavelPrincipal: this.obterResponsavelPrincipal(),
@@ -893,6 +917,7 @@ export class NovaFamiliaComponent implements OnInit {
       regiao,
       cidade,
       cep,
+      telefone,
       membros
     };
   }
