@@ -29,6 +29,10 @@ export class LocalidadesService {
     return this.http.get<Cidade[]>(buildApiUrl('/cidades'));
   }
 
+  criarCidade(payload: { nome: string; uf: string }): Observable<Cidade> {
+    return this.http.post<Cidade>(buildApiUrl('/cidades'), payload);
+  }
+
   listarBairros(cidadeId: number, regiao?: string | null): Observable<Bairro[]> {
     let params = new HttpParams();
     if (regiao) {

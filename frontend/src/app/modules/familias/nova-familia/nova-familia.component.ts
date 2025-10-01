@@ -59,6 +59,8 @@ interface FamiliaEnderecoForm {
   novaRegiao: string;
   bairroSelecionado: string | null;
   novoBairro: string;
+  regiaoBloqueada: boolean;
+  atualizandoRegiao: boolean;
   carregandoCep: boolean;
   erroCep: string | null;
   regioes: Regiao[];
@@ -201,6 +203,8 @@ export class NovaFamiliaComponent implements OnInit {
       this.enderecoFamilia.novaRegiao = '';
       this.enderecoFamilia.bairroSelecionado = null;
       this.enderecoFamilia.novoBairro = '';
+      this.enderecoFamilia.regiaoBloqueada = false;
+      this.enderecoFamilia.atualizandoRegiao = false;
       this.novaRegiaoGeradaPorCep = false;
       this.novoBairroGeradoPorCep = false;
       return;
@@ -210,7 +214,18 @@ export class NovaFamiliaComponent implements OnInit {
   }
 
   aoAlterarRegiaoFamilia(valor: string | null): void {
+    if (this.enderecoFamilia.regiaoBloqueada) {
+      this.enderecoFamilia.regiaoSelecionada = this.obterRegiaoAtualDoBairro();
+      return;
+    }
+
     this.enderecoFamilia.regiaoSelecionada = valor && valor !== '' ? valor : null;
+
+    if (!this.enderecoFamilia.regiaoSelecionada) {
+      this.enderecoFamilia.novaRegiao = '';
+      return;
+    }
+
     if (this.enderecoFamilia.regiaoSelecionada === this.valorNovaRegiao) {
       if (!this.ehAdministrador && !this.novaRegiaoGeradaPorCep) {
         window.alert(
@@ -220,17 +235,22 @@ export class NovaFamiliaComponent implements OnInit {
         return;
       }
       this.enderecoFamilia.novaRegiao = '';
-      this.enderecoFamilia.bairroSelecionado = this.valorNovoBairro;
-      this.enderecoFamilia.bairros = [];
-    } else {
-      this.enderecoFamilia.novaRegiao = '';
-      this.aplicarBairrosFamilia();
-      this.novaRegiaoGeradaPorCep = false;
+      return;
+    }
+
+    this.enderecoFamilia.novaRegiao = '';
+    if (
+      this.enderecoFamilia.bairroSelecionado &&
+      this.enderecoFamilia.bairroSelecionado !== this.valorNovoBairro
+    ) {
+      this.vincularBairroARegiao(this.enderecoFamilia.regiaoSelecionada);
     }
   }
 
   aoAlterarBairroFamilia(valor: string | null): void {
     this.enderecoFamilia.bairroSelecionado = valor && valor !== '' ? valor : null;
+    this.enderecoFamilia.atualizandoRegiao = false;
+
     if (this.enderecoFamilia.bairroSelecionado === this.valorNovoBairro) {
       if (!this.ehAdministrador && !this.novoBairroGeradoPorCep) {
         window.alert(
@@ -240,9 +260,32 @@ export class NovaFamiliaComponent implements OnInit {
         return;
       }
       this.enderecoFamilia.novoBairro = '';
-    } else {
+      this.enderecoFamilia.regiaoSelecionada = null;
+      this.enderecoFamilia.regiaoBloqueada = false;
+      this.enderecoFamilia.novaRegiao = '';
+      return;
+    }
+
+    if (!this.enderecoFamilia.bairroSelecionado) {
       this.enderecoFamilia.novoBairro = '';
-      this.novoBairroGeradoPorCep = false;
+      this.enderecoFamilia.regiaoSelecionada = null;
+      this.enderecoFamilia.regiaoBloqueada = false;
+      this.enderecoFamilia.novaRegiao = '';
+      return;
+    }
+
+    const bairroSelecionado = this.obterBairroSelecionado();
+    this.enderecoFamilia.novoBairro = '';
+    this.novoBairroGeradoPorCep = false;
+
+    if (bairroSelecionado?.regiao) {
+      this.enderecoFamilia.regiaoSelecionada = bairroSelecionado.regiao;
+      this.enderecoFamilia.regiaoBloqueada = true;
+      this.enderecoFamilia.novaRegiao = '';
+    } else {
+      this.enderecoFamilia.regiaoSelecionada = null;
+      this.enderecoFamilia.regiaoBloqueada = false;
+      this.enderecoFamilia.novaRegiao = '';
     }
   }
 
@@ -279,6 +322,8 @@ export class NovaFamiliaComponent implements OnInit {
     this.enderecoFamilia.novaRegiao = '';
     this.enderecoFamilia.bairroSelecionado = null;
     this.enderecoFamilia.novoBairro = '';
+    this.enderecoFamilia.regiaoBloqueada = false;
+    this.enderecoFamilia.atualizandoRegiao = false;
     this.novaRegiaoGeradaPorCep = false;
     this.novoBairroGeradoPorCep = false;
     this.carregarRegioesFamilia(cidadeId);
@@ -295,21 +340,34 @@ export class NovaFamiliaComponent implements OnInit {
 
     this.enderecoFamilia.erroCep = null;
 
-    const cidadeEncontrada = this.cidades.find(cidade => {
-      const mesmoNome = this.normalizarTexto(cidade.nome) === this.normalizarTexto(resposta.localidade ?? '');
-      const mesmaUf = cidade.uf.toUpperCase() === (resposta.uf ?? '').toUpperCase();
-      return mesmoNome && mesmaUf;
-    });
+    const nomeCidade = resposta.localidade?.trim() ?? '';
+    const uf = resposta.uf?.trim().toUpperCase() ?? '';
 
-    if (!cidadeEncontrada) {
-      this.enderecoFamilia.erroCep = 'Cidade do CEP não cadastrada. Preencha os dados manualmente.';
+    if (!nomeCidade || !uf) {
+      this.enderecoFamilia.erroCep = 'Cidade ou UF não informados pelo CEP consultado.';
       return;
     }
 
-    this.definirCidadeFamilia(cidadeEncontrada.id);
-    this.carregarBairrosFamilia(cidadeEncontrada.id, () => {
-      this.definirBairroFamiliaPorNome(resposta.bairro);
-    });
+    const cidadeSimilar = this.encontrarCidadeSimilar(nomeCidade, uf);
+    if (cidadeSimilar) {
+      this.aplicarCidadeDoCep(cidadeSimilar, resposta.bairro);
+      return;
+    }
+
+    this.enderecoFamilia.carregandoCep = true;
+    this.localidadesService
+      .criarCidade({ nome: nomeCidade, uf })
+      .subscribe({
+        next: cidade => {
+          this.enderecoFamilia.carregandoCep = false;
+          this.adicionarCidadeOrdenada(cidade);
+          this.aplicarCidadeDoCep(cidade, resposta.bairro);
+        },
+        error: () => {
+          this.enderecoFamilia.carregandoCep = false;
+          this.enderecoFamilia.erroCep = 'Não foi possível cadastrar a cidade retornada pelo CEP.';
+        }
+      });
   }
 
   private carregarRegioesFamilia(cidadeId: number): void {
@@ -323,6 +381,45 @@ export class NovaFamiliaComponent implements OnInit {
       const ordenadas = [...regioes].sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
       this.regioesCache.set(cidadeId, ordenadas);
       this.enderecoFamilia.regioes = ordenadas;
+    });
+  }
+
+  private encontrarCidadeSimilar(nomeCidade: string, uf: string): Cidade | undefined {
+    const cidadeNormalizada = this.normalizarTexto(nomeCidade);
+    const ufNormalizada = uf.toUpperCase();
+
+    const exata = this.cidades.find(cidade => {
+      const mesmoNome = this.normalizarTexto(cidade.nome) === cidadeNormalizada;
+      const mesmaUf = cidade.uf.toUpperCase() === ufNormalizada;
+      return mesmoNome && mesmaUf;
+    });
+
+    if (exata) {
+      return exata;
+    }
+
+    return this.cidades.find(cidade => {
+      if (cidade.uf.toUpperCase() !== ufNormalizada) {
+        return false;
+      }
+      const nomeNormalizado = this.normalizarTexto(cidade.nome);
+      return nomeNormalizado.includes(cidadeNormalizada) || cidadeNormalizada.includes(nomeNormalizado);
+    });
+  }
+
+  private adicionarCidadeOrdenada(cidade: Cidade): void {
+    const existe = this.cidades.some(item => item.id === cidade.id);
+    if (existe) {
+      return;
+    }
+
+    this.cidades = [...this.cidades, cidade].sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
+  }
+
+  private aplicarCidadeDoCep(cidade: Cidade, bairro: string | undefined): void {
+    this.definirCidadeFamilia(cidade.id);
+    this.carregarBairrosFamilia(cidade.id, () => {
+      this.definirBairroFamiliaPorNome(bairro);
     });
   }
 
@@ -351,7 +448,11 @@ export class NovaFamiliaComponent implements OnInit {
     }
 
     const todos = this.bairrosCache.get(cidadeId) ?? [];
-    if (!this.enderecoFamilia.regiaoSelecionada || this.enderecoFamilia.regiaoSelecionada === this.valorNovaRegiao) {
+    if (
+      !this.enderecoFamilia.regiaoSelecionada ||
+      this.enderecoFamilia.regiaoSelecionada === this.valorNovaRegiao ||
+      this.enderecoFamilia.regiaoBloqueada
+    ) {
       this.enderecoFamilia.bairros = [...todos];
     } else {
       const regiaoNormalizada = this.normalizarTexto(this.enderecoFamilia.regiaoSelecionada);
@@ -369,6 +470,104 @@ export class NovaFamiliaComponent implements OnInit {
         this.enderecoFamilia.bairroSelecionado = null;
       }
     }
+
+    this.atualizarEstadoRegiaoParaBairroSelecionado();
+  }
+
+  private obterIdBairroSelecionado(): number | null {
+    if (
+      !this.enderecoFamilia.bairroSelecionado ||
+      this.enderecoFamilia.bairroSelecionado === this.valorNovoBairro
+    ) {
+      return null;
+    }
+
+    const id = Number(this.enderecoFamilia.bairroSelecionado);
+    return Number.isNaN(id) ? null : id;
+  }
+
+  private obterBairroSelecionado(): Bairro | undefined {
+    const cidadeId = this.enderecoFamilia.cidadeId;
+    const bairroId = this.obterIdBairroSelecionado();
+    if (!cidadeId || !bairroId) {
+      return undefined;
+    }
+
+    const todos = this.bairrosCache.get(cidadeId) ?? [];
+    return todos.find(item => item.id === bairroId);
+  }
+
+  private obterRegiaoAtualDoBairro(): string | null {
+    const bairro = this.obterBairroSelecionado();
+    return bairro?.regiao ?? null;
+  }
+
+  private atualizarEstadoRegiaoParaBairroSelecionado(): void {
+    const bairro = this.obterBairroSelecionado();
+    if (!bairro) {
+      return;
+    }
+
+    if (bairro.regiao) {
+      this.enderecoFamilia.regiaoSelecionada = bairro.regiao;
+      this.enderecoFamilia.regiaoBloqueada = true;
+    } else {
+      this.enderecoFamilia.regiaoBloqueada = false;
+    }
+  }
+
+  private vincularBairroARegiao(regiaoNome: string): void {
+    const bairroId = this.obterIdBairroSelecionado();
+    if (!bairroId) {
+      return;
+    }
+
+    const regiaoNormalizada = this.normalizarTexto(regiaoNome);
+    const regiao = this.enderecoFamilia.regioes.find(
+      item => this.normalizarTexto(item.nome) === regiaoNormalizada
+    );
+
+    const payload = {
+      bairrosIds: [bairroId],
+      regiaoId: regiao?.id ?? null,
+      nomeRegiaoLivre: regiao?.id ? null : regiaoNome
+    };
+
+    this.enderecoFamilia.atualizandoRegiao = true;
+    this.localidadesService.atualizarRegiaoBairros(payload).subscribe({
+      next: () => {
+        this.enderecoFamilia.atualizandoRegiao = false;
+        this.enderecoFamilia.regiaoBloqueada = true;
+        this.enderecoFamilia.regiaoSelecionada = regiaoNome;
+        this.novaRegiaoGeradaPorCep = false;
+        this.atualizarRegiaoCacheParaBairro(bairroId, regiaoNome);
+      },
+      error: () => {
+        this.enderecoFamilia.atualizandoRegiao = false;
+        window.alert('Não foi possível vincular o bairro à região selecionada. Tente novamente.');
+        this.enderecoFamilia.regiaoSelecionada = null;
+        this.enderecoFamilia.regiaoBloqueada = false;
+      }
+    });
+  }
+
+  private atualizarRegiaoCacheParaBairro(bairroId: number, regiaoNome: string): void {
+    const cidadeId = this.enderecoFamilia.cidadeId;
+    if (!cidadeId) {
+      return;
+    }
+
+    const cache = this.bairrosCache.get(cidadeId);
+    if (cache) {
+      const atualizados = cache.map(bairro =>
+        bairro.id === bairroId ? { ...bairro, regiao: regiaoNome } : bairro
+      );
+      this.bairrosCache.set(cidadeId, atualizados);
+    }
+
+    this.enderecoFamilia.bairros = this.enderecoFamilia.bairros.map(bairro =>
+      bairro.id === bairroId ? { ...bairro, regiao: regiaoNome } : bairro
+    );
   }
 
   private definirBairroFamiliaPorNome(nomeBairro: string | undefined): void {
@@ -377,9 +576,11 @@ export class NovaFamiliaComponent implements OnInit {
       return;
     }
 
+    this.enderecoFamilia.atualizandoRegiao = false;
     const todos = this.bairrosCache.get(cidadeId) ?? [];
     if (!nomeBairro) {
       this.enderecoFamilia.regiaoSelecionada = null;
+      this.enderecoFamilia.regiaoBloqueada = false;
       this.aplicarBairrosFamilia();
       this.enderecoFamilia.bairroSelecionado = this.valorNovoBairro;
       this.enderecoFamilia.novoBairro = '';
@@ -392,6 +593,7 @@ export class NovaFamiliaComponent implements OnInit {
 
     if (bairroEncontrado) {
       this.enderecoFamilia.regiaoSelecionada = bairroEncontrado.regiao ?? null;
+      this.enderecoFamilia.regiaoBloqueada = Boolean(bairroEncontrado.regiao);
       this.enderecoFamilia.novaRegiao = '';
       this.aplicarBairrosFamilia();
       this.enderecoFamilia.bairroSelecionado = String(bairroEncontrado.id);
@@ -400,6 +602,7 @@ export class NovaFamiliaComponent implements OnInit {
       this.novaRegiaoGeradaPorCep = false;
     } else {
       this.enderecoFamilia.regiaoSelecionada = null;
+      this.enderecoFamilia.regiaoBloqueada = false;
       this.aplicarBairrosFamilia();
       this.enderecoFamilia.bairroSelecionado = this.valorNovoBairro;
       this.enderecoFamilia.novoBairro = nomeBairro;
@@ -513,6 +716,8 @@ export class NovaFamiliaComponent implements OnInit {
       novaRegiao: '',
       bairroSelecionado: null,
       novoBairro: '',
+      regiaoBloqueada: false,
+      atualizandoRegiao: false,
       carregandoCep: false,
       erroCep: null,
       regioes: [],
