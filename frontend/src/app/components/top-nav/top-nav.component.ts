@@ -90,6 +90,12 @@ export class TopNavComponent implements OnDestroy {
         icon: 'M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 4.34l1.63 1.27a.5.5 0 01-.03.79l-1.94 1.12c-.14.77-',
         route: '/configuracoes'
       });
+      itensBase.push({
+        label: 'GeoReferenciamento',
+        description: 'Mapa das famílias cadastradas',
+        icon: 'M12 11c1.657 0 3-1.343 3-3S13.657 5 12 5s-3 1.343-3 3 1.343 3 3 3zm0 2c-2.21 0-4 1.79-4 4v3h8v-3c0-2.21-1.79-4-4-4zm9-2h-1a1 1 0 01-1-1V9a1 1 0 012 0v1zm-16 0H4a1 1 0 01-1-1V9a1 1 0 012 0v1z',
+        route: '/georreferenciamento'
+      });
     }
 
     return itensBase;

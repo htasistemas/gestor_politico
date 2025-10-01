@@ -1,0 +1,62 @@
+:host {
+  display: block;
+}
+
+.mapa-container {
+  height: 600px;
+  border-radius: 1.5rem;
+  overflow: hidden;
+  box-shadow: inset 0 0 0 1px rgba(15, 118, 110, 0.08);
+}
+
+.popup-conteudo {
+  max-width: 220px;
+  font-size: 0.875rem;
+  color: #1f2937;
+}
+
+.popup-conteudo strong {
+  display: block;
+  font-size: 1rem;
+  margin-bottom: 0.25rem;
+}
+
+.popup-endereco {
+  color: #4b5563;
+  margin-bottom: 0.5rem;
+}
+
+.popup-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-weight: 600;
+  color: #047857;
+  text-decoration: none;
+}
+
+.popup-link:hover {
+  text-decoration: underline;
+}
+
+.popup-link .fa-solid {
+  font-size: 0.75rem;
+}
+
+.familia-marker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #10b981, #047857);
+  color: #fff;
+  border: 3px solid #fff;
+  box-shadow: 0 10px 15px -3px rgba(4, 120, 87, 0.35);
+}
+
+.familia-marker .fa-solid {
+  font-size: 1rem;
+  filter: drop-shadow(0 2px 4px rgba(15, 23, 42, 0.35));
+}

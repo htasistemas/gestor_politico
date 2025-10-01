@@ -81,6 +81,7 @@
           <div
             *ngFor="let familia of familias"
             class="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm hover:shadow-md transition-all"
+            [ngClass]="{ 'border-2 border-emerald-400 shadow-xl': familia.id === familiaSelecionadaId }"
           >
             <div class="flex items-start justify-between">
               <div>
