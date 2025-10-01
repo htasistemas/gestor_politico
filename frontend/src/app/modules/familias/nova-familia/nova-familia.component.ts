@@ -7,7 +7,6 @@ import { AuthService } from '../../shared/services/auth.service';
 
 const VALOR_NOVA_REGIAO = '__nova__';
 const VALOR_NOVO_BAIRRO = '__novo__';
-
 type ProbabilidadeVoto = 'Alta' | 'Média' | 'Baixa' | '';
 
 type GrauParentesco =
@@ -23,8 +22,11 @@ type GrauParentesco =
   | 'Cônjuge'
   | 'Avô(ó)'
   | 'Enteado(a)'
+  | 'Responsável pela família'
   | 'Outro'
   | '';
+
+const PARENTESCO_RESPONSAVEL: GrauParentesco = 'Responsável pela família';
 
 interface MembroFamiliaForm {
   nome: string;
@@ -57,7 +59,6 @@ interface FamiliaEnderecoForm {
   novaRegiao: string;
   bairroSelecionado: string | null;
   novoBairro: string;
-  preenchimentoManual: boolean;
   carregandoCep: boolean;
   erroCep: string | null;
   regioes: Regiao[];
@@ -71,7 +72,6 @@ interface PreviaFamilia {
   regiao: string;
   cidade: string;
   cep: string;
-  telefone: string;
   membros: PreviaMembro[];
 }
 
@@ -85,10 +85,6 @@ export class NovaFamiliaComponent implements OnInit {
   readonly valorNovaRegiao = VALOR_NOVA_REGIAO;
   readonly valorNovoBairro = VALOR_NOVO_BAIRRO;
   readonly ehAdministrador: boolean;
-
-  familia = {
-    telefone: ''
-  };
 
   enderecoFamilia: FamiliaEnderecoForm = this.criarEnderecoFamilia();
   novaRegiaoGeradaPorCep = false;
@@ -161,15 +157,24 @@ export class NovaFamiliaComponent implements OnInit {
     this.membros.splice(indice, 1);
     if (!this.membros.some(membro => membro.responsavel)) {
       this.membros[0].responsavel = true;
+      this.membros[0].parentesco = PARENTESCO_RESPONSAVEL;
     }
   }
 
   definirResponsavel(indice: number, selecionado: boolean): void {
     if (selecionado) {
-      this.membros = this.membros.map((membro, posicao) => ({
-        ...membro,
-        responsavel: posicao === indice
-      }));
+      this.membros = this.membros.map((membro, posicao) => {
+        const responsavel = posicao === indice;
+        return {
+          ...membro,
+          responsavel,
+          parentesco: responsavel
+            ? PARENTESCO_RESPONSAVEL
+            : membro.parentesco === PARENTESCO_RESPONSAVEL
+              ? ''
+              : membro.parentesco
+        };
+      });
       return;
     }
 
@@ -177,10 +182,14 @@ export class NovaFamiliaComponent implements OnInit {
     if (!existeOutroResponsavel) {
       window.alert('A família precisa ter um responsável principal.');
       this.membros[indice].responsavel = true;
+      this.membros[indice].parentesco = PARENTESCO_RESPONSAVEL;
       return;
     }
 
     this.membros[indice].responsavel = false;
+    if (this.membros[indice].parentesco === PARENTESCO_RESPONSAVEL) {
+      this.membros[indice].parentesco = '';
+    }
   }
 
   aoAlterarCidadeFamilia(cidadeId: number | null): void {
@@ -237,15 +246,6 @@ export class NovaFamiliaComponent implements OnInit {
     }
   }
 
-  alternarPreenchimentoManualFamilia(): void {
-    this.enderecoFamilia.preenchimentoManual = !this.enderecoFamilia.preenchimentoManual;
-    if (this.enderecoFamilia.preenchimentoManual) {
-      this.enderecoFamilia.erroCep = null;
-    }
-    this.novoBairroGeradoPorCep = false;
-    this.novaRegiaoGeradaPorCep = false;
-  }
-
   buscarCepFamilia(): void {
     const cepLimpo = this.enderecoFamilia.cep.replace(/\D/g, '');
     if (cepLimpo.length !== 8) {
@@ -259,8 +259,7 @@ export class NovaFamiliaComponent implements OnInit {
       next: resposta => {
         this.enderecoFamilia.carregandoCep = false;
         if (!resposta) {
-          this.enderecoFamilia.erroCep = 'CEP não encontrado. Preencha manualmente.';
-          this.enderecoFamilia.preenchimentoManual = true;
+          this.enderecoFamilia.erroCep = 'CEP não encontrado. Preencha os dados manualmente.';
           return;
       }
       this.aplicarDadosViaCepFamilia(resposta);
@@ -294,7 +293,6 @@ export class NovaFamiliaComponent implements OnInit {
       this.enderecoFamilia.rua = resposta.logradouro;
     }
 
-    this.enderecoFamilia.preenchimentoManual = false;
     this.enderecoFamilia.erroCep = null;
 
     const cidadeEncontrada = this.cidades.find(cidade => {
@@ -304,8 +302,7 @@ export class NovaFamiliaComponent implements OnInit {
     });
 
     if (!cidadeEncontrada) {
-      this.enderecoFamilia.preenchimentoManual = true;
-      this.enderecoFamilia.erroCep = 'Cidade do CEP não cadastrada. Preencha manualmente.';
+      this.enderecoFamilia.erroCep = 'Cidade do CEP não cadastrada. Preencha os dados manualmente.';
       return;
     }
 
@@ -483,7 +480,7 @@ export class NovaFamiliaComponent implements OnInit {
       return;
     }
 
-    const somenteNumeros = telefone.replace(/\D/g, '');
+    const somenteNumeros = this.obterTelefoneLimpo(telefone);
     if (!somenteNumeros) {
       window.alert('Telefone inválido para contato via WhatsApp.');
       return;
@@ -499,7 +496,7 @@ export class NovaFamiliaComponent implements OnInit {
       cpf: '',
       nascimento: '',
       profissao: '',
-      parentesco: '',
+      parentesco: responsavelPrincipal ? PARENTESCO_RESPONSAVEL : '',
       responsavel: responsavelPrincipal,
       probabilidade: '',
       telefone: ''
@@ -516,7 +513,6 @@ export class NovaFamiliaComponent implements OnInit {
       novaRegiao: '',
       bairroSelecionado: null,
       novoBairro: '',
-      preenchimentoManual: false,
       carregandoCep: false,
       erroCep: null,
       regioes: [],
@@ -526,7 +522,6 @@ export class NovaFamiliaComponent implements OnInit {
 
 
   private formularioValido(): boolean {
-    const telefone = this.normalizarTexto(this.familia.telefone);
     const rua = this.normalizarTexto(this.enderecoFamilia.rua);
     const numero = this.normalizarTexto(this.enderecoFamilia.numero);
     const cidadeId = this.enderecoFamilia.cidadeId;
@@ -535,8 +530,8 @@ export class NovaFamiliaComponent implements OnInit {
     const regiaoSelecionada = this.enderecoFamilia.regiaoSelecionada;
     const novaRegiao = this.normalizarTexto(this.enderecoFamilia.novaRegiao);
 
-    if (!rua || !numero || !telefone) {
-      window.alert('Por favor, preencha rua, número e telefone da família.');
+    if (!rua || !numero) {
+      window.alert('Por favor, preencha rua e número da família.');
       return false;
     }
 
@@ -567,8 +562,9 @@ export class NovaFamiliaComponent implements OnInit {
       const probabilidade = this.normalizarTexto(membro.probabilidade);
       const parentesco = this.normalizarTexto(membro.parentesco);
       const cpf = membro.cpf.replace(/\D/g, '');
+      const responsavel = this.normalizarResponsavel(membro.responsavel);
 
-      if (!nome || !nascimento || !probabilidade || !parentesco) {
+      if (!nome || !nascimento || !probabilidade || (!responsavel && !parentesco)) {
         window.alert(`Preencha todos os campos obrigatórios do ${indice + 1}º membro da família.`);
         return false;
       }
@@ -610,7 +606,6 @@ export class NovaFamiliaComponent implements OnInit {
       bairroId,
       novoBairro,
       novaRegiao,
-      telefone: this.familia.telefone.trim(),
       membros
     };
   }
@@ -621,11 +616,67 @@ export class NovaFamiliaComponent implements OnInit {
       cpf: membro.cpf.replace(/\D/g, ''),
       dataNascimento: membro.nascimento || null,
       profissao: membro.profissao ? membro.profissao.trim() : null,
-      parentesco: membro.parentesco,
+      parentesco: membro.responsavel ? PARENTESCO_RESPONSAVEL : membro.parentesco,
       responsavelPrincipal: membro.responsavel,
       probabilidadeVoto: membro.probabilidade,
-      telefone: membro.telefone ? membro.telefone.trim() : null
+      telefone: this.obterTelefoneLimpo(membro.telefone)
     };
+  }
+
+  atualizarTelefoneMembro(indice: number, valor: string): void {
+    const telefoneFormatado = this.aplicarMascaraTelefone(valor);
+    this.membros[indice].telefone = telefoneFormatado;
+  }
+
+  private aplicarMascaraTelefone(valor: string): string {
+    const numeros = valor.replace(/\D/g, '').slice(0, 11);
+    if (!numeros) {
+      return '';
+    }
+
+    if (numeros.length <= 10) {
+      return numeros.replace(/(\d{0,2})(\d{0,4})(\d{0,4})/, (_, ddd, parte1, parte2) => {
+        let resultado = '';
+        if (ddd) {
+          resultado += `(${ddd}`;
+          if (ddd.length === 2) {
+            resultado += ') ';
+          }
+        }
+        if (parte1) {
+          resultado += parte1;
+        }
+        if (parte2) {
+          resultado += `-${parte2}`;
+        }
+        return resultado.trim();
+      });
+    }
+
+    return numeros.replace(/(\d{0,2})(\d{0,5})(\d{0,4})/, (_, ddd, parte1, parte2) => {
+      let resultado = '';
+      if (ddd) {
+        resultado += `(${ddd}`;
+        if (ddd.length === 2) {
+          resultado += ') ';
+        }
+      }
+      if (parte1) {
+        resultado += parte1;
+      }
+      if (parte2) {
+        resultado += `-${parte2}`;
+      }
+      return resultado.trim();
+    });
+  }
+
+  private obterTelefoneLimpo(telefone: string): string | null {
+    if (!telefone) {
+      return null;
+    }
+    const numeros = telefone.replace(/\D/g, '');
+    return numeros ? numeros : null;
   }
 
   private gerarDadosFamilia(incluirIdade = true): PreviaFamilia {
@@ -634,10 +685,12 @@ export class NovaFamiliaComponent implements OnInit {
       cpf: this.formatarCpf(membro.cpf),
       idade: incluirIdade ? this.calcularIdade(membro.nascimento) : null,
       profissao: this.normalizarTexto(membro.profissao),
-      parentesco: this.normalizarTexto(membro.parentesco) as GrauParentesco,
+      parentesco: membro.responsavel
+        ? PARENTESCO_RESPONSAVEL
+        : (this.normalizarTexto(membro.parentesco) as GrauParentesco),
       responsavel: this.normalizarResponsavel(membro.responsavel),
       probabilidade: this.normalizarTexto(membro.probabilidade) as ProbabilidadeVoto,
-      telefone: this.normalizarTexto(membro.telefone)
+      telefone: membro.telefone.trim()
     }));
 
     const endereco = `${this.enderecoFamilia.rua.trim()}, ${this.enderecoFamilia.numero.trim()}`;
@@ -653,7 +706,6 @@ export class NovaFamiliaComponent implements OnInit {
       regiao,
       cidade,
       cep,
-      telefone: this.familia.telefone.trim(),
       membros
     };
   }
