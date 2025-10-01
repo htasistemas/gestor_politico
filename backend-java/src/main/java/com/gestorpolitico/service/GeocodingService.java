@@ -2,6 +2,8 @@ package com.gestorpolitico.service;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.springframework.web.util.UriUtils;
+import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,36 +23,41 @@ public class GeocodingService {
     this.webClient = webClient;
   }
 
-  public Optional<Coordenada> buscarCoordenadas(String enderecoCompleto) {
-    if (enderecoCompleto == null || enderecoCompleto.isBlank()) {
-      return Optional.empty();
+    public Optional<Coordenada> buscarCoordenadas(String enderecoCompleto) {
+        if (enderecoCompleto == null || enderecoCompleto.isBlank()) {
+            return Optional.empty();
+        }
+
+        return webClient
+                .get()
+                .uri(UriComponentsBuilder
+                        .fromHttpUrl(NOMINATIM_URL)
+                        .queryParam("q", UriUtils.encode(enderecoCompleto, StandardCharsets.UTF_8))
+                        .queryParam("format", "json")
+                        .queryParam("limit", "1")
+                        .queryParam("addressdetails", "0")
+                        .queryParam("countrycodes", "br")
+                        .build(true)
+                        .toUri()
+                )
+                .retrieve()
+                .bodyToMono(NominatimResponse[].class)
+                .onErrorResume(throwable -> {
+                    LOGGER.warn("Falha ao consultar Nominatim: {}", throwable.getMessage());
+                    return Mono.just(new NominatimResponse[0]);
+                })
+                // 🔑 Garante que nunca retorne null
+                .flatMap(respostas -> {
+                    if (respostas.length == 0) {
+                        return Mono.empty();
+                    }
+                    Coordenada coordenada = respostas[0].toCoordenada();
+                    return coordenada != null ? Mono.just(coordenada) : Mono.empty();
+                })
+                .blockOptional(); // já devolve Optional<Coordenada>
     }
 
-    return webClient
-      .get()
-      .uri(UriComponentsBuilder
-        .fromHttpUrl(NOMINATIM_URL)
-        .queryParam("q", enderecoCompleto)
-        .queryParam("format", "json")
-        .queryParam("limit", "1")
-        .queryParam("addressdetails", "0")
-        .queryParam("countrycodes", "br")
-        .build(true)
-        .toUri()
-      )
-      .retrieve()
-      .bodyToMono(NominatimResponse[].class)
-      .onErrorResume(throwable -> {
-        LOGGER.warn("Falha ao consultar Nominatim: {}", throwable.getMessage());
-        return Mono.just(new NominatimResponse[0]);
-      })
-      .map(respostas -> respostas.length > 0 ? respostas[0].toCoordenada() : null)
-      .map(Optional::ofNullable)
-      .blockOptional()
-      .orElse(Optional.empty());
-  }
-
-  @JsonIgnoreProperties(ignoreUnknown = true)
+    @JsonIgnoreProperties(ignoreUnknown = true)
   private static class NominatimResponse {
     @JsonProperty("lat")
     private String latitude;
