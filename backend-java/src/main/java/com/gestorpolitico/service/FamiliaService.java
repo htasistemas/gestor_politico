@@ -14,17 +14,14 @@ import com.gestorpolitico.entity.Regiao;
 import com.gestorpolitico.repository.BairroRepository;
 import com.gestorpolitico.repository.CidadeRepository;
 import com.gestorpolitico.repository.FamiliaRepository;
-import com.gestorpolitico.repository.MembroFamiliaRepository;
 import com.gestorpolitico.repository.RegiaoRepository;
 import com.gestorpolitico.service.CepService.CepResultado;
 import java.math.BigDecimal;
 import java.text.Normalizer;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Collectors;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -37,7 +34,6 @@ public class FamiliaService {
   private final CidadeRepository cidadeRepository;
   private final BairroRepository bairroRepository;
   private final RegiaoRepository regiaoRepository;
-  private final MembroFamiliaRepository membroFamiliaRepository;
   private final GeocodingService geocodingService;
   private final CepService cepService;
 
@@ -46,7 +42,6 @@ public class FamiliaService {
     CidadeRepository cidadeRepository,
     BairroRepository bairroRepository,
     RegiaoRepository regiaoRepository,
-    MembroFamiliaRepository membroFamiliaRepository,
     GeocodingService geocodingService,
     CepService cepService
   ) {
@@ -54,7 +49,6 @@ public class FamiliaService {
     this.cidadeRepository = cidadeRepository;
     this.bairroRepository = bairroRepository;
     this.regiaoRepository = regiaoRepository;
-    this.membroFamiliaRepository = membroFamiliaRepository;
     this.geocodingService = geocodingService;
     this.cepService = cepService;
   }
@@ -97,9 +91,8 @@ public class FamiliaService {
     familia.setTelefone(dto.getTelefone());
     familia.setEnderecoDetalhado(endereco);
 
-    Set<String> cpfsInformados = new HashSet<>();
     List<MembroFamilia> membros = dto.getMembros().stream()
-      .map(membro -> converterMembro(membro, cpfsInformados))
+      .map(this::converterMembro)
       .collect(Collectors.toList());
     membros.forEach(familia::adicionarMembro);
 
@@ -114,22 +107,9 @@ public class FamiliaService {
       .collect(Collectors.toList());
   }
 
-  private MembroFamilia converterMembro(MembroFamiliaRequestDTO dto, Set<String> cpfsInformados) {
-    String cpfNormalizado = normalizarCpf(dto.getCpf());
-
-    if (!cpfsInformados.add(cpfNormalizado)) {
-      throw new ResponseStatusException(HttpStatus.CONFLICT, "CPF duplicado entre os membros informados.");
-    }
-
-    membroFamiliaRepository
-      .findByCpf(cpfNormalizado)
-      .ifPresent(existente -> {
-        throw new ResponseStatusException(HttpStatus.CONFLICT, "CPF já cadastrado em outra família.");
-      });
-
+  private MembroFamilia converterMembro(MembroFamiliaRequestDTO dto) {
     MembroFamilia membro = new MembroFamilia();
     membro.setNomeCompleto(dto.getNomeCompleto());
-    membro.setCpf(cpfNormalizado);
     membro.setDataNascimento(dto.getDataNascimento());
     membro.setProfissao(dto.getProfissao());
     membro.setParentesco(dto.getParentesco());
@@ -358,7 +338,6 @@ public class FamiliaService {
       .map(membro -> new MembroFamiliaResponseDTO(
         membro.getId(),
         membro.getNomeCompleto(),
-        membro.getCpf(),
         membro.getDataNascimento(),
         membro.getProfissao(),
         membro.getParentesco(),
@@ -382,10 +361,6 @@ public class FamiliaService {
 
   private String montarEnderecoResumo(FamiliaRequestDTO dto) {
     return dto.getRua().trim() + ", " + dto.getNumero().trim();
-  }
-
-  private String normalizarCpf(String cpf) {
-    return cpf.replaceAll("\\D", "");
   }
 
   private String normalizarTexto(String valor) {

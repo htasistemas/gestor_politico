@@ -30,7 +30,6 @@ const PARENTESCO_RESPONSAVEL: GrauParentesco = 'Responsável pela família';
 
 interface MembroFamiliaForm {
   nome: string;
-  cpf: string;
   nascimento: string;
   profissao: string;
   parentesco: GrauParentesco;
@@ -41,7 +40,6 @@ interface MembroFamiliaForm {
 
 interface PreviaMembro {
   nome: string;
-  cpf: string;
   idade: number | null;
   profissao: string;
   parentesco: GrauParentesco;
@@ -493,7 +491,6 @@ export class NovaFamiliaComponent implements OnInit {
   private criarMembro(responsavelPrincipal: boolean): MembroFamiliaForm {
     return {
       nome: '',
-      cpf: '',
       nascimento: '',
       profissao: '',
       parentesco: responsavelPrincipal ? PARENTESCO_RESPONSAVEL : '',
@@ -561,16 +558,10 @@ export class NovaFamiliaComponent implements OnInit {
       const nascimento = membro.nascimento?.trim() || '';
       const probabilidade = this.normalizarTexto(membro.probabilidade);
       const parentesco = this.normalizarTexto(membro.parentesco);
-      const cpf = membro.cpf.replace(/\D/g, '');
       const responsavel = this.normalizarResponsavel(membro.responsavel);
 
       if (!nome || !nascimento || !probabilidade || (!responsavel && !parentesco)) {
         window.alert(`Preencha todos os campos obrigatórios do ${indice + 1}º membro da família.`);
-        return false;
-      }
-
-      if (cpf.length !== 11) {
-        window.alert(`Informe um CPF válido para o ${indice + 1}º membro da família.`);
         return false;
       }
     }
@@ -606,7 +597,6 @@ export class NovaFamiliaComponent implements OnInit {
   private mapearMembroPayload(membro: MembroFamiliaForm): FamiliaMembroPayload {
     return {
       nomeCompleto: membro.nome.trim(),
-      cpf: membro.cpf.replace(/\D/g, ''),
       dataNascimento: membro.nascimento || null,
       profissao: membro.profissao ? membro.profissao.trim() : null,
       parentesco: membro.responsavel ? PARENTESCO_RESPONSAVEL : membro.parentesco,
@@ -675,7 +665,6 @@ export class NovaFamiliaComponent implements OnInit {
   private gerarDadosFamilia(incluirIdade = true): PreviaFamilia {
     const membros: PreviaMembro[] = this.membros.map(membro => ({
       nome: this.normalizarTexto(membro.nome),
-      cpf: this.formatarCpf(membro.cpf),
       idade: incluirIdade ? this.calcularIdade(membro.nascimento) : null,
       profissao: this.normalizarTexto(membro.profissao),
       parentesco: membro.responsavel
@@ -779,11 +768,4 @@ export class NovaFamiliaComponent implements OnInit {
     return idade;
   }
 
-  private formatarCpf(cpf: string): string {
-    const somenteNumeros = cpf.replace(/\D/g, '');
-    if (somenteNumeros.length !== 11) {
-      return somenteNumeros;
-    }
-    return `${somenteNumeros.substring(0, 3)}.${somenteNumeros.substring(3, 6)}.${somenteNumeros.substring(6, 9)}-${somenteNumeros.substring(9)}`;
-  }
 }

@@ -232,14 +232,29 @@
             </div>
 
             <div>
-              <label class="block text-sm font-semibold text-gray-700 mb-2">CPF *</label>
-              <input
-                type="text"
-                class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all duration-200"
-                [(ngModel)]="membro.cpf"
-                name="cpf_{{ i }}"
-                placeholder="000.000.000-00"
-              />
+              <label class="block text-sm font-semibold text-gray-700 mb-2">Telefone de Contato</label>
+              <div class="flex items-center space-x-2">
+                <input
+                  type="tel"
+                  class="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all duration-200"
+                  [ngModel]="membro.telefone"
+                  (ngModelChange)="atualizarTelefoneMembro(i, $event)"
+                  name="telefone_{{ i }}"
+                  placeholder="(11) 99999-9999"
+                />
+                <button
+                  type="button"
+                  (click)="abrirWhatsApp(membro.telefone)"
+                  class="p-3 bg-green-100 text-green-600 rounded-xl hover:bg-green-200 transition-colors"
+                  title="Chamar no WhatsApp"
+                >
+                  <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 32 32" aria-hidden="true">
+                    <path
+                      d="M16.003 2.667c-7.364 0-13.333 5.969-13.333 13.333 0 2.352.612 4.643 1.777 6.667L2.667 29.333l6.8-1.753a13.266 13.266 0 006.536 1.72h.004c7.36 0 13.33-5.969 13.33-13.333 0-3.563-1.387-6.917-3.904-9.437-2.515-2.52-5.867-3.863-9.33-3.863zm-.004 24c-2.12 0-4.2-.567-6.016-1.64l-.432-.256-4.032 1.04 1.072-3.933-.28-.404a11.264 11.264 0 01-1.732-5.973c0-6.24 5.088-11.333 11.336-11.333 3.027 0 5.876 1.18 8.016 3.32a11.267 11.267 0 013.32 8.02c0 6.243-5.087 11.329-11.32 11.329zm6.192-8.429c-.339-.17-2.012-.993-2.324-1.105-.312-.114-.539-.17-.766.169-.226.339-.877 1.105-1.074 1.333-.198.226-.395.255-.734.085-.339-.17-1.433-.527-2.732-1.68-1.01-.9-1.69-2.017-1.888-2.356-.198-.339-.021-.522.149-.692.153-.152.339-.395.509-.593.17-.198.226-.339.339-.565.113-.226.057-.424-.028-.593-.085-.17-.766-1.848-1.05-2.528-.276-.663-.558-.572-.766-.582l-.653-.012c-.197 0-.52.074-.792.372-.272.339-1.04 1.016-1.04 2.48 0 1.463 1.064 2.876 1.213 3.074.149.197 2.095 3.2 5.077 4.486.71.306 1.264.489 1.695.624.712.227 1.36.195 1.872.118.571-.085 1.75-.715 1.997-1.403.247-.688.247-1.277.173-1.403-.074-.127-.272-.198-.61-.368z"
+                    ></path>
+                  </svg>
+                </button>
+              </div>
             </div>
 
             <div>
@@ -281,22 +296,6 @@
               </div>
             </div>
 
-            <div class="md:col-span-2">
-              <div class="flex items-center space-x-3 mt-2 md:mt-0">
-                <input
-                  type="checkbox"
-                  class="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  [id]="'responsavel_' + i"
-                  [checked]="membro.responsavel"
-                  (change)="definirResponsavel(i, $event.target.checked)"
-                />
-                <label [for]="'responsavel_' + i" class="text-sm font-semibold text-gray-700">
-                  Responsável pela família
-                </label>
-              </div>
-              <p class="text-xs text-gray-500 mt-2">Somente um membro pode ser o responsável principal por vez.</p>
-            </div>
-
             <div>
               <label class="block text-sm font-semibold text-gray-700 mb-2">Probabilidade de Voto *</label>
               <select
@@ -311,30 +310,20 @@
               </select>
             </div>
 
-            <div>
-              <label class="block text-sm font-semibold text-gray-700 mb-2">Telefone de Contato</label>
-              <div class="flex items-center space-x-2">
+            <div class="md:col-span-2">
+              <div class="flex items-center space-x-3 mt-2 md:mt-0">
                 <input
-                  type="tel"
-                  class="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all duration-200"
-                  [ngModel]="membro.telefone"
-                  (ngModelChange)="atualizarTelefoneMembro(i, $event)"
-                  name="telefone_{{ i }}"
-                  placeholder="(11) 99999-9999"
+                  type="checkbox"
+                  class="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  [id]="'responsavel_' + i"
+                  [checked]="membro.responsavel"
+                  (change)="definirResponsavel(i, $event.target.checked)"
                 />
-                <button
-                  type="button"
-                  (click)="abrirWhatsApp(membro.telefone)"
-                  class="p-3 bg-green-100 text-green-600 rounded-xl hover:bg-green-200 transition-colors"
-                  title="Chamar no WhatsApp"
-                >
-                  <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 32 32" aria-hidden="true">
-                    <path
-                      d="M16.003 2.667c-7.364 0-13.333 5.969-13.333 13.333 0 2.352.612 4.643 1.777 6.667L2.667 29.333l6.8-1.753a13.266 13.266 0 006.536 1.72h.004c7.36 0 13.33-5.969 13.33-13.333 0-3.563-1.387-6.917-3.904-9.437-2.515-2.52-5.867-3.863-9.33-3.863zm-.004 24c-2.12 0-4.2-.567-6.016-1.64l-.432-.256-4.032 1.04 1.072-3.933-.28-.404a11.264 11.264 0 01-1.732-5.973c0-6.24 5.088-11.333 11.336-11.333 3.027 0 5.876 1.18 8.016 3.32a11.267 11.267 0 013.32 8.02c0 6.243-5.087 11.329-11.32 11.329zm6.192-8.429c-.339-.17-2.012-.993-2.324-1.105-.312-.114-.539-.17-.766.169-.226.339-.877 1.105-1.074 1.333-.198.226-.395.255-.734.085-.339-.17-1.433-.527-2.732-1.68-1.01-.9-1.69-2.017-1.888-2.356-.198-.339-.021-.522.149-.692.153-.152.339-.395.509-.593.17-.198.226-.339.339-.565.113-.226.057-.424-.028-.593-.085-.17-.766-1.848-1.05-2.528-.276-.663-.558-.572-.766-.582l-.653-.012c-.197 0-.52.074-.792.372-.272.339-1.04 1.016-1.04 2.48 0 1.463 1.064 2.876 1.213 3.074.149.197 2.095 3.2 5.077 4.486.71.306 1.264.489 1.695.624.712.227 1.36.195 1.872.118.571-.085 1.75-.715 1.997-1.403.247-.688.247-1.277.173-1.403-.074-.127-.272-.198-.61-.368z"
-                    ></path>
-                  </svg>
-                </button>
+                <label [for]="'responsavel_' + i" class="text-sm font-semibold text-gray-700">
+                  Responsável pela família
+                </label>
               </div>
+              <p class="text-xs text-gray-500 mt-2">Somente um membro pode ser o responsável principal por vez.</p>
             </div>
 
                         <!-- Campos de endereço removidos dos membros -->

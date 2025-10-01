@@ -53,7 +53,6 @@ CREATE TABLE IF NOT EXISTS familia (
 CREATE TABLE IF NOT EXISTS membro_familia (
   id BIGSERIAL PRIMARY KEY,
   nome_completo VARCHAR(255) NOT NULL,
-  cpf VARCHAR(11) NOT NULL UNIQUE,
   data_nascimento DATE,
   profissao VARCHAR(255),
   parentesco VARCHAR(255) NOT NULL,

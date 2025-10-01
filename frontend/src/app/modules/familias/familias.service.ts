@@ -5,7 +5,6 @@ import { buildApiUrl } from '../shared/api-url.util';
 
 export interface FamiliaMembroPayload {
   nomeCompleto: string;
-  cpf: string;
   dataNascimento: string | null;
   profissao: string | null;
   parentesco: string;
@@ -39,7 +38,6 @@ export interface EnderecoFamiliaResponse {
 export interface FamiliaMembroResponse {
   id: number;
   nomeCompleto: string;
-  cpf: string;
   dataNascimento: string | null;
   profissao: string | null;
   parentesco: string;

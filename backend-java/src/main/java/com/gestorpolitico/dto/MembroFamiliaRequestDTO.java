@@ -2,7 +2,6 @@ package com.gestorpolitico.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Past;
-import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import jakarta.validation.constraints.NotNull;
 import java.time.LocalDate;
@@ -11,10 +10,6 @@ public class MembroFamiliaRequestDTO {
   @NotBlank(message = "O nome completo é obrigatório.")
   @Size(max = 255, message = "O nome completo deve ter no máximo 255 caracteres.")
   private String nomeCompleto;
-
-  @NotBlank(message = "O CPF é obrigatório.")
-  @Pattern(regexp = "\\d{11}|\\d{3}\\.\\d{3}\\.\\d{3}-\\d{2}", message = "Informe um CPF válido.")
-  private String cpf;
 
   @Past(message = "A data de nascimento deve estar no passado.")
   private LocalDate dataNascimento;
@@ -43,14 +38,6 @@ public class MembroFamiliaRequestDTO {
 
   public void setNomeCompleto(String nomeCompleto) {
     this.nomeCompleto = nomeCompleto;
-  }
-
-  public String getCpf() {
-    return cpf;
-  }
-
-  public void setCpf(String cpf) {
-    this.cpf = cpf;
   }
 
   public LocalDate getDataNascimento() {
