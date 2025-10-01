@@ -1,7 +1,10 @@
 package com.gestorpolitico.entity;
 
+import com.gestorpolitico.enums.Parentesco;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -34,9 +37,10 @@ public class MembroFamilia {
   @Size(max = 255)
   private String profissao;
 
-  @NotBlank
+  @NotNull
+  @Enumerated(EnumType.STRING)
   @Column(nullable = false)
-  private String parentesco;
+  private Parentesco parentesco;
 
   @NotNull
   @Column(name = "responsavel_principal", nullable = false)
@@ -88,11 +92,11 @@ public class MembroFamilia {
     this.profissao = profissao;
   }
 
-  public String getParentesco() {
+  public Parentesco getParentesco() {
     return parentesco;
   }
 
-  public void setParentesco(String parentesco) {
+  public void setParentesco(Parentesco parentesco) {
     this.parentesco = parentesco;
   }
 

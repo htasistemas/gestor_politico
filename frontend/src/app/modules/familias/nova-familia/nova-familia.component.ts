@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { FamiliasService, FamiliaMembroPayload, FamiliaPayload, FamiliaResponse } from '../familias.service';
+import { DESCRICOES_PARENTESCO, GrauParentesco } from '../parentesco.enum';
 import { Bairro, Cidade, LocalidadesService, Regiao } from '../../shared/services/localidades.service';
 import { ViaCepResponse, ViaCepService } from '../../shared/services/via-cep.service';
 import { AuthService } from '../../shared/services/auth.service';
@@ -9,30 +10,13 @@ const VALOR_NOVA_REGIAO = '__nova__';
 const VALOR_NOVO_BAIRRO = '__novo__';
 type ProbabilidadeVoto = 'Alta' | 'Média' | 'Baixa' | '';
 
-type GrauParentesco =
-  | 'Pai'
-  | 'Mãe'
-  | 'Filho(a)'
-  | 'Filha'
-  | 'Filho'
-  | 'Irmão(ã)'
-  | 'Primo(a)'
-  | 'Tio(a)'
-  | 'Sobrinho(a)'
-  | 'Cônjuge'
-  | 'Avô(ó)'
-  | 'Enteado(a)'
-  | 'Responsável pela família'
-  | 'Outro'
-  | '';
-
-const PARENTESCO_RESPONSAVEL: GrauParentesco = 'Responsável pela família';
+const PARENTESCO_RESPONSAVEL: GrauParentesco = GrauParentesco.RESPONSAVEL;
 
 interface MembroFamiliaForm {
   nome: string;
   nascimento: string;
   profissao: string;
-  parentesco: GrauParentesco;
+  parentesco: GrauParentesco | '';
   responsavel: boolean;
   probabilidade: ProbabilidadeVoto;
   telefone: string;
@@ -42,7 +26,7 @@ interface PreviaMembro {
   nome: string;
   idade: number | null;
   profissao: string;
-  parentesco: GrauParentesco;
+  parentesco: string;
   responsavel: boolean;
   probabilidade: ProbabilidadeVoto;
   telefone: string;
@@ -94,20 +78,23 @@ export class NovaFamiliaComponent implements OnInit {
   private readonly regioesCache = new Map<number, Regiao[]>();
   private readonly bairrosCache = new Map<number, Bairro[]>();
 
+  readonly descricoesParentesco = DESCRICOES_PARENTESCO;
+  readonly parentescoResponsavel = PARENTESCO_RESPONSAVEL;
+
   grausParentesco: GrauParentesco[] = [
-    'Pai',
-    'Mãe',
-    'Filho(a)',
-    'Filha',
-    'Filho',
-    'Irmão(ã)',
-    'Primo(a)',
-    'Tio(a)',
-    'Sobrinho(a)',
-    'Cônjuge',
-    'Avô(ó)',
-    'Enteado(a)',
-    'Outro'
+    GrauParentesco.PAI,
+    GrauParentesco.MAE,
+    GrauParentesco.FILHO_A,
+    GrauParentesco.FILHA,
+    GrauParentesco.FILHO,
+    GrauParentesco.IRMAO_A,
+    GrauParentesco.PRIMO_A,
+    GrauParentesco.TIO_A,
+    GrauParentesco.SOBRINHO_A,
+    GrauParentesco.CONJUGE,
+    GrauParentesco.AVO_O,
+    GrauParentesco.ENTEADO_A,
+    GrauParentesco.OUTRO
   ];
 
   membros: MembroFamiliaForm[];
@@ -800,11 +787,12 @@ export class NovaFamiliaComponent implements OnInit {
   }
 
   private mapearMembroPayload(membro: MembroFamiliaForm): FamiliaMembroPayload {
+    const parentesco = membro.responsavel ? PARENTESCO_RESPONSAVEL : membro.parentesco;
     return {
       nomeCompleto: membro.nome.trim(),
       dataNascimento: membro.nascimento || null,
       profissao: membro.profissao ? membro.profissao.trim() : null,
-      parentesco: membro.responsavel ? PARENTESCO_RESPONSAVEL : membro.parentesco,
+      parentesco: parentesco as GrauParentesco,
       responsavelPrincipal: membro.responsavel,
       probabilidadeVoto: membro.probabilidade,
       telefone: this.obterTelefoneLimpo(membro.telefone)
@@ -868,17 +856,18 @@ export class NovaFamiliaComponent implements OnInit {
   }
 
   private gerarDadosFamilia(incluirIdade = true): PreviaFamilia {
-    const membros: PreviaMembro[] = this.membros.map(membro => ({
-      nome: this.normalizarTexto(membro.nome),
-      idade: incluirIdade ? this.calcularIdade(membro.nascimento) : null,
-      profissao: this.normalizarTexto(membro.profissao),
-      parentesco: membro.responsavel
-        ? PARENTESCO_RESPONSAVEL
-        : (this.normalizarTexto(membro.parentesco) as GrauParentesco),
-      responsavel: this.normalizarResponsavel(membro.responsavel),
-      probabilidade: this.normalizarTexto(membro.probabilidade) as ProbabilidadeVoto,
-      telefone: membro.telefone.trim()
-    }));
+    const membros: PreviaMembro[] = this.membros.map(membro => {
+      const codigoParentesco = membro.responsavel ? PARENTESCO_RESPONSAVEL : membro.parentesco;
+      return {
+        nome: this.normalizarTexto(membro.nome),
+        idade: incluirIdade ? this.calcularIdade(membro.nascimento) : null,
+        profissao: this.normalizarTexto(membro.profissao),
+        parentesco: this.obterDescricaoParentesco(codigoParentesco),
+        responsavel: this.normalizarResponsavel(membro.responsavel),
+        probabilidade: this.normalizarTexto(membro.probabilidade) as ProbabilidadeVoto,
+        telefone: membro.telefone.trim()
+      };
+    });
 
     const endereco = `${this.enderecoFamilia.rua.trim()}, ${this.enderecoFamilia.numero.trim()}`;
     const bairro = this.obterDescricaoBairroFamilia() || 'Bairro não informado';
@@ -900,6 +889,13 @@ export class NovaFamiliaComponent implements OnInit {
   obterResponsavelPrincipal(): string {
     const responsavel = this.membros.find(membro => this.normalizarResponsavel(membro.responsavel));
     return responsavel?.nome?.trim() || '';
+  }
+
+  obterDescricaoParentesco(parentesco: GrauParentesco | ''): string {
+    if (!parentesco) {
+      return '';
+    }
+    return this.descricoesParentesco[parentesco];
   }
 
   private obterDescricaoBairroFamilia(): string {
@@ -936,11 +932,12 @@ export class NovaFamiliaComponent implements OnInit {
     return responsavel?.nomeCompleto;
   }
 
-  private normalizarTexto(valor: string): string {
+  private normalizarTexto(valor: string | GrauParentesco | null | undefined): string {
     if (!valor) {
       return '';
     }
-    const semAcento = valor
+    const texto = String(valor);
+    const semAcento = texto
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '');
     return semAcento.toUpperCase().replace(/\s+/g, ' ').trim();
