@@ -78,8 +78,22 @@ export class GeoReferenciamentoComponent implements OnInit, AfterViewInit, OnDes
     this.mapa = L.map('geo-map', {
       center: [-14.235004, -51.92528],
       zoom: 5,
-      attributionControl: false
+      attributionControl: false,
+      zoomControl: true,
+      scrollWheelZoom: true,
+      dragging: true,
+      touchZoom: true,
+      doubleClickZoom: true,
+      boxZoom: true,
+      keyboard: true
     });
+
+    this.mapa.scrollWheelZoom.enable();
+    this.mapa.dragging.enable();
+    this.mapa.touchZoom.enable();
+    this.mapa.doubleClickZoom.enable();
+    this.mapa.boxZoom.enable();
+    this.mapa.keyboard.enable();
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
@@ -110,10 +124,18 @@ export class GeoReferenciamentoComponent implements OnInit, AfterViewInit, OnDes
 
     if (coordenadas.length === 1) {
       this.mapa.setView(coordenadas[0], 15);
-    } else {
-      const limites = L.latLngBounds(coordenadas);
-      this.mapa.fitBounds(limites, { padding: [40, 40] });
+      return;
     }
+
+    const grupoMaisDenso = this.obterGrupoMaisDenso();
+    if (grupoMaisDenso) {
+      const limitesGrupo = L.latLngBounds(grupoMaisDenso);
+      this.mapa.fitBounds(limitesGrupo, { padding: [40, 40], maxZoom: 16 });
+      return;
+    }
+
+    const limites = L.latLngBounds(coordenadas);
+    this.mapa.fitBounds(limites, { padding: [40, 40] });
   }
 
   private converterFamilia(familia: FamiliaResponse): FamiliaLocalizada | null {
@@ -188,5 +210,36 @@ export class GeoReferenciamentoComponent implements OnInit, AfterViewInit, OnDes
       "'": '&#39;'
     };
     return valor.replace(/[&<>"']/g, caractere => mapaCaracteres[caractere]);
+  }
+
+  private obterGrupoMaisDenso(): L.LatLngExpression[] | null {
+    if (this.familiasLocalizadas.length <= 1) {
+      return null;
+    }
+
+    const tamanhoCelula = 0.05;
+    const grupos = new Map<string, FamiliaLocalizada[]>();
+
+    this.familiasLocalizadas.forEach(familia => {
+      const chaveLat = Math.round(familia.latitude / tamanhoCelula);
+      const chaveLng = Math.round(familia.longitude / tamanhoCelula);
+      const chave = `${chaveLat}-${chaveLng}`;
+      const grupoAtual = grupos.get(chave) ?? [];
+      grupoAtual.push(familia);
+      grupos.set(chave, grupoAtual);
+    });
+
+    let maiorGrupo: FamiliaLocalizada[] = [];
+    grupos.forEach(grupo => {
+      if (grupo.length > maiorGrupo.length) {
+        maiorGrupo = grupo;
+      }
+    });
+
+    if (maiorGrupo.length < 2) {
+      return null;
+    }
+
+    return maiorGrupo.map(familia => [familia.latitude, familia.longitude] as L.LatLngExpression);
   }
 }
