@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import { FamiliasService, FamiliaResponse } from './familias.service';
 
 @Component({
@@ -16,9 +17,18 @@ export class FamiliasComponent implements OnInit {
   carregando = false;
   erroCarregamento = '';
 
-  constructor(private readonly familiasService: FamiliasService) {}
+  familiaSelecionadaId: number | null = null;
+
+  constructor(private readonly familiasService: FamiliasService, private readonly route: ActivatedRoute) {}
 
   ngOnInit(): void {
+    const familiaIdParam = this.route.snapshot.queryParamMap.get('familiaId');
+    if (familiaIdParam) {
+      const id = Number(familiaIdParam);
+      if (!Number.isNaN(id)) {
+        this.familiaSelecionadaId = id;
+      }
+    }
     this.carregarFamilias();
   }
 

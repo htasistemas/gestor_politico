@@ -1,0 +1,56 @@
+<div class="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50 pb-12">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 space-y-8">
+    <div class="bg-white rounded-3xl shadow-xl border border-gray-100 p-8 flex flex-col gap-6">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+        <div>
+          <div class="inline-flex items-center px-3 py-1 rounded-full bg-green-50 text-green-600 text-xs font-semibold mb-3">
+            Inteligência territorial
+          </div>
+          <h1 class="text-3xl font-bold text-gray-900 mb-2">GeoReferenciamento das famílias</h1>
+          <p class="text-gray-600 max-w-2xl">
+            Visualize no mapa os núcleos familiares com coordenadas cadastradas, identifique responsáveis estratégicos
+            e acesse rapidamente o cadastro de cada família.
+          </p>
+        </div>
+        <div class="bg-gradient-to-r from-green-400 to-emerald-500 text-white rounded-3xl px-6 py-4 shadow-lg">
+          <div class="text-sm uppercase tracking-wider opacity-80">Famílias georreferenciadas</div>
+          <div class="text-3xl font-semibold">{{ familiasLocalizadas.length }}</div>
+        </div>
+      </div>
+
+      <div class="relative">
+        <div *ngIf="carregando" class="absolute inset-0 z-10 flex items-center justify-center bg-white/80 rounded-3xl">
+          <div class="text-gray-600 font-medium">Carregando mapa e famílias...</div>
+        </div>
+        <div *ngIf="erroCarregamento" class="absolute inset-0 z-10 flex items-center justify-center bg-red-50 rounded-3xl">
+          <div class="text-red-600 font-semibold">{{ erroCarregamento }}</div>
+        </div>
+        <div
+          *ngIf="!carregando && !erroCarregamento && familiasLocalizadas.length === 0"
+          class="absolute inset-0 z-10 flex items-center justify-center bg-white/90 rounded-3xl text-gray-500 text-center px-6"
+        >
+          Nenhuma família possui latitude e longitude cadastradas até o momento.
+        </div>
+        <div id="geo-map" class="mapa-container"></div>
+      </div>
+
+      <div class="bg-white rounded-2xl border border-gray-100 p-6 shadow-inner">
+        <h2 class="text-lg font-semibold text-gray-900 mb-4">Como funciona</h2>
+        <ul class="grid md:grid-cols-3 gap-4 text-sm text-gray-600">
+          <li class="flex items-start gap-3">
+            <span class="w-8 h-8 rounded-xl bg-green-100 text-green-600 font-semibold flex items-center justify-center">1</span>
+            <span>Buscamos todas as famílias cadastradas e filtramos apenas aquelas com coordenadas geográficas válidas.</span>
+          </li>
+          <li class="flex items-start gap-3">
+            <span class="w-8 h-8 rounded-xl bg-green-100 text-green-600 font-semibold flex items-center justify-center">2</span>
+            <span>Os marcadores exibem o responsável principal e o endereço completo informado no cadastro.</span>
+          </li>
+          <li class="flex items-start gap-3">
+            <span class="w-8 h-8 rounded-xl bg-green-100 text-green-600 font-semibold flex items-center justify-center">3</span>
+            <span>Ao clicar em um ponto do mapa, acesse rapidamente o cadastro da família em uma nova aba.</span>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>

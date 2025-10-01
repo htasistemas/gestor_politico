@@ -22,6 +22,12 @@ const routes: Routes = [
     loadChildren: () => import('./modules/configuracoes/configuracoes.module').then(m => m.ConfiguracoesModule)
   },
   {
+    path: 'georreferenciamento',
+    canActivate: [AdminGuard],
+    loadChildren: () =>
+      import('./modules/georreferenciamento/georreferenciamento.module').then(m => m.GeoReferenciamentoModule)
+  },
+  {
     path: 'perfil',
     canActivate: [AuthGuard],
     loadChildren: () => import('./modules/perfil/perfil.module').then(m => m.PerfilModule)
