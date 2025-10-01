@@ -2,12 +2,13 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { buildApiUrl } from '../shared/api-url.util';
+import { GrauParentesco } from './parentesco.enum';
 
 export interface FamiliaMembroPayload {
   nomeCompleto: string;
   dataNascimento: string | null;
   profissao: string | null;
-  parentesco: string;
+  parentesco: GrauParentesco;
   responsavelPrincipal: boolean;
   probabilidadeVoto: string;
   telefone: string | null;
@@ -40,7 +41,7 @@ export interface FamiliaMembroResponse {
   nomeCompleto: string;
   dataNascimento: string | null;
   profissao: string | null;
-  parentesco: string;
+  parentesco: GrauParentesco;
   responsavelPrincipal: boolean;
   probabilidadeVoto: string;
   telefone: string | null;

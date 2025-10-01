@@ -1,5 +1,6 @@
 package com.gestorpolitico.dto;
 
+import com.gestorpolitico.enums.Parentesco;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 
@@ -8,7 +9,7 @@ public class MembroFamiliaResponseDTO {
   private String nomeCompleto;
   private LocalDate dataNascimento;
   private String profissao;
-  private String parentesco;
+  private Parentesco parentesco;
   private boolean responsavelPrincipal;
   private String probabilidadeVoto;
   private String telefone;
@@ -22,7 +23,7 @@ public class MembroFamiliaResponseDTO {
     String nomeCompleto,
     LocalDate dataNascimento,
     String profissao,
-    String parentesco,
+    Parentesco parentesco,
     boolean responsavelPrincipal,
     String probabilidadeVoto,
     String telefone,
@@ -71,11 +72,11 @@ public class MembroFamiliaResponseDTO {
     this.profissao = profissao;
   }
 
-  public String getParentesco() {
+  public Parentesco getParentesco() {
     return parentesco;
   }
 
-  public void setParentesco(String parentesco) {
+  public void setParentesco(Parentesco parentesco) {
     this.parentesco = parentesco;
   }
 
