@@ -2,6 +2,7 @@ package com.gestorpolitico.controller;
 
 import com.gestorpolitico.dto.AtualizarRegiaoBairrosRequestDTO;
 import com.gestorpolitico.dto.BairroResponseDTO;
+import com.gestorpolitico.dto.CidadeRequestDTO;
 import com.gestorpolitico.dto.CidadeResponseDTO;
 import com.gestorpolitico.dto.RegiaoAtribuicaoRequestDTO;
 import com.gestorpolitico.dto.RegiaoRequestDTO;
@@ -32,6 +33,11 @@ public class LocalidadeController {
   @GetMapping("/cidades")
   public ResponseEntity<List<CidadeResponseDTO>> listarCidades() {
     return ResponseEntity.ok(localidadeService.listarCidades());
+  }
+
+  @PostMapping("/cidades")
+  public ResponseEntity<CidadeResponseDTO> criarCidade(@Valid @RequestBody CidadeRequestDTO dto) {
+    return ResponseEntity.ok(localidadeService.criarCidade(dto));
   }
 
   @GetMapping("/cidades/{cidadeId}/bairros")

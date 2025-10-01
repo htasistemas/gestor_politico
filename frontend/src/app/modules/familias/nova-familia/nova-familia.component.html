@@ -59,19 +59,6 @@
           <p class="text-xs text-gray-500 mt-2">O responsável é definido ao marcar a opção de responsável em um dos membros cadastrados.</p>
         </div>
 
-        <div>
-          <label class="block text-sm font-semibold text-gray-700 mb-2">Cidade *</label>
-          <select
-            class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all duration-200"
-            [(ngModel)]="enderecoFamilia.cidadeId"
-            name="cidadeFamilia"
-            (ngModelChange)="aoAlterarCidadeFamilia($event)"
-          >
-            <option [ngValue]="null">Selecione a cidade</option>
-            <option *ngFor="let cidade of cidades" [ngValue]="cidade.id">{{ cidade.nome }} - {{ cidade.uf }}</option>
-          </select>
-        </div>
-
         <div class="md:col-span-2">
           <label class="block text-sm font-semibold text-gray-700 mb-2">CEP</label>
           <div class="flex flex-col space-y-2">
@@ -119,30 +106,16 @@
         </div>
 
         <div>
-          <label class="block text-sm font-semibold text-gray-700 mb-2">Região</label>
+          <label class="block text-sm font-semibold text-gray-700 mb-2">Cidade *</label>
           <select
             class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all duration-200"
-            [(ngModel)]="enderecoFamilia.regiaoSelecionada"
-            name="regiaoFamilia"
-            (ngModelChange)="aoAlterarRegiaoFamilia($event)"
+            [(ngModel)]="enderecoFamilia.cidadeId"
+            name="cidadeFamilia"
+            (ngModelChange)="aoAlterarCidadeFamilia($event)"
           >
-            <option [ngValue]="null">Selecione a região</option>
-            <option *ngFor="let regiao of enderecoFamilia.regioes" [ngValue]="regiao.nome">{{ regiao.nome }}</option>
-            <option *ngIf="ehAdministrador || novaRegiaoGeradaPorCep" [ngValue]="valorNovaRegiao">
-              Cadastrar nova região
-            </option>
+            <option [ngValue]="null">Selecione a cidade</option>
+            <option *ngFor="let cidade of cidades" [ngValue]="cidade.id">{{ cidade.nome }} - {{ cidade.uf }}</option>
           </select>
-        </div>
-
-        <div *ngIf="enderecoFamilia.regiaoSelecionada === valorNovaRegiao && (ehAdministrador || novaRegiaoGeradaPorCep)">
-          <label class="block text-sm font-semibold text-gray-700 mb-2">Nova Região *</label>
-          <input
-            type="text"
-            class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all duration-200"
-            [(ngModel)]="enderecoFamilia.novaRegiao"
-            name="novaRegiaoFamilia"
-            placeholder="Informe o nome da nova região"
-          />
         </div>
 
         <div>
@@ -159,6 +132,41 @@
               Cadastrar novo bairro
             </option>
           </select>
+        </div>
+
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-2">Região do bairro</label>
+          <select
+            class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all duration-200"
+            [ngClass]="{ 'bg-gray-100': enderecoFamilia.regiaoBloqueada }"
+            [(ngModel)]="enderecoFamilia.regiaoSelecionada"
+            name="regiaoFamilia"
+            [disabled]="enderecoFamilia.regiaoBloqueada || enderecoFamilia.atualizandoRegiao"
+            (ngModelChange)="aoAlterarRegiaoFamilia($event)"
+          >
+            <option [ngValue]="null">Selecione a região</option>
+            <option *ngFor="let regiao of enderecoFamilia.regioes" [ngValue]="regiao.nome">{{ regiao.nome }}</option>
+            <option *ngIf="!enderecoFamilia.regiaoBloqueada && (ehAdministrador || novaRegiaoGeradaPorCep)" [ngValue]="valorNovaRegiao">
+              Cadastrar nova região
+            </option>
+          </select>
+          <p *ngIf="enderecoFamilia.atualizandoRegiao" class="text-xs text-blue-600 mt-2">Atualizando região do bairro...</p>
+          <p *ngIf="enderecoFamilia.regiaoBloqueada" class="text-xs text-gray-500 mt-2">
+            Região definida para este bairro e bloqueada para edição.
+          </p>
+        </div>
+
+        <div
+          *ngIf="!enderecoFamilia.regiaoBloqueada && enderecoFamilia.regiaoSelecionada === valorNovaRegiao && (ehAdministrador || novaRegiaoGeradaPorCep)"
+        >
+          <label class="block text-sm font-semibold text-gray-700 mb-2">Nova Região *</label>
+          <input
+            type="text"
+            class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all duration-200"
+            [(ngModel)]="enderecoFamilia.novaRegiao"
+            name="novaRegiaoFamilia"
+            placeholder="Informe o nome da nova região"
+          />
         </div>
 
         <div *ngIf="enderecoFamilia.bairroSelecionado === valorNovoBairro && (ehAdministrador || novoBairroGeradoPorCep)">

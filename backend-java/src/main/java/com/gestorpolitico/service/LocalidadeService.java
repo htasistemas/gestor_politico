@@ -2,6 +2,7 @@ package com.gestorpolitico.service;
 
 import com.gestorpolitico.dto.AtualizarRegiaoBairrosRequestDTO;
 import com.gestorpolitico.dto.BairroResponseDTO;
+import com.gestorpolitico.dto.CidadeRequestDTO;
 import com.gestorpolitico.dto.CidadeResponseDTO;
 import com.gestorpolitico.dto.RegiaoRequestDTO;
 import com.gestorpolitico.dto.RegiaoResponseDTO;
@@ -51,6 +52,27 @@ public class LocalidadeService {
       .sorted(Comparator.comparing(Cidade::getNome, String.CASE_INSENSITIVE_ORDER))
       .map(cidade -> new CidadeResponseDTO(cidade.getId(), cidade.getNome(), cidade.getUf()))
       .toList();
+  }
+
+  @Transactional
+  public CidadeResponseDTO criarCidade(CidadeRequestDTO dto) {
+    String nome = dto.getNome() != null ? dto.getNome().trim() : "";
+    String uf = dto.getUf() != null ? dto.getUf().trim().toUpperCase() : "";
+
+    if (nome.isBlank() || uf.isBlank()) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Informe nome e UF da cidade.");
+    }
+
+    return cidadeRepository
+      .findByNomeIgnoreCaseAndUfIgnoreCase(nome, uf)
+      .map(existente -> new CidadeResponseDTO(existente.getId(), existente.getNome(), existente.getUf()))
+      .orElseGet(() -> {
+        Cidade cidade = new Cidade();
+        cidade.setNome(nome);
+        cidade.setUf(uf);
+        Cidade salvo = cidadeRepository.save(cidade);
+        return new CidadeResponseDTO(salvo.getId(), salvo.getNome(), salvo.getUf());
+      });
   }
 
   public List<BairroResponseDTO> listarBairros(Long cidadeId, String regiao) {
