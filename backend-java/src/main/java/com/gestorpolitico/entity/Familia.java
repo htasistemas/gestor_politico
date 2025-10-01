@@ -35,11 +35,6 @@ public class Familia {
   @Column(nullable = false, length = 120)
   private String bairro;
 
-  @NotBlank
-  @Size(max = 30)
-  @Column(nullable = false, length = 30)
-  private String telefone;
-
   @Column(name = "criado_em", nullable = false)
   private OffsetDateTime criadoEm = OffsetDateTime.now();
 
@@ -72,14 +67,6 @@ public class Familia {
 
   public void setBairro(String bairro) {
     this.bairro = bairro;
-  }
-
-  public String getTelefone() {
-    return telefone;
-  }
-
-  public void setTelefone(String telefone) {
-    this.telefone = telefone;
   }
 
   public OffsetDateTime getCriadoEm() {

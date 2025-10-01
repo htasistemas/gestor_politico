@@ -25,10 +25,6 @@ public class FamiliaRequestDTO {
   @Size(max = 120, message = "A região deve ter no máximo 120 caracteres.")
   private String novaRegiao;
 
-  @NotBlank(message = "O telefone é obrigatório.")
-  @Size(max = 30, message = "O telefone deve ter no máximo 30 caracteres.")
-  private String telefone;
-
   @NotEmpty(message = "Informe ao menos um membro da família.")
   @Valid
   private List<MembroFamiliaRequestDTO> membros;
@@ -74,14 +70,6 @@ public class FamiliaRequestDTO {
 
   public void setNovaRegiao(String novaRegiao) {
     this.novaRegiao = novaRegiao;
-  }
-
-  public String getTelefone() {
-    return telefone;
-  }
-
-  public void setTelefone(String telefone) {
-    this.telefone = telefone;
   }
 
   public List<MembroFamiliaRequestDTO> getMembros() {
