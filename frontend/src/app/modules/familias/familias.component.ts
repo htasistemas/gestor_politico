@@ -40,6 +40,14 @@ export class FamiliasComponent implements OnInit {
     return responsavel?.nomeCompleto || 'Responsável não informado';
   }
 
+  obterTelefoneResponsavel(familia: FamiliaResponse): string {
+    const responsavel = familia.membros.find(membro => membro.responsavelPrincipal);
+    if (!responsavel?.telefone) {
+      return 'Telefone não informado';
+    }
+    return responsavel.telefone;
+  }
+
   obterTotalMembros(familia: FamiliaResponse): number {
     return familia.membros.length;
   }

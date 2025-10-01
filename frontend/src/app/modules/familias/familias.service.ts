@@ -22,7 +22,6 @@ export interface FamiliaPayload {
   bairroId: number | null;
   novoBairro: string | null;
   novaRegiao: string | null;
-  telefone: string;
   membros: FamiliaMembroPayload[];
 }
 
