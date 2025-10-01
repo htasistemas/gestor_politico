@@ -12,7 +12,6 @@ import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
@@ -28,11 +27,6 @@ public class MembroFamilia {
   @Size(max = 255)
   @Column(name = "nome_completo", nullable = false, length = 255)
   private String nomeCompleto;
-
-  @NotBlank
-  @Pattern(regexp = "\\d{11}")
-  @Column(nullable = false, length = 11, unique = true)
-  private String cpf;
 
   @Column(name = "data_nascimento")
   private LocalDate dataNascimento;
@@ -76,14 +70,6 @@ public class MembroFamilia {
 
   public void setNomeCompleto(String nomeCompleto) {
     this.nomeCompleto = nomeCompleto;
-  }
-
-  public String getCpf() {
-    return cpf;
-  }
-
-  public void setCpf(String cpf) {
-    this.cpf = cpf;
   }
 
   public LocalDate getDataNascimento() {

@@ -6,7 +6,6 @@ import java.time.OffsetDateTime;
 public class MembroFamiliaResponseDTO {
   private Long id;
   private String nomeCompleto;
-  private String cpf;
   private LocalDate dataNascimento;
   private String profissao;
   private String parentesco;
@@ -21,7 +20,6 @@ public class MembroFamiliaResponseDTO {
   public MembroFamiliaResponseDTO(
     Long id,
     String nomeCompleto,
-    String cpf,
     LocalDate dataNascimento,
     String profissao,
     String parentesco,
@@ -32,7 +30,6 @@ public class MembroFamiliaResponseDTO {
   ) {
     this.id = id;
     this.nomeCompleto = nomeCompleto;
-    this.cpf = cpf;
     this.dataNascimento = dataNascimento;
     this.profissao = profissao;
     this.parentesco = parentesco;
@@ -56,14 +53,6 @@ public class MembroFamiliaResponseDTO {
 
   public void setNomeCompleto(String nomeCompleto) {
     this.nomeCompleto = nomeCompleto;
-  }
-
-  public String getCpf() {
-    return cpf;
-  }
-
-  public void setCpf(String cpf) {
-    this.cpf = cpf;
   }
 
   public LocalDate getDataNascimento() {
