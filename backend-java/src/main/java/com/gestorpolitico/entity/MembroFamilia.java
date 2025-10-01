@@ -39,7 +39,7 @@ public class MembroFamilia {
 
   @NotNull
   @Enumerated(EnumType.STRING)
-  @Column(nullable = false)
+  @Column(name = "parentesco", nullable = false, columnDefinition = "grau_parentesco")
   private Parentesco parentesco;
 
   @NotNull

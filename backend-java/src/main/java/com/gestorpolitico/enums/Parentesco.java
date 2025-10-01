@@ -52,9 +52,8 @@ public enum Parentesco {
 
   @JsonValue
   public String getCodigo() {
-    return name().toLowerCase(Locale.ROOT);
+    return name();
   }
-
   public String getDescricao() {
     return descricao;
   }
