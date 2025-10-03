@@ -1,17 +1,22 @@
 package com.gestorpolitico.controller;
 
+import com.gestorpolitico.dto.FamiliaFiltroRequestDTO;
+import com.gestorpolitico.dto.FamiliaListaResponseDTO;
 import com.gestorpolitico.dto.FamiliaRequestDTO;
 import com.gestorpolitico.dto.FamiliaResponseDTO;
 import com.gestorpolitico.service.FamiliaService;
 import jakarta.validation.Valid;
-import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 
 @RestController
 @RequestMapping("/api/familias")
@@ -29,8 +34,15 @@ public class FamiliaController {
   }
 
   @GetMapping
-  public ResponseEntity<List<FamiliaResponseDTO>> listarFamilias() {
-    List<FamiliaResponseDTO> familias = familiaService.listarFamilias();
+  public ResponseEntity<FamiliaListaResponseDTO> listarFamilias(
+    FamiliaFiltroRequestDTO filtro,
+    @RequestParam(defaultValue = "0") int pagina,
+    @RequestParam(defaultValue = "20") int tamanho
+  ) {
+    int paginaAjustada = Math.max(pagina, 0);
+    int tamanhoAjustado = Math.min(Math.max(tamanho, 1), 200);
+    Pageable pageable = PageRequest.of(paginaAjustada, tamanhoAjustado, Sort.by(Sort.Direction.DESC, "criadoEm"));
+    FamiliaListaResponseDTO familias = familiaService.buscarFamilias(filtro, pageable);
     return ResponseEntity.ok(familias);
   }
 }

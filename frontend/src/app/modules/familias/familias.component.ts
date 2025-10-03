@@ -1,6 +1,16 @@
 import { Component, OnInit } from '@angular/core';
+import { FormBuilder, FormGroup } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
-import { FamiliasService, FamiliaResponse } from './familias.service';
+import {
+  FamiliasService,
+  FamiliaFiltro,
+  FamiliaResponse
+} from './familias.service';
+import {
+  LocalidadesService,
+  Cidade,
+  Regiao
+} from '../shared/services/localidades.service';
 
 @Component({
 
@@ -12,14 +22,44 @@ import { FamiliasService, FamiliaResponse } from './familias.service';
 })
 export class FamiliasComponent implements OnInit {
   destaques: { titulo: string; valor: string; variacao: string; descricao: string }[] = [];
-  filtros = ['Todos', 'Zona Norte', 'Zona Sul', 'Zona Leste', 'Zona Oeste'];
   familias: FamiliaResponse[] = [];
   carregando = false;
   erroCarregamento = '';
 
+  filtroForm: FormGroup;
+  cidades: Cidade[] = [];
+  regioes: Regiao[] = [];
+  probabilidadesVoto: string[] = ['Alta', 'Média', 'Baixa'];
+  tamanhosPagina: number[] = [10, 20, 50, 100];
+
+  paginaAtual = 0;
+  tamanhoPagina = 20;
+  totalFamilias = 0;
+  responsaveisAtivos = 0;
+  novosCadastros = 0;
+
   familiaSelecionadaId: number | null = null;
 
-  constructor(private readonly familiasService: FamiliasService, private readonly route: ActivatedRoute) {}
+  constructor(
+    private readonly familiasService: FamiliasService,
+    private readonly route: ActivatedRoute,
+    private readonly fb: FormBuilder,
+    private readonly localidadesService: LocalidadesService
+  ) {
+    this.filtroForm = this.fb.group({
+      cidadeId: [null],
+      regiao: [''],
+      termo: [''],
+      responsavel: [''],
+      probabilidadeVoto: [''],
+      dataInicio: [''],
+      dataFim: [''],
+      bairro: [''],
+      rua: [''],
+      numero: [''],
+      cep: ['']
+    });
+  }
 
   ngOnInit(): void {
     const familiaIdParam = this.route.snapshot.queryParamMap.get('familiaId');
@@ -29,7 +69,104 @@ export class FamiliasComponent implements OnInit {
         this.familiaSelecionadaId = id;
       }
     }
-    this.carregarFamilias();
+
+    this.localidadesService.listarCidades().subscribe({
+      next: cidades => {
+        this.cidades = cidades;
+        if (cidades.length > 0) {
+          const cidadeId = cidades[0].id;
+          this.filtroForm.patchValue({ cidadeId });
+          this.carregarRegioes(cidadeId);
+        }
+        this.buscarFamilias();
+      },
+      error: erro => {
+        console.error('Erro ao carregar cidades', erro);
+        this.buscarFamilias();
+      }
+    });
+  }
+
+  aplicarFiltros(): void {
+    this.paginaAtual = 0;
+    this.buscarFamilias();
+  }
+
+  limparFiltros(): void {
+    const cidadeId = this.filtroForm.get('cidadeId')?.value ?? null;
+    this.filtroForm.reset({
+      cidadeId,
+      regiao: '',
+      termo: '',
+      responsavel: '',
+      probabilidadeVoto: '',
+      dataInicio: '',
+      dataFim: '',
+      bairro: '',
+      rua: '',
+      numero: '',
+      cep: ''
+    });
+    this.paginaAtual = 0;
+    this.buscarFamilias();
+  }
+
+  onCidadeChange(valor: string | number | null): void {
+    if (valor === null || valor === '') {
+      this.filtroForm.patchValue({ cidadeId: null, regiao: '' }, { emitEvent: false });
+      this.regioes = [];
+      this.aplicarFiltros();
+      return;
+    }
+
+    const cidadeId = Number(valor);
+    if (Number.isNaN(cidadeId)) {
+      return;
+    }
+
+    this.filtroForm.patchValue({ cidadeId, regiao: '' }, { emitEvent: false });
+    this.carregarRegioes(cidadeId);
+    this.aplicarFiltros();
+  }
+
+  alterarPagina(delta: number): void {
+    const novaPagina = this.paginaAtual + delta;
+    if (novaPagina < 0 || novaPagina >= this.totalPaginas) {
+      return;
+    }
+    this.paginaAtual = novaPagina;
+    this.buscarFamilias();
+  }
+
+  alterarTamanhoPagina(evento: Event): void {
+    const valor = Number((evento.target as HTMLSelectElement).value);
+    if (Number.isNaN(valor) || valor <= 0) {
+      return;
+    }
+    this.tamanhoPagina = valor;
+    this.paginaAtual = 0;
+    this.buscarFamilias();
+  }
+
+  get totalPaginas(): number {
+    if (this.tamanhoPagina <= 0) {
+      return 1;
+    }
+    return Math.max(1, Math.ceil(this.totalFamilias / this.tamanhoPagina));
+  }
+
+  get inicioIntervalo(): number {
+    if (this.totalFamilias === 0) {
+      return 0;
+    }
+    return this.paginaAtual * this.tamanhoPagina + 1;
+  }
+
+  get fimIntervalo(): number {
+    if (this.totalFamilias === 0) {
+      return 0;
+    }
+    return Math.min(this.totalFamilias, this.inicioIntervalo + this.familias.length - 1);
   }
 
   obterIniciais(nome: string): string {
@@ -81,12 +218,24 @@ export class FamiliasComponent implements OnInit {
     return data.toLocaleDateString();
   }
 
-  private carregarFamilias(): void {
+  private buscarFamilias(): void {
     this.carregando = true;
     this.erroCarregamento = '';
-    this.familiasService.listarFamilias().subscribe({
-      next: familias => {
-        this.familias = familias;
+    const filtros = this.montarFiltros();
+    this.familiasService.buscarFamilias(filtros, this.paginaAtual, this.tamanhoPagina).subscribe({
+      next: resposta => {
+        this.familias = resposta.familias;
+        this.totalFamilias = resposta.total;
+        this.responsaveisAtivos = resposta.responsaveisAtivos;
+        this.novosCadastros = resposta.novosCadastros;
+
+        const ultimaPagina = Math.max(this.totalPaginas - 1, 0);
+        if (this.familias.length === 0 && this.totalFamilias > 0 && this.paginaAtual > ultimaPagina) {
+          this.paginaAtual = ultimaPagina;
+          this.buscarFamilias();
+          return;
+        }
+
         this.atualizarDestaques();
         this.carregando = false;
       },
@@ -98,17 +247,71 @@ export class FamiliasComponent implements OnInit {
     });
   }
 
+  private carregarRegioes(cidadeId: number | null): void {
+    if (cidadeId === null || Number.isNaN(cidadeId)) {
+      this.regioes = [];
+      return;
+    }
+
+    this.localidadesService.listarRegioes(cidadeId).subscribe({
+      next: regioes => {
+        this.regioes = regioes;
+      },
+      error: erro => {
+        console.error('Erro ao carregar regiões', erro);
+        this.regioes = [];
+      }
+    });
+  }
+
+  private montarFiltros(): FamiliaFiltro {
+    const valores = this.filtroForm.value;
+    const filtros: FamiliaFiltro = {};
+
+    const cidadeId = valores.cidadeId !== null && valores.cidadeId !== '' ? Number(valores.cidadeId) : null;
+    if (cidadeId !== null && !Number.isNaN(cidadeId)) {
+      filtros.cidadeId = cidadeId;
+    }
+
+    const registrar = <K extends keyof FamiliaFiltro>(campo: K, valor: unknown) => {
+      if (typeof valor === 'string') {
+        const texto = valor.trim();
+        if (texto !== '') {
+          filtros[campo] = texto as FamiliaFiltro[K];
+        }
+      }
+    };
+
+    registrar('regiao', valores.regiao);
+    registrar('termo', valores.termo);
+    registrar('responsavel', valores.responsavel);
+    registrar('probabilidadeVoto', valores.probabilidadeVoto);
+    registrar('bairro', valores.bairro);
+    registrar('rua', valores.rua);
+    registrar('numero', valores.numero);
+
+    if (typeof valores.cep === 'string') {
+      const cepSanitizado = valores.cep.replace(/\D/g, '');
+      if (cepSanitizado !== '') {
+        filtros.cep = cepSanitizado;
+      }
+    }
+
+    if (typeof valores.dataInicio === 'string' && valores.dataInicio.trim() !== '') {
+      filtros.dataInicio = valores.dataInicio;
+    }
+
+    if (typeof valores.dataFim === 'string' && valores.dataFim.trim() !== '') {
+      filtros.dataFim = valores.dataFim;
+    }
+
+    return filtros;
+  }
+
   private atualizarDestaques(): void {
-    const totalFamilias = this.familias.length;
-    const responsaveisAtivos = this.familias.filter(familia =>
-      familia.membros.some(membro => membro.responsavelPrincipal)
-    ).length;
-    const seteDiasAtras = new Date();
-    seteDiasAtras.setDate(seteDiasAtras.getDate() - 7);
-    const novosCadastros = this.familias.filter(familia => {
-      const data = new Date(familia.criadoEm);
-      return data >= seteDiasAtras;
-    }).length;
+    const totalFamilias = this.totalFamilias;
+    const responsaveisAtivos = this.responsaveisAtivos;
+    const novosCadastros = this.novosCadastros;
 
     this.destaques = [
       {
