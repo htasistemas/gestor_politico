@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import {
   FamiliasService,
   FamiliaFiltro,
@@ -39,12 +39,14 @@ export class FamiliasComponent implements OnInit {
   novosCadastros = 0;
 
   familiaSelecionadaId: number | null = null;
+  mostrarFiltrosAvancados = false;
 
   constructor(
     private readonly familiasService: FamiliasService,
     private readonly route: ActivatedRoute,
     private readonly fb: FormBuilder,
-    private readonly localidadesService: LocalidadesService
+    private readonly localidadesService: LocalidadesService,
+    private readonly router: Router
   ) {
     this.filtroForm = this.fb.group({
       cidadeId: [null],
@@ -85,6 +87,10 @@ export class FamiliasComponent implements OnInit {
         this.buscarFamilias();
       }
     });
+  }
+
+  alternarFiltrosAvancados(): void {
+    this.mostrarFiltrosAvancados = !this.mostrarFiltrosAvancados;
   }
 
   aplicarFiltros(): void {
@@ -136,6 +142,13 @@ export class FamiliasComponent implements OnInit {
     }
     this.paginaAtual = novaPagina;
     this.buscarFamilias();
+  }
+
+  abrirFamilia(familia: FamiliaResponse): void {
+    this.familiaSelecionadaId = familia.id;
+    this.router.navigate(['/familias/nova'], {
+      queryParams: { familiaId: familia.id }
+    });
   }
 
   alterarTamanhoPagina(evento: Event): void {

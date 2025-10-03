@@ -66,138 +66,146 @@
       </div>
 
       <div class="px-6 py-6 border-b border-gray-100 bg-gray-50">
-        <form
-          [formGroup]="filtroForm"
-          (ngSubmit)="aplicarFiltros()"
-          class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4"
-          autocomplete="off"
-        >
-          <div class="flex flex-col gap-2">
-            <label class="text-xs font-semibold text-gray-600 uppercase tracking-wide">Cidade</label>
-            <select
-              formControlName="cidadeId"
-              class="px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              (change)="onCidadeChange($event.target.value)"
-            >
-              <option [ngValue]="null">Todas as cidades</option>
-              <option *ngFor="let cidade of cidades" [ngValue]="cidade.id">{{ cidade.nome }} / {{ cidade.uf }}</option>
-            </select>
+        <form [formGroup]="filtroForm" (ngSubmit)="aplicarFiltros()" class="space-y-5" autocomplete="off">
+          <div class="flex flex-col gap-4 lg:flex-row lg:items-end">
+            <div class="flex-1 flex flex-col gap-2">
+              <label class="text-xs font-semibold text-gray-600 uppercase tracking-wide">Busca livre</label>
+              <input
+                type="text"
+                formControlName="termo"
+                placeholder="Digite nome, endereço ou palavra-chave"
+                class="px-4 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div class="flex flex-wrap items-center gap-3 lg:justify-end">
+              <button
+                type="button"
+                class="px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-white transition-all"
+                (click)="alternarFiltrosAvancados()"
+              >
+                {{ mostrarFiltrosAvancados ? 'Ocultar filtros' : 'Filtro avançado' }}
+              </button>
+              <button
+                type="button"
+                class="px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-white transition-all"
+                (click)="limparFiltros()"
+              >
+                Limpar filtros
+              </button>
+              <button
+                type="submit"
+                class="px-5 py-2.5 rounded-xl gradient-blue text-white text-sm font-semibold shadow-md hover:opacity-90 transition-all"
+              >
+                Aplicar filtros
+              </button>
+            </div>
           </div>
 
-          <div class="flex flex-col gap-2">
-            <label class="text-xs font-semibold text-gray-600 uppercase tracking-wide">Região</label>
-            <select
-              formControlName="regiao"
-              class="px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">Todas as regiões</option>
-              <option *ngFor="let regiao of regioes" [value]="regiao.nome">{{ regiao.nome }}</option>
-            </select>
-          </div>
+          <div
+            *ngIf="mostrarFiltrosAvancados"
+            class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4"
+          >
+            <div class="flex flex-col gap-2">
+              <label class="text-xs font-semibold text-gray-600 uppercase tracking-wide">Cidade</label>
+              <select
+                formControlName="cidadeId"
+                class="px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                (change)="onCidadeChange($event.target.value)"
+              >
+                <option [ngValue]="null">Todas as cidades</option>
+                <option *ngFor="let cidade of cidades" [ngValue]="cidade.id">{{ cidade.nome }} / {{ cidade.uf }}</option>
+              </select>
+            </div>
 
-          <div class="flex flex-col gap-2">
-            <label class="text-xs font-semibold text-gray-600 uppercase tracking-wide">Busca livre</label>
-            <input
-              type="text"
-              formControlName="termo"
-              placeholder="Digite nome, endereço ou palavra-chave"
-              class="px-4 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
+            <div class="flex flex-col gap-2">
+              <label class="text-xs font-semibold text-gray-600 uppercase tracking-wide">Região</label>
+              <select
+                formControlName="regiao"
+                class="px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Todas as regiões</option>
+                <option *ngFor="let regiao of regioes" [value]="regiao.nome">{{ regiao.nome }}</option>
+              </select>
+            </div>
 
-          <div class="flex flex-col gap-2">
-            <label class="text-xs font-semibold text-gray-600 uppercase tracking-wide">Responsável</label>
-            <input
-              type="text"
-              formControlName="responsavel"
-              placeholder="Nome do responsável"
-              class="px-4 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
+            <div class="flex flex-col gap-2">
+              <label class="text-xs font-semibold text-gray-600 uppercase tracking-wide">Responsável</label>
+              <input
+                type="text"
+                formControlName="responsavel"
+                placeholder="Nome do responsável"
+                class="px-4 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
 
-          <div class="flex flex-col gap-2">
-            <label class="text-xs font-semibold text-gray-600 uppercase tracking-wide">Probabilidade de voto</label>
-            <select
-              formControlName="probabilidadeVoto"
-              class="px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">Todas</option>
-              <option *ngFor="let probabilidade of probabilidadesVoto" [value]="probabilidade">{{ probabilidade }}</option>
-            </select>
-          </div>
+            <div class="flex flex-col gap-2">
+              <label class="text-xs font-semibold text-gray-600 uppercase tracking-wide">Probabilidade de voto</label>
+              <select
+                formControlName="probabilidadeVoto"
+                class="px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Todas</option>
+                <option *ngFor="let probabilidade of probabilidadesVoto" [value]="probabilidade">{{ probabilidade }}</option>
+              </select>
+            </div>
 
-          <div class="flex flex-col gap-2">
-            <label class="text-xs font-semibold text-gray-600 uppercase tracking-wide">Data inicial</label>
-            <input
-              type="date"
-              formControlName="dataInicio"
-              class="px-4 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
+            <div class="flex flex-col gap-2">
+              <label class="text-xs font-semibold text-gray-600 uppercase tracking-wide">Data inicial</label>
+              <input
+                type="date"
+                formControlName="dataInicio"
+                class="px-4 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
 
-          <div class="flex flex-col gap-2">
-            <label class="text-xs font-semibold text-gray-600 uppercase tracking-wide">Data final</label>
-            <input
-              type="date"
-              formControlName="dataFim"
-              class="px-4 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
+            <div class="flex flex-col gap-2">
+              <label class="text-xs font-semibold text-gray-600 uppercase tracking-wide">Data final</label>
+              <input
+                type="date"
+                formControlName="dataFim"
+                class="px-4 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
 
-          <div class="flex flex-col gap-2">
-            <label class="text-xs font-semibold text-gray-600 uppercase tracking-wide">Bairro</label>
-            <input
-              type="text"
-              formControlName="bairro"
-              placeholder="Nome do bairro"
-              class="px-4 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
+            <div class="flex flex-col gap-2">
+              <label class="text-xs font-semibold text-gray-600 uppercase tracking-wide">Bairro</label>
+              <input
+                type="text"
+                formControlName="bairro"
+                placeholder="Nome do bairro"
+                class="px-4 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
 
-          <div class="flex flex-col gap-2">
-            <label class="text-xs font-semibold text-gray-600 uppercase tracking-wide">Rua</label>
-            <input
-              type="text"
-              formControlName="rua"
-              placeholder="Logradouro"
-              class="px-4 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
+            <div class="flex flex-col gap-2">
+              <label class="text-xs font-semibold text-gray-600 uppercase tracking-wide">Rua</label>
+              <input
+                type="text"
+                formControlName="rua"
+                placeholder="Logradouro"
+                class="px-4 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
 
-          <div class="flex flex-col gap-2">
-            <label class="text-xs font-semibold text-gray-600 uppercase tracking-wide">Número</label>
-            <input
-              type="text"
-              formControlName="numero"
-              placeholder="Número"
-              class="px-4 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
+            <div class="flex flex-col gap-2">
+              <label class="text-xs font-semibold text-gray-600 uppercase tracking-wide">Número</label>
+              <input
+                type="text"
+                formControlName="numero"
+                placeholder="Número"
+                class="px-4 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
 
-          <div class="flex flex-col gap-2">
-            <label class="text-xs font-semibold text-gray-600 uppercase tracking-wide">CEP</label>
-            <input
-              type="text"
-              formControlName="cep"
-              placeholder="Somente números"
-              class="px-4 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-          <div class="flex items-end justify-end gap-3 md:col-span-2 xl:col-span-4">
-            <button
-              type="button"
-              class="px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-white transition-all"
-              (click)="limparFiltros()"
-            >
-              Limpar filtros
-            </button>
-            <button
-              type="submit"
-              class="px-5 py-2.5 rounded-xl gradient-blue text-white text-sm font-semibold shadow-md hover:opacity-90 transition-all"
-            >
-              Aplicar filtros
-            </button>
+            <div class="flex flex-col gap-2">
+              <label class="text-xs font-semibold text-gray-600 uppercase tracking-wide">CEP</label>
+              <input
+                type="text"
+                formControlName="cep"
+                placeholder="Somente números"
+                class="px-4 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
           </div>
         </form>
       </div>
@@ -240,11 +248,12 @@
               <div class="max-h-[520px] overflow-y-auto divide-y divide-gray-100">
                 <div
                   *ngFor="let familia of familias"
-                  class="p-6 transition-colors"
+                  class="p-6 transition-colors cursor-pointer"
                   [ngClass]="{
                     'bg-blue-50/60 border-l-4 border-blue-400': familia.id === familiaSelecionadaId,
                     'hover:bg-gray-50': familia.id !== familiaSelecionadaId
                   }"
+                  (click)="abrirFamilia(familia)"
                 >
                   <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
                     <div class="flex items-start gap-4">
