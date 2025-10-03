@@ -124,7 +124,9 @@
                 class="px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">Todas as regiões</option>
-                <option *ngFor="let regiao of regioes" [value]="regiao.nome">{{ regiao.nome }}</option>
+                <option *ngFor="let regiao of regioes" [value]="regiao.nome">
+                  {{ regiao.nome }}{{ cidadeSelecionadaId === null && regiao.cidadeNome ? ' • ' + regiao.cidadeNome : '' }}
+                </option>
               </select>
             </div>
 
