@@ -18,8 +18,6 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
-import org.hibernate.annotations.JdbcType;
-import org.hibernate.type.descriptor.jdbc.PostgreSQLEnumJdbcType;
 
 @Entity
 @Table(name = "membro_familia")
@@ -41,8 +39,7 @@ public class MembroFamilia {
 
   @NotNull
   @Enumerated(EnumType.STRING)
-  @JdbcType(PostgreSQLEnumJdbcType.INSTANCE)
-  @Column(name = "parentesco", nullable = false, columnDefinition = "grau_parentesco")
+  @Column(name = "parentesco", nullable = false, length = 50)
   private Parentesco parentesco;
 
   @NotNull

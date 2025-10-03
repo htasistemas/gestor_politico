@@ -1,5 +1,4 @@
--- Script de criação das tabelas principais para o módulo de pessoas
-
+-- Criação inicial das tabelas essenciais para o módulo de famílias
 CREATE TABLE IF NOT EXISTS cidades (
   id BIGSERIAL PRIMARY KEY,
   nome VARCHAR(150) NOT NULL,
