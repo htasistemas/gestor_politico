@@ -5,6 +5,7 @@ import { DESCRICOES_PARENTESCO, GrauParentesco } from '../parentesco.enum';
 import { Bairro, Cidade, LocalidadesService, Regiao } from '../../shared/services/localidades.service';
 import { ViaCepResponse, ViaCepService } from '../../shared/services/via-cep.service';
 import { AuthService } from '../../shared/services/auth.service';
+import { NotificationService } from '../../shared/services/notification.service';
 
 const VALOR_NOVA_REGIAO = '__nova__';
 const VALOR_NOVO_BAIRRO = '__novo__';
@@ -107,7 +108,8 @@ export class NovaFamiliaComponent implements OnInit {
     private readonly familiasService: FamiliasService,
     private readonly localidadesService: LocalidadesService,
     private readonly viaCepService: ViaCepService,
-    private readonly authService: AuthService
+    private readonly authService: AuthService,
+    private readonly notificationService: NotificationService
   ) {
     this.ehAdministrador = this.authService.ehAdministrador();
     this.membros = [this.criarMembro(true)];
@@ -617,21 +619,28 @@ export class NovaFamiliaComponent implements OnInit {
     this.familiasService.criarFamilia(payload).subscribe({
       next: (resposta: FamiliaResponse | null) => {
         if (!resposta) {
-          window.alert('Não foi possível confirmar o cadastro da família no banco de dados. Tente novamente.');
+          this.notificationService.showError(
+            'Não foi possível confirmar o cadastro da família.',
+            'Tente novamente em instantes.'
+          );
           return;
         }
 
         const responsavel = this.obterResponsavelServidor(resposta) || 'Responsável não informado';
         const totalMembros = resposta.membros.length;
 
-        window.alert(
-          `Família do responsável "${responsavel}" cadastrada com sucesso!\n` + `Membros cadastrados: ${totalMembros}`
+        this.notificationService.showSuccess(
+          'Família cadastrada com sucesso!',
+          `Responsável: ${responsavel}\nMembros cadastrados: ${totalMembros}`
         );
         this.router.navigate(['/familias']);
       },
       error: erro => {
         console.error('Erro ao cadastrar família', erro);
-        window.alert('Não foi possível cadastrar a família. Tente novamente.');
+        this.notificationService.showError(
+          'Não foi possível cadastrar a família.',
+          'Tente novamente.'
+        );
       }
     });
   }
