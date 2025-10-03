@@ -1,0 +1,18 @@
+<div
+  *ngIf="notification$ | async as notification"
+  class="notification-card"
+  [ngClass]="typeClassMap[notification.type]"
+  role="status"
+  aria-live="polite"
+>
+  <div class="notification-accent"></div>
+  <div class="notification-body">
+    <button type="button" class="notification-close" (click)="dismiss()" aria-label="Fechar notificação">
+      <span aria-hidden="true">&times;</span>
+    </button>
+    <div class="notification-content">
+      <p class="notification-title">{{ notification.title }}</p>
+      <p *ngIf="notification.message" class="notification-message">{{ notification.message }}</p>
+    </div>
+  </div>
+</div>
