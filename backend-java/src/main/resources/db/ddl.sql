@@ -49,12 +49,29 @@ CREATE TABLE IF NOT EXISTS familia (
   criado_em TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+CREATE TYPE IF NOT EXISTS grau_parentesco AS ENUM (
+  'PAI',
+  'MAE',
+  'FILHO_A',
+  'FILHA',
+  'FILHO',
+  'IRMAO_A',
+  'PRIMO_A',
+  'TIO_A',
+  'SOBRINHO_A',
+  'CONJUGE',
+  'AVO_O',
+  'ENTEADO_A',
+  'RESPONSAVEL',
+  'OUTRO'
+);
+
 CREATE TABLE IF NOT EXISTS membro_familia (
   id BIGSERIAL PRIMARY KEY,
   nome_completo VARCHAR(255) NOT NULL,
   data_nascimento DATE,
   profissao VARCHAR(255),
-  parentesco VARCHAR(255) NOT NULL,
+  parentesco grau_parentesco NOT NULL,
   responsavel_principal BOOLEAN NOT NULL DEFAULT FALSE,
   probabilidade_voto VARCHAR(255) NOT NULL,
   telefone VARCHAR(30),
