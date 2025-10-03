@@ -2,6 +2,7 @@ package com.gestorpolitico.service;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.net.URI;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,7 +35,7 @@ public class CepService {
 
     Mono<CepResponse> requisicao = webClient
       .get()
-      .uri(CEP_URL + numerico)
+      .uri(URI.create(CEP_URL + numerico))
       .retrieve()
       .bodyToMono(CepResponse.class)
       .doOnError(erro -> LOGGER.warn("Falha ao consultar CEP {}: {}", numerico, erro.getMessage()));
@@ -60,9 +61,7 @@ public class CepService {
     String bairro,
     String cidade,
     String uf,
-    String codigoIbge,
-    Double latitude,
-    Double longitude
+    String codigoIbge
   ) {}
 
   @JsonIgnoreProperties(ignoreUnknown = true)
@@ -85,44 +84,8 @@ public class CepService {
     @JsonProperty("city_ibge")
     private String codigoIbge;
 
-    @JsonProperty("location")
-    private Location location;
-
     CepResultado toResultado() {
-      Double latitude = null;
-      Double longitude = null;
-      if (location != null && location.coordinates != null) {
-        latitude = parseDouble(location.coordinates.latitude);
-        longitude = parseDouble(location.coordinates.longitude);
-      }
-      return new CepResultado(cep, logradouro, bairro, cidade, uf, codigoIbge, latitude, longitude);
+      return new CepResultado(cep, logradouro, bairro, cidade, uf, codigoIbge);
     }
-
-    private Double parseDouble(String valor) {
-      if (valor == null || valor.isBlank()) {
-        return null;
-      }
-      try {
-        return Double.valueOf(valor);
-      } catch (NumberFormatException ex) {
-        LOGGER.warn("Coordenada inválida recebida para o CEP {}: {}", cep, valor);
-        return null;
-      }
-    }
-  }
-
-  @JsonIgnoreProperties(ignoreUnknown = true)
-  private static class Location {
-    @JsonProperty("coordinates")
-    private Coordinates coordinates;
-  }
-
-  @JsonIgnoreProperties(ignoreUnknown = true)
-  private static class Coordinates {
-    @JsonProperty("latitude")
-    private String latitude;
-
-    @JsonProperty("longitude")
-    private String longitude;
   }
 }
