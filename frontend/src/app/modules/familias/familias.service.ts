@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { HttpClient, HttpParams } from '@angular/common/http';
+import { Observable, map } from 'rxjs';
 import { buildApiUrl } from '../shared/api-url.util';
 import { GrauParentesco } from './parentesco.enum';
 
@@ -57,14 +57,60 @@ export interface FamiliaResponse {
   membros: FamiliaMembroResponse[];
 }
 
+export interface FamiliaFiltro {
+  cidadeId?: number | null;
+  regiao?: string | null;
+  bairro?: string | null;
+  responsavel?: string | null;
+  probabilidadeVoto?: string | null;
+  rua?: string | null;
+  numero?: string | null;
+  cep?: string | null;
+  termo?: string | null;
+  dataInicio?: string | null;
+  dataFim?: string | null;
+}
+
+export interface FamiliaListaResponse {
+  familias: FamiliaResponse[];
+  total: number;
+  pagina: number;
+  tamanho: number;
+  responsaveisAtivos: number;
+  novosCadastros: number;
+}
+
 @Injectable({ providedIn: 'root' })
 export class FamiliasService {
   private readonly apiUrl = buildApiUrl('familias');
 
   constructor(private readonly http: HttpClient) {}
 
-  listarFamilias(): Observable<FamiliaResponse[]> {
-    return this.http.get<FamiliaResponse[]>(this.apiUrl);
+  buscarFamilias(
+    filtros: FamiliaFiltro = {},
+    pagina = 0,
+    tamanho = 20
+  ): Observable<FamiliaListaResponse> {
+    let params = new HttpParams()
+      .set('pagina', pagina.toString())
+      .set('tamanho', tamanho.toString());
+
+    Object.entries(filtros).forEach(([chave, valor]) => {
+      if (valor === null || valor === undefined) {
+        return;
+      }
+      const texto = typeof valor === 'string' ? valor.trim() : valor;
+      if (texto === '' || texto === null) {
+        return;
+      }
+      params = params.set(chave, String(texto));
+    });
+
+    return this.http.get<FamiliaListaResponse>(this.apiUrl, { params });
+  }
+
+  listarTodasFamilias(filtros: FamiliaFiltro = {}): Observable<FamiliaResponse[]> {
+    return this.buscarFamilias(filtros, 0, 1000).pipe(map(resposta => resposta.familias));
   }
 
   criarFamilia(payload: FamiliaPayload): Observable<FamiliaResponse> {

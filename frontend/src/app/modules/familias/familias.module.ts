@@ -1,6 +1,6 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RouterModule, Routes } from '@angular/router';
 import { FamiliasComponent } from './familias.component';
 import { NovaFamiliaComponent } from './nova-familia/nova-familia.component';
@@ -12,6 +12,6 @@ const routes: Routes = [
 
 @NgModule({
   declarations: [FamiliasComponent, NovaFamiliaComponent],
-  imports: [CommonModule, FormsModule, RouterModule.forChild(routes)]
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule.forChild(routes)]
 })
 export class FamiliasModule {}

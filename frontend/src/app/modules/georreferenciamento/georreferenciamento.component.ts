@@ -55,7 +55,7 @@ export class GeoReferenciamentoComponent implements OnInit, AfterViewInit, OnDes
   private carregarFamilias(): void {
     this.carregando = true;
     this.erroCarregamento = '';
-    this.assinaturaFamilias = this.familiasService.listarFamilias().subscribe({
+    this.assinaturaFamilias = this.familiasService.listarTodasFamilias().subscribe({
       next: familias => {
         this.familiasLocalizadas = familias
           .map(familia => this.converterFamilia(familia))

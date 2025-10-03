@@ -1,6 +1,8 @@
 package com.gestorpolitico.service;
 
 import com.gestorpolitico.dto.EnderecoResponseDTO;
+import com.gestorpolitico.dto.FamiliaFiltroRequestDTO;
+import com.gestorpolitico.dto.FamiliaListaResponseDTO;
 import com.gestorpolitico.dto.FamiliaRequestDTO;
 import com.gestorpolitico.dto.FamiliaResponseDTO;
 import com.gestorpolitico.dto.MembroFamiliaRequestDTO;
@@ -16,13 +18,23 @@ import com.gestorpolitico.repository.CidadeRepository;
 import com.gestorpolitico.repository.FamiliaRepository;
 import com.gestorpolitico.repository.RegiaoRepository;
 import com.gestorpolitico.service.CepService.CepResultado;
+import jakarta.persistence.criteria.Join;
+import jakarta.persistence.criteria.JoinType;
+import jakarta.persistence.criteria.Predicate;
 import java.math.BigDecimal;
 import java.text.Normalizer;
+import java.time.LocalTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -100,10 +112,41 @@ public class FamiliaService {
   }
 
   @Transactional(readOnly = true)
-  public List<FamiliaResponseDTO> listarFamilias() {
-    return familiaRepository.findAllByOrderByCriadoEmDesc().stream()
+  public FamiliaListaResponseDTO buscarFamilias(FamiliaFiltroRequestDTO filtro, Pageable pageable) {
+    Specification<Familia> specification = criarFiltroSpecification(filtro);
+    Page<Familia> pagina = familiaRepository.findAll(specification, pageable);
+
+    List<FamiliaResponseDTO> familias = pagina
+      .getContent()
+      .stream()
       .map(this::converterFamilia)
       .collect(Collectors.toList());
+
+    List<Familia> familiasFiltradas = familiaRepository.findAll(specification);
+    long responsaveisAtivos = familiasFiltradas
+      .stream()
+      .filter(familia ->
+        familia
+          .getMembros()
+          .stream()
+          .anyMatch(membro -> Boolean.TRUE.equals(membro.getResponsavelPrincipal()))
+      )
+      .count();
+
+    OffsetDateTime seteDiasAtras = OffsetDateTime.now().minusDays(7);
+    long novosCadastros = familiasFiltradas
+      .stream()
+      .filter(familia -> familia.getCriadoEm() != null && familia.getCriadoEm().isAfter(seteDiasAtras))
+      .count();
+
+    return new FamiliaListaResponseDTO(
+      familias,
+      pagina.getTotalElements(),
+      pagina.getNumber(),
+      pagina.getSize(),
+      responsaveisAtivos,
+      novosCadastros
+    );
   }
 
   private MembroFamilia converterMembro(MembroFamiliaRequestDTO dto) {
@@ -193,6 +236,127 @@ public class FamiliaService {
     }
 
     return endereco;
+  }
+
+  private Specification<Familia> criarFiltroSpecification(FamiliaFiltroRequestDTO filtro) {
+    return (root, query, builder) -> {
+      query.distinct(true);
+      List<Predicate> predicates = new ArrayList<>();
+
+      var enderecoJoin = root.join("enderecoDetalhado", JoinType.LEFT);
+      var cidadeJoin = enderecoJoin.join("cidade", JoinType.LEFT);
+      Join<Familia, MembroFamilia> membrosJoin = null;
+
+      if (filtro == null) {
+        return builder.conjunction();
+      }
+
+      if (filtro.getCidadeId() != null) {
+        predicates.add(builder.equal(cidadeJoin.get("id"), filtro.getCidadeId()));
+      }
+
+      if (filtro.getRegiao() != null && !filtro.getRegiao().isBlank()) {
+        var bairroJoin = enderecoJoin.join("bairro", JoinType.LEFT);
+        predicates.add(
+          builder.equal(
+            builder.lower(bairroJoin.get("regiao")),
+            filtro.getRegiao().trim().toLowerCase(Locale.ROOT)
+          )
+        );
+      }
+
+      if (filtro.getBairro() != null && !filtro.getBairro().isBlank()) {
+        predicates.add(
+          builder.like(
+            builder.lower(root.get("bairro")),
+            "%" + filtro.getBairro().trim().toLowerCase(Locale.ROOT) + "%"
+          )
+        );
+      }
+
+      if (filtro.getRua() != null && !filtro.getRua().isBlank()) {
+        predicates.add(
+          builder.like(
+            builder.lower(enderecoJoin.get("rua")),
+            "%" + filtro.getRua().trim().toLowerCase(Locale.ROOT) + "%"
+          )
+        );
+      }
+
+      if (filtro.getNumero() != null && !filtro.getNumero().isBlank()) {
+        predicates.add(
+          builder.like(
+            builder.lower(enderecoJoin.get("numero")),
+            "%" + filtro.getNumero().trim().toLowerCase(Locale.ROOT) + "%"
+          )
+        );
+      }
+
+      if (filtro.getCep() != null && !filtro.getCep().isBlank()) {
+        String cepSanitizado = filtro.getCep().replaceAll("\\D", "");
+        if (!cepSanitizado.isBlank()) {
+          predicates.add(builder.like(enderecoJoin.get("cep"), "%" + cepSanitizado + "%"));
+        }
+      }
+
+      if (filtro.getResponsavel() != null && !filtro.getResponsavel().isBlank()) {
+        membrosJoin = root.join("membros", JoinType.LEFT);
+        predicates.add(builder.isTrue(membrosJoin.get("responsavelPrincipal")));
+        predicates.add(
+          builder.like(
+            builder.lower(membrosJoin.get("nomeCompleto")),
+            "%" + filtro.getResponsavel().trim().toLowerCase(Locale.ROOT) + "%"
+          )
+        );
+      }
+
+      if (filtro.getProbabilidadeVoto() != null && !filtro.getProbabilidadeVoto().isBlank()) {
+        if (membrosJoin == null) {
+          membrosJoin = root.join("membros", JoinType.LEFT);
+        }
+        predicates.add(
+          builder.equal(
+            builder.lower(membrosJoin.get("probabilidadeVoto")),
+            filtro.getProbabilidadeVoto().trim().toLowerCase(Locale.ROOT)
+          )
+        );
+      }
+
+      if (filtro.getDataInicio() != null) {
+        OffsetDateTime inicio = filtro
+          .getDataInicio()
+          .atStartOfDay(ZoneId.systemDefault())
+          .toOffsetDateTime();
+        predicates.add(builder.greaterThanOrEqualTo(root.get("criadoEm"), inicio));
+      }
+
+      if (filtro.getDataFim() != null) {
+        OffsetDateTime fim = filtro
+          .getDataFim()
+          .atTime(LocalTime.MAX)
+          .atZone(ZoneId.systemDefault())
+          .toOffsetDateTime();
+        predicates.add(builder.lessThanOrEqualTo(root.get("criadoEm"), fim));
+      }
+
+      if (filtro.getTermo() != null && !filtro.getTermo().isBlank()) {
+        String termoLike = "%" + filtro.getTermo().trim().toLowerCase(Locale.ROOT) + "%";
+        Predicate enderecoPredicate = builder.like(builder.lower(root.get("endereco")), termoLike);
+        Predicate bairroPredicate = builder.like(builder.lower(root.get("bairro")), termoLike);
+        Predicate cidadePredicate = builder.like(builder.lower(cidadeJoin.get("nome")), termoLike);
+        if (membrosJoin == null) {
+          membrosJoin = root.join("membros", JoinType.LEFT);
+        }
+        Predicate responsavelPredicate = builder.like(builder.lower(membrosJoin.get("nomeCompleto")), termoLike);
+        predicates.add(builder.or(enderecoPredicate, bairroPredicate, cidadePredicate, responsavelPredicate));
+      }
+
+      if (predicates.isEmpty()) {
+        return builder.conjunction();
+      }
+
+      return builder.and(predicates.toArray(new Predicate[0]));
+    };
   }
 
   private String montarEnderecoCompleto(
