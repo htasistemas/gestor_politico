@@ -102,6 +102,7 @@ export class NovaFamiliaComponent implements OnInit {
 
   mostrarPrevia = false;
   previaFamilia: PreviaFamilia | null = null;
+  salvandoFamilia = false;
 
   constructor(
     private readonly router: Router,
@@ -611,10 +612,15 @@ export class NovaFamiliaComponent implements OnInit {
   }
 
   cadastrarFamilia(): void {
+    if (this.salvandoFamilia) {
+      return;
+    }
+
     if (!this.formularioValido()) {
       return;
     }
 
+    this.salvandoFamilia = true;
     const payload = this.montarPayload();
     this.familiasService.criarFamilia(payload).subscribe({
       next: (resposta: FamiliaResponse | null) => {
@@ -623,6 +629,7 @@ export class NovaFamiliaComponent implements OnInit {
             'Não foi possível confirmar o cadastro da família.',
             'Tente novamente em instantes.'
           );
+          this.salvandoFamilia = false;
           return;
         }
 
@@ -633,6 +640,7 @@ export class NovaFamiliaComponent implements OnInit {
           'Família cadastrada com sucesso!',
           `Responsável: ${responsavel}\nMembros cadastrados: ${totalMembros}`
         );
+        this.salvandoFamilia = false;
         this.router.navigate(['/familias']);
       },
       error: erro => {
@@ -641,6 +649,7 @@ export class NovaFamiliaComponent implements OnInit {
           'Não foi possível cadastrar a família.',
           'Tente novamente.'
         );
+        this.salvandoFamilia = false;
       }
     });
   }

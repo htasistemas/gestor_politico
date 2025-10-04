@@ -27,6 +27,7 @@ public class GeocodingService {
       return Optional.empty();
     }
 
+
     if (LOGGER.isDebugEnabled()) {
       LOGGER.debug("Consultando Nominatim com endereço: {}", enderecoCompleto);
     }
@@ -70,7 +71,49 @@ public class GeocodingService {
     } catch (Exception ex) {
       LOGGER.warn("Falha ao consultar Nominatim: {}", ex.getMessage());
       return Optional.empty();
+
     }
+  }
+
+    return webClient
+      .get()
+      .uri(
+        UriComponentsBuilder
+          .fromHttpUrl(NOMINATIM_URL)
+          .queryParam("q", UriUtils.encode(enderecoCompleto, StandardCharsets.UTF_8))
+          .queryParam("format", "json")
+          .queryParam("limit", "1")
+          .queryParam("addressdetails", "0")
+          .queryParam("countrycodes", "br")
+          .build(true)
+          .toUri()
+      )
+      .retrieve()
+      .bodyToMono(NominatimResponse[].class)
+      .doOnError(throwable -> LOGGER.warn("Falha ao consultar Nominatim: {}", throwable.getMessage()))
+      .onErrorReturn(new NominatimResponse[0])
+      .flatMap(respostas -> {
+        if (respostas.length == 0) {
+          if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("Nominatim não retornou resultados para: {}", enderecoCompleto);
+          }
+          return Mono.empty();
+        }
+        Coordenada coordenada = respostas[0].toCoordenada();
+        if (coordenada == null) {
+          LOGGER.debug("Primeiro resultado do Nominatim não possui coordenadas válidas");
+          return Mono.empty();
+        }
+        if (LOGGER.isDebugEnabled()) {
+          LOGGER.debug(
+            "Nominatim retornou latitude {} e longitude {}",
+            coordenada.latitude(),
+            coordenada.longitude()
+          );
+        }
+        return Mono.just(coordenada);
+      })
+      .blockOptional();
   }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
