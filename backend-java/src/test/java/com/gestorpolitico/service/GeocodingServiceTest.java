@@ -41,7 +41,7 @@ class GeocodingServiceTest {
     );
 
     Optional<GeocodingService.Coordenada> coordenada = geocodingService.buscarCoordenadas(
-      "Rua Arpoador 147 Uberlandia Minas Gerais Brasil"
+      "Rua Arpoador, 147, Uberlandia - MG, Brasil"
     );
 
     RecordedRequest recordedRequest = mockWebServer.takeRequest();
@@ -76,7 +76,7 @@ class GeocodingServiceTest {
   }
 
   @Test
-  void deveTentarComEnderecoNormalizadoQuandoNaoHaResultadosNaPrimeiraConsulta() throws InterruptedException {
+  void deveTentarSemBairroQuandoNaoHaResultadosNaPrimeiraConsulta() throws InterruptedException {
     mockWebServer.enqueue(
       new MockResponse().setResponseCode(200).setHeader("Content-Type", "application/json").setBody("[]")
     );
@@ -95,11 +95,11 @@ class GeocodingServiceTest {
     RecordedRequest segundaRequisicao = mockWebServer.takeRequest();
 
     assertEquals(
-      "Rua Ildeu Oliveira Rezende, 82, Luizote De Freitas, Uberlândia - MG, CEP 38414368, Brasil",
+      "Rua Ildeu Oliveira Rezende 82 Luizote De Freitas Uberlandia Minas Gerais Brasil",
       primeiraRequisicao.getRequestUrl().queryParameter("q")
     );
     assertEquals(
-      "Rua Ildeu Oliveira Rezende 82 Luizote De Freitas Uberlandia Minas Gerais Brasil",
+      "Rua Ildeu Oliveira Rezende 82 Uberlandia Minas Gerais Brasil",
       segundaRequisicao.getRequestUrl().queryParameter("q")
     );
 

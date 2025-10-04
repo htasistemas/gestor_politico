@@ -75,15 +75,21 @@ public class GeocodingService {
       LOGGER.warn("Geocodificação ignorada porque o endereço está vazio");
       return Optional.empty();
     }
-    Optional<Coordenada> coordenada = consultarNominatim(enderecoCompleto);
-    if (coordenada.isPresent()) {
-      return coordenada;
+    String enderecoNormalizado = normalizarEndereco(enderecoCompleto);
+    if (!enderecoNormalizado.isBlank()) {
+      Optional<Coordenada> coordenada = consultarNominatim(enderecoNormalizado);
+      if (coordenada.isPresent()) {
+        return coordenada;
+      }
     }
 
-    String enderecoNormalizado = normalizarEndereco(enderecoCompleto);
-    if (!enderecoNormalizado.isBlank() && !enderecoNormalizado.equals(enderecoCompleto)) {
-      LOGGER.info("Tentando geocodificação com endereço normalizado: {}", enderecoNormalizado);
-      return consultarNominatim(enderecoNormalizado);
+    Optional<String> enderecoSemBairro = removerBairro(enderecoCompleto);
+    if (enderecoSemBairro.isPresent()) {
+      String enderecoSemBairroNormalizado = normalizarEndereco(enderecoSemBairro.get());
+      if (!enderecoSemBairroNormalizado.isBlank()) {
+        LOGGER.info("Tentando geocodificação sem bairro: {}", enderecoSemBairroNormalizado);
+        return consultarNominatim(enderecoSemBairroNormalizado);
+      }
     }
 
     return Optional.empty();
@@ -174,6 +180,56 @@ public class GeocodingService {
       resultado = matcher.replaceAll(Matcher.quoteReplacement(entry.getValue()));
     }
     return resultado;
+  }
+
+  private Optional<String> removerBairro(String enderecoCompleto) {
+    if (enderecoCompleto == null || enderecoCompleto.isBlank()) {
+      return Optional.empty();
+    }
+
+    String[] partes = enderecoCompleto.split(",");
+    if (partes.length < 3) {
+      return Optional.empty();
+    }
+
+    String possivelBairro = partes[2].trim();
+    if (!ehProvavelBairro(possivelBairro)) {
+      return Optional.empty();
+    }
+
+    StringBuilder builder = new StringBuilder();
+    for (int i = 0; i < partes.length; i++) {
+      if (i == 2) {
+        continue;
+      }
+      String parte = partes[i].trim();
+      if (parte.isEmpty()) {
+        continue;
+      }
+      if (builder.length() > 0) {
+        builder.append(", ");
+      }
+      builder.append(parte);
+    }
+
+    if (builder.length() == 0) {
+      return Optional.empty();
+    }
+
+    return Optional.of(builder.toString());
+  }
+
+  private boolean ehProvavelBairro(String parte) {
+    if (parte.isBlank()) {
+      return false;
+    }
+    if ("Brasil".equalsIgnoreCase(parte)) {
+      return false;
+    }
+    if (parte.regionMatches(true, 0, "CEP", 0, 3)) {
+      return false;
+    }
+    return !parte.contains(" - ");
   }
 
   @JsonIgnoreProperties(ignoreUnknown = true)
