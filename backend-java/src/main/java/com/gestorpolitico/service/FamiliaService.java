@@ -218,22 +218,17 @@ public class FamiliaService {
     endereco.setCidade(cidade);
     endereco.setBairro(bairro);
 
-    if (cepResultado.latitude() != null && cepResultado.longitude() != null) {
-      endereco.setLatitude(BigDecimal.valueOf(cepResultado.latitude()));
-      endereco.setLongitude(BigDecimal.valueOf(cepResultado.longitude()));
-    } else {
-      String enderecoCompleto = montarEnderecoCompleto(dto, cidade, bairro, cepSanitizado);
-      geocodingService
-        .buscarCoordenadas(enderecoCompleto)
-        .ifPresent(coordenada -> {
-          if (coordenada.latitude() != null) {
-            endereco.setLatitude(BigDecimal.valueOf(coordenada.latitude()));
-          }
-          if (coordenada.longitude() != null) {
-            endereco.setLongitude(BigDecimal.valueOf(coordenada.longitude()));
-          }
-        });
-    }
+    String enderecoCompleto = montarEnderecoCompleto(dto, cidade, bairro, cepResultado, cepSanitizado);
+    geocodingService
+      .buscarCoordenadas(enderecoCompleto)
+      .ifPresent(coordenada -> {
+        if (coordenada.latitude() != null) {
+          endereco.setLatitude(BigDecimal.valueOf(coordenada.latitude()));
+        }
+        if (coordenada.longitude() != null) {
+          endereco.setLongitude(BigDecimal.valueOf(coordenada.longitude()));
+        }
+      });
 
     return endereco;
   }
@@ -363,19 +358,51 @@ public class FamiliaService {
     FamiliaRequestDTO dto,
     Cidade cidade,
     Bairro bairro,
+    CepResultado cepResultado,
     String cepSanitizado
   ) {
     StringBuilder builder = new StringBuilder();
-    builder.append(dto.getRua()).append(", ").append(dto.getNumero());
+    adicionarParte(builder, obterPrimeiroValorNaoVazio(dto.getRua(), cepResultado.logradouro()));
+    adicionarParte(builder, obterPrimeiroValorNaoVazio(dto.getNumero()));
     if (bairro != null) {
-      builder.append(", ").append(bairro.getNome());
+      adicionarParte(builder, bairro.getNome());
     }
-    builder.append(", ").append(cidade.getNome()).append(" - ").append(cidade.getUf());
+    adicionarParte(builder, cidade.getNome() + " - " + cidade.getUf());
     if (cepSanitizado != null && !cepSanitizado.isBlank()) {
-      builder.append(", CEP ").append(cepSanitizado);
+      adicionarParte(builder, "CEP " + cepSanitizado);
     }
-    builder.append(", Brasil");
+    adicionarParte(builder, "Brasil");
     return builder.toString();
+  }
+
+  private void adicionarParte(StringBuilder builder, String valor) {
+    if (valor == null) {
+      return;
+    }
+    String normalizado = valor.trim();
+    if (normalizado.isEmpty()) {
+      return;
+    }
+    if (builder.length() > 0) {
+      builder.append(", ");
+    }
+    builder.append(normalizado);
+  }
+
+  private String obterPrimeiroValorNaoVazio(String... valores) {
+    if (valores == null) {
+      return null;
+    }
+    for (String valor : valores) {
+      if (valor == null) {
+        continue;
+      }
+      String normalizado = valor.trim();
+      if (!normalizado.isEmpty()) {
+        return normalizado;
+      }
+    }
+    return null;
   }
 
   private void validarCidadeComCep(Cidade cidade, CepResultado cepResultado) {
