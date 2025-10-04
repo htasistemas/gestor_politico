@@ -26,11 +26,7 @@ public class GeocodingService {
       LOGGER.debug("Geocoding ignorado, endereço vazio");
       return Optional.empty();
     }
-
-
-    if (LOGGER.isDebugEnabled()) {
-      LOGGER.debug("Consultando Nominatim com endereço: {}", enderecoCompleto);
-    }
+    LOGGER.info("Consultando Nominatim com endereço: {}", enderecoCompleto);
 
     URI uri = UriComponentsBuilder
       .fromHttpUrl(NOMINATIM_URL)
@@ -46,26 +42,22 @@ public class GeocodingService {
       NominatimResponse[] respostas = webClient.get().uri(uri).retrieve().bodyToMono(NominatimResponse[].class).block();
 
       if (respostas == null || respostas.length == 0) {
-        if (LOGGER.isDebugEnabled()) {
-          LOGGER.debug("Nominatim não retornou resultados para: {}", enderecoCompleto);
-        }
+        LOGGER.info("Nominatim não retornou resultados para: {}", enderecoCompleto);
         return Optional.empty();
       }
 
       NominatimResponse primeiraResposta = respostas[0];
       Coordenada coordenada = primeiraResposta != null ? primeiraResposta.toCoordenada() : null;
       if (coordenada == null) {
-        LOGGER.debug("Primeiro resultado do Nominatim não possui coordenadas válidas");
+        LOGGER.warn("Primeiro resultado do Nominatim não possui coordenadas válidas");
         return Optional.empty();
       }
 
-      if (LOGGER.isDebugEnabled()) {
-        LOGGER.debug(
-          "Nominatim retornou latitude {} e longitude {}",
-          coordenada.latitude(),
-          coordenada.longitude()
-        );
-      }
+      LOGGER.info(
+        "Nominatim retornou latitude {} e longitude {}",
+        coordenada.latitude(),
+        coordenada.longitude()
+      );
 
       return Optional.of(coordenada);
     } catch (Exception ex) {
