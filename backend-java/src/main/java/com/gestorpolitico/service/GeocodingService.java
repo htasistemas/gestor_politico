@@ -3,6 +3,9 @@ package com.gestorpolitico.service;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,8 +17,12 @@ import org.springframework.web.util.UriComponentsBuilder;
 public class GeocodingService {
   private static final Logger LOGGER = LoggerFactory.getLogger(GeocodingService.class);
   private static final String NOMINATIM_URL = "https://nominatim.openstreetmap.org/search";
+  private static final String USER_AGENT = "GestorPolitico/1.0 (contato@gestorpolitico.com)";
+  private static final Duration NOMINATIM_RATE_LIMIT = Duration.ofSeconds(1);
 
   private final WebClient webClient;
+  private final Object rateLimitLock = new Object();
+  private Instant lastRequestTime = Instant.EPOCH;
 
   public GeocodingService(WebClient webClient) {
     this.webClient = webClient;
@@ -35,11 +42,21 @@ public class GeocodingService {
       .queryParam("limit", "1")
       .queryParam("addressdetails", "0")
       .queryParam("countrycodes", "br")
+      .encode(StandardCharsets.UTF_8)
       .build()
       .toUri();
 
     try {
-      NominatimResponse[] respostas = webClient.get().uri(uri).retrieve().bodyToMono(NominatimResponse[].class).block();
+      aplicarLimiteDeTaxa();
+
+      NominatimResponse[] respostas = webClient
+        .get()
+        .uri(uri)
+        .header("User-Agent", USER_AGENT)
+        .header("Accept-Language", "pt-BR")
+        .retrieve()
+        .bodyToMono(NominatimResponse[].class)
+        .block();
 
       if (respostas == null || respostas.length == 0) {
         LOGGER.warn("Nominatim não retornou resultados para: {}", enderecoCompleto);
@@ -64,6 +81,22 @@ public class GeocodingService {
       LOGGER.warn("Falha ao consultar Nominatim", ex);
       return Optional.empty();
 
+    }
+  }
+
+  private void aplicarLimiteDeTaxa() {
+    synchronized (rateLimitLock) {
+      Instant agora = Instant.now();
+      Duration decorrido = Duration.between(lastRequestTime, agora);
+      if (decorrido.compareTo(NOMINATIM_RATE_LIMIT) < 0) {
+        long aguardarMillis = NOMINATIM_RATE_LIMIT.minus(decorrido).toMillis();
+        try {
+          Thread.sleep(aguardarMillis);
+        } catch (InterruptedException interruptedException) {
+          Thread.currentThread().interrupt();
+        }
+      }
+      lastRequestTime = Instant.now();
     }
   }
 
