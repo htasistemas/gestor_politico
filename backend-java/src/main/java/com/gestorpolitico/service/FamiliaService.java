@@ -32,6 +32,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -42,6 +44,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class FamiliaService {
+  private static final Logger LOGGER = LoggerFactory.getLogger(FamiliaService.class);
   private final FamiliaRepository familiaRepository;
   private final CidadeRepository cidadeRepository;
   private final BairroRepository bairroRepository;
@@ -219,16 +222,28 @@ public class FamiliaService {
     endereco.setBairro(bairro);
 
     String enderecoCompleto = montarEnderecoCompleto(dto, cidade, bairro, cepResultado, cepSanitizado);
-    geocodingService
-      .buscarCoordenadas(enderecoCompleto)
-      .ifPresent(coordenada -> {
-        if (coordenada.latitude() != null) {
-          endereco.setLatitude(BigDecimal.valueOf(coordenada.latitude()));
-        }
-        if (coordenada.longitude() != null) {
-          endereco.setLongitude(BigDecimal.valueOf(coordenada.longitude()));
-        }
-      });
+    LOGGER.info("Preparando geocodificação do endereço da família: {}", enderecoCompleto);
+    Optional<GeocodingService.Coordenada> coordenadaOptional = geocodingService.buscarCoordenadas(enderecoCompleto);
+
+    if (coordenadaOptional.isEmpty()) {
+      LOGGER.warn("Nenhuma coordenada retornada para o endereço: {}", enderecoCompleto);
+      return endereco;
+    }
+
+    GeocodingService.Coordenada coordenada = coordenadaOptional.get();
+
+    if (coordenada.latitude() != null) {
+      endereco.setLatitude(BigDecimal.valueOf(coordenada.latitude()));
+    }
+    if (coordenada.longitude() != null) {
+      endereco.setLongitude(BigDecimal.valueOf(coordenada.longitude()));
+    }
+
+    LOGGER.info(
+      "Coordenadas definidas para o endereço da família (lat: {}, lon: {})",
+      coordenada.latitude(),
+      coordenada.longitude()
+    );
 
     return endereco;
   }
