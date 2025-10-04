@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, OnDestroy, OnInit } from '@angular/core';
+import { AfterViewInit, Component, HostListener, OnDestroy, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import * as L from 'leaflet';
 import { Subscription } from 'rxjs';
@@ -25,6 +25,7 @@ export class GeoReferenciamentoComponent implements OnInit, AfterViewInit, OnDes
   private mapa: L.Map | null = null;
   private camadaMarcadores: L.LayerGroup | null = null;
   private assinaturaFamilias: Subscription | null = null;
+  private ajusteMapaTimeout: number | null = null;
   private readonly iconeFamilia = L.divIcon({
 
     html: '<i class="fa-solid fa-house-chimney-window" aria-hidden="true"></i>',
@@ -43,15 +44,25 @@ export class GeoReferenciamentoComponent implements OnInit, AfterViewInit, OnDes
 
   ngAfterViewInit(): void {
     this.inicializarMapa();
+    this.agendarAjusteMapa();
     this.atualizarMapa();
   }
 
   ngOnDestroy(): void {
+    if (this.ajusteMapaTimeout !== null) {
+      clearTimeout(this.ajusteMapaTimeout);
+      this.ajusteMapaTimeout = null;
+    }
     this.assinaturaFamilias?.unsubscribe();
     if (this.mapa) {
       this.mapa.remove();
       this.mapa = null;
     }
+  }
+
+  @HostListener('window:resize')
+  onWindowResize(): void {
+    this.agendarAjusteMapa();
   }
 
   private carregarFamilias(): void {
@@ -108,6 +119,8 @@ export class GeoReferenciamentoComponent implements OnInit, AfterViewInit, OnDes
       return;
     }
 
+    this.agendarAjusteMapa();
+
     if (!this.camadaMarcadores) {
       this.camadaMarcadores = L.layerGroup().addTo(this.mapa);
     }
@@ -138,6 +151,21 @@ export class GeoReferenciamentoComponent implements OnInit, AfterViewInit, OnDes
 
     const limites = L.latLngBounds(coordenadas);
     this.mapa.fitBounds(limites, { padding: [40, 40] });
+  }
+
+  private agendarAjusteMapa(): void {
+    if (!this.mapa) {
+      return;
+    }
+
+    if (this.ajusteMapaTimeout !== null) {
+      clearTimeout(this.ajusteMapaTimeout);
+    }
+
+    this.ajusteMapaTimeout = setTimeout(() => {
+      this.mapa?.invalidateSize();
+      this.ajusteMapaTimeout = null;
+    }, 0);
   }
 
   private converterFamilia(familia: FamiliaResponse): FamiliaLocalizada | null {
