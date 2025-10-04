@@ -74,4 +74,38 @@ class GeocodingServiceTest {
 
     assertTrue(coordenada.isEmpty());
   }
+
+  @Test
+  void deveTentarComEnderecoNormalizadoQuandoNaoHaResultadosNaPrimeiraConsulta() throws InterruptedException {
+    mockWebServer.enqueue(
+      new MockResponse().setResponseCode(200).setHeader("Content-Type", "application/json").setBody("[]")
+    );
+    mockWebServer.enqueue(
+      new MockResponse()
+        .setResponseCode(200)
+        .setHeader("Content-Type", "application/json")
+        .setBody("[{\"lat\":\"-18.9204939\",\"lon\":\"-48.3245775\"}]")
+    );
+
+    Optional<GeocodingService.Coordenada> coordenada = geocodingService.buscarCoordenadas(
+      "Rua Ildeu Oliveira Rezende, 82, Luizote De Freitas, Uberlândia - MG, CEP 38414368, Brasil"
+    );
+
+    RecordedRequest primeiraRequisicao = mockWebServer.takeRequest();
+    RecordedRequest segundaRequisicao = mockWebServer.takeRequest();
+
+    assertEquals(
+      "Rua Ildeu Oliveira Rezende, 82, Luizote De Freitas, Uberlândia - MG, CEP 38414368, Brasil",
+      primeiraRequisicao.getRequestUrl().queryParameter("q")
+    );
+    assertEquals(
+      "Rua Ildeu Oliveira Rezende 82 Luizote De Freitas Uberlandia Minas Gerais Brasil",
+      segundaRequisicao.getRequestUrl().queryParameter("q")
+    );
+
+    assertTrue(coordenada.isPresent());
+    assertEquals(-18.9204939, coordenada.get().latitude());
+    assertEquals(-48.3245775, coordenada.get().longitude());
+  }
+
 }
