@@ -23,7 +23,7 @@ public class GeocodingService {
 
   public Optional<Coordenada> buscarCoordenadas(String enderecoCompleto) {
     if (enderecoCompleto == null || enderecoCompleto.isBlank()) {
-      LOGGER.debug("Geocoding ignorado, endereço vazio");
+      LOGGER.warn("Geocodificação ignorada porque o endereço está vazio");
       return Optional.empty();
     }
     LOGGER.info("Consultando Nominatim com endereço: {}", enderecoCompleto);
@@ -42,7 +42,7 @@ public class GeocodingService {
       NominatimResponse[] respostas = webClient.get().uri(uri).retrieve().bodyToMono(NominatimResponse[].class).block();
 
       if (respostas == null || respostas.length == 0) {
-        LOGGER.info("Nominatim não retornou resultados para: {}", enderecoCompleto);
+        LOGGER.warn("Nominatim não retornou resultados para: {}", enderecoCompleto);
         return Optional.empty();
       }
 
@@ -61,7 +61,7 @@ public class GeocodingService {
 
       return Optional.of(coordenada);
     } catch (Exception ex) {
-      LOGGER.warn("Falha ao consultar Nominatim: {}", ex.getMessage());
+      LOGGER.warn("Falha ao consultar Nominatim", ex);
       return Optional.empty();
 
     }
