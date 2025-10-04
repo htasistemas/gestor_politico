@@ -26,11 +26,11 @@ export class GeoReferenciamentoComponent implements OnInit, AfterViewInit, OnDes
   private camadaMarcadores: L.LayerGroup | null = null;
   private assinaturaFamilias: Subscription | null = null;
   private readonly iconeFamilia = L.divIcon({
-    html: '<i class="fa-solid fa-people-roof" aria-hidden="true"></i>',
+    html: '<i class="fa-solid fa-house-chimney-window" aria-hidden="true"></i>',
     className: 'familia-marker',
-    iconSize: [36, 36],
-    iconAnchor: [18, 36],
-    popupAnchor: [0, -28]
+    iconSize: [40, 40],
+    iconAnchor: [20, 40],
+    popupAnchor: [0, -32]
   });
 
   constructor(private readonly familiasService: FamiliasService, private readonly router: Router) {}

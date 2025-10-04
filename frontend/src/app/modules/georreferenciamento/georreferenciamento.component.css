@@ -47,16 +47,16 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #10b981, #047857);
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
   color: #fff;
-  border: 3px solid #fff;
-  box-shadow: 0 10px 15px -3px rgba(4, 120, 87, 0.35);
+  border: 3px solid rgba(255, 255, 255, 0.95);
+  box-shadow: 0 12px 20px -6px rgba(37, 99, 235, 0.45);
 }
 
 .familia-marker .fa-solid {
-  font-size: 1rem;
+  font-size: 1.1rem;
   filter: drop-shadow(0 2px 4px rgba(15, 23, 42, 0.35));
 }
