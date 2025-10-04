@@ -107,4 +107,5 @@ class GeocodingServiceTest {
     assertEquals(-18.9204939, coordenada.get().latitude());
     assertEquals(-48.3245775, coordenada.get().longitude());
   }
+
 }
