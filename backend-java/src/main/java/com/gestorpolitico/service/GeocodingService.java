@@ -9,6 +9,7 @@ import java.time.Instant;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -16,16 +17,20 @@ import org.springframework.web.util.UriComponentsBuilder;
 @Service
 public class GeocodingService {
   private static final Logger LOGGER = LoggerFactory.getLogger(GeocodingService.class);
-  private static final String NOMINATIM_URL = "https://nominatim.openstreetmap.org/search";
-  private static final String USER_AGENT = "GestorPolitico/1.0 (contato@gestorpolitico.com)";
+  private static final String USER_AGENT = "gestor-politico/1.0 (contato@gestorpolitico.com)";
   private static final Duration NOMINATIM_RATE_LIMIT = Duration.ofSeconds(1);
 
   private final WebClient webClient;
+  private final String nominatimUrl;
   private final Object rateLimitLock = new Object();
   private Instant lastRequestTime = Instant.EPOCH;
 
-  public GeocodingService(WebClient webClient) {
+  public GeocodingService(
+    WebClient webClient,
+    @Value("${geocoding.nominatim.url:https://nominatim.openstreetmap.org/search}") String nominatimUrl
+  ) {
     this.webClient = webClient;
+    this.nominatimUrl = nominatimUrl;
   }
 
   public Optional<Coordenada> buscarCoordenadas(String enderecoCompleto) {
@@ -36,7 +41,7 @@ public class GeocodingService {
     LOGGER.info("Consultando Nominatim com endereço: {}", enderecoCompleto);
 
     URI uri = UriComponentsBuilder
-      .fromHttpUrl(NOMINATIM_URL)
+      .fromHttpUrl(nominatimUrl)
       .queryParam("q", enderecoCompleto)
       .queryParam("format", "json")
       .queryParam("limit", "1")
