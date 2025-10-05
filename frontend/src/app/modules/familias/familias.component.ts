@@ -1,8 +1,8 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { forkJoin, of } from 'rxjs';
-import { catchError } from 'rxjs/operators';
+import { Subject, forkJoin, of } from 'rxjs';
+import { catchError, takeUntil } from 'rxjs/operators';
 import {
   FamiliasService,
   FamiliaFiltro,
@@ -14,6 +14,10 @@ import {
   Regiao
 } from '../shared/services/localidades.service';
 
+import { NotificationService } from '../shared/services/notification.service';
+
+import { DemandasService, Demanda } from '../shared/services/demandas.service';
+
 type RegiaoFiltro = Regiao & { cidadeId: number; cidadeNome: string };
 
 @Component({
@@ -24,7 +28,7 @@ type RegiaoFiltro = Regiao & { cidadeId: number; cidadeNome: string };
   templateUrl: './familias.component.html',
   styleUrls: ['./familias.component.css']
 })
-export class FamiliasComponent implements OnInit {
+export class FamiliasComponent implements OnInit, OnDestroy {
   destaques: { titulo: string; valor: string; variacao: string; descricao: string }[] = [];
   familias: FamiliaResponse[] = [];
   carregando = false;
@@ -41,18 +45,28 @@ export class FamiliasComponent implements OnInit {
   totalFamilias = 0;
   responsaveisAtivos = 0;
   novosCadastros = 0;
+  totalPessoas = 0;
+  novasPessoasSemana = 0;
 
   familiaSelecionadaId: number | null = null;
   mostrarFiltrosAvancados = false;
+  whatsappCarregandoId: number | null = null;
   private todasRegioes: RegiaoFiltro[] = [];
   private readonly regioesPorCidade = new Map<number, RegiaoFiltro[]>();
+  private readonly destroy$ = new Subject<void>();
+  private demandasAbertas = new Map<number, number>();
 
   constructor(
     private readonly familiasService: FamiliasService,
     private readonly route: ActivatedRoute,
     private readonly fb: FormBuilder,
     private readonly localidadesService: LocalidadesService,
-    private readonly router: Router
+    private readonly router: Router,
+
+    private readonly notificationService: NotificationService
+
+    private readonly demandasService: DemandasService
+
   ) {
     this.filtroForm = this.fb.group({
       cidadeId: [null],
@@ -70,6 +84,11 @@ export class FamiliasComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.demandasService
+      .observarDemandas()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(demandas => this.atualizarDemandasAbertas(demandas));
+
     const familiaIdParam = this.route.snapshot.queryParamMap.get('familiaId');
     if (familiaIdParam) {
       const id = Number(familiaIdParam);
@@ -84,11 +103,19 @@ export class FamiliasComponent implements OnInit {
         this.carregarRegioesIniciais(cidades);
         this.buscarFamilias();
       },
-      error: erro => {
-        console.error('Erro ao carregar cidades', erro);
+      error: _erro => {
+        this.notificationService.showError(
+          'Erro ao carregar cidades',
+          'Não foi possível carregar a lista de cidades. Tente novamente mais tarde.'
+        );
         this.buscarFamilias();
       }
     });
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   alternarFiltrosAvancados(): void {
@@ -216,11 +243,40 @@ export class FamiliasComponent implements OnInit {
   }
 
   obterTelefoneResponsavel(familia: FamiliaResponse): string {
-    const responsavel = familia.membros.find(membro => membro.responsavelPrincipal);
+    const responsavel = this.encontrarResponsavelPrincipal(familia);
     if (!responsavel?.telefone) {
       return 'Telefone não informado';
     }
-    return responsavel.telefone;
+    return this.formatarTelefone(responsavel.telefone);
+  }
+
+  possuiTelefoneResponsavel(familia: FamiliaResponse): boolean {
+    const responsavel = this.encontrarResponsavelPrincipal(familia);
+    return Boolean(responsavel?.telefone);
+  }
+
+  abrirWhatsapp(evento: MouseEvent, familia: FamiliaResponse): void {
+    evento.stopPropagation();
+    const responsavel = this.encontrarResponsavelPrincipal(familia);
+    if (!responsavel?.telefone || this.whatsappCarregandoId === familia.id) {
+      return;
+    }
+
+    this.whatsappCarregandoId = familia.id;
+    const linkWhatsapp = this.montarLinkWhatsapp(responsavel.telefone);
+
+    setTimeout(() => {
+      window.open(linkWhatsapp, '_blank', 'noopener');
+      this.whatsappCarregandoId = null;
+    }, 300);
+  }
+
+  contarDemandasPendentes(familia: FamiliaResponse): number {
+    return this.demandasAbertas.get(familia.id) ?? 0;
+  }
+
+  temDemandasPendentes(familia: FamiliaResponse): boolean {
+    return this.contarDemandasPendentes(familia) > 0;
   }
 
   obterTotalMembros(familia: FamiliaResponse): number {
@@ -256,6 +312,8 @@ export class FamiliasComponent implements OnInit {
         this.totalFamilias = resposta.total;
         this.responsaveisAtivos = resposta.responsaveisAtivos;
         this.novosCadastros = resposta.novosCadastros;
+        this.totalPessoas = resposta.totalPessoas;
+        this.novasPessoasSemana = resposta.novasPessoasSemana;
 
         const ultimaPagina = Math.max(this.totalPaginas - 1, 0);
         if (this.familias.length === 0 && this.totalFamilias > 0 && this.paginaAtual > ultimaPagina) {
@@ -267,8 +325,11 @@ export class FamiliasComponent implements OnInit {
         this.atualizarDestaques();
         this.carregando = false;
       },
-      error: erro => {
-        console.error('Erro ao carregar famílias', erro);
+      error: _erro => {
+        this.notificationService.showError(
+          'Erro ao carregar famílias',
+          'Não foi possível carregar as famílias cadastradas. Tente novamente.'
+        );
         this.erroCarregamento = 'Não foi possível carregar as famílias cadastradas.';
         this.carregando = false;
       }
@@ -285,8 +346,11 @@ export class FamiliasComponent implements OnInit {
 
     const requisicoes = cidades.map(cidade =>
       this.localidadesService.listarRegioes(cidade.id).pipe(
-        catchError(erro => {
-          console.error(`Erro ao carregar regiões da cidade ${cidade.nome}`, erro);
+        catchError(_erro => {
+          this.notificationService.showError(
+            'Erro ao carregar regiões',
+            `Não foi possível carregar as regiões da cidade ${cidade.nome}.`
+          );
           return of<Regiao[]>([]);
         })
       )
@@ -304,6 +368,18 @@ export class FamiliasComponent implements OnInit {
     });
   }
 
+  private atualizarDemandasAbertas(demandas: Demanda[]): void {
+    const mapa = new Map<number, number>();
+    demandas.forEach(demanda => {
+      if (demanda.status === 'Concluída') {
+        return;
+      }
+      const total = mapa.get(demanda.familiaId) ?? 0;
+      mapa.set(demanda.familiaId, total + 1);
+    });
+    this.demandasAbertas = mapa;
+  }
+
   private carregarRegioesPorCidade(cidadeId: number): void {
     const cidade = this.cidades.find(item => item.id === cidadeId);
     if (!cidade) {
@@ -314,8 +390,11 @@ export class FamiliasComponent implements OnInit {
     this.localidadesService
       .listarRegioes(cidadeId)
       .pipe(
-        catchError(erro => {
-          console.error(`Erro ao carregar regiões da cidade ${cidade.nome}`, erro);
+        catchError(_erro => {
+          this.notificationService.showError(
+            'Erro ao carregar regiões',
+            `Não foi possível carregar as regiões da cidade ${cidade.nome}.`
+          );
           return of<Regiao[]>([]);
         })
       )
@@ -402,8 +481,9 @@ export class FamiliasComponent implements OnInit {
 
   private atualizarDestaques(): void {
     const totalFamilias = this.totalFamilias;
-    const responsaveisAtivos = this.responsaveisAtivos;
+    const totalPessoas = this.totalPessoas;
     const novosCadastros = this.novosCadastros;
+    const novasPessoasSemana = this.novasPessoasSemana;
 
     this.destaques = [
       {
@@ -413,17 +493,51 @@ export class FamiliasComponent implements OnInit {
         descricao: 'total registrado na base'
       },
       {
-        titulo: 'Responsáveis ativos',
-        valor: responsaveisAtivos.toString(),
-        variacao: responsaveisAtivos > 0 ? `+${responsaveisAtivos}` : '+0',
-        descricao: 'famílias com responsável definido'
+        titulo: 'Pessoas cadastradas',
+        valor: totalPessoas.toString(),
+        variacao: totalPessoas > 0 ? `+${totalPessoas}` : '+0',
+        descricao: 'membros distribuídos nas famílias'
       },
       {
-        titulo: 'Novos cadastros',
+        titulo: 'Novas famílias na semana',
         valor: novosCadastros.toString(),
         variacao: `+${novosCadastros} nesta semana`,
-        descricao: 'entradas nos últimos 7 dias'
+        descricao: 'entradas de núcleos familiares'
+      },
+      {
+        titulo: 'Novas pessoas na semana',
+        valor: novasPessoasSemana.toString(),
+        variacao: `+${novasPessoasSemana} nesta semana`,
+        descricao: 'membros adicionados nos últimos 7 dias'
       }
     ];
+  }
+
+  private encontrarResponsavelPrincipal(familia: FamiliaResponse) {
+    return familia.membros.find(membro => membro.responsavelPrincipal);
+  }
+
+  private formatarTelefone(telefone: string): string {
+    const digitos = telefone.replace(/\D/g, '');
+    if (digitos.length < 10) {
+      return telefone;
+    }
+
+    const ddd = digitos.substring(0, 2);
+    if (digitos.length >= 11) {
+      const primeiraParte = digitos.substring(2, 7);
+      const segundaParte = digitos.substring(7, 11);
+      return `(${ddd}) ${primeiraParte}-${segundaParte}`;
+    }
+
+    const primeiraParte = digitos.substring(2, 6);
+    const segundaParte = digitos.substring(6, 10);
+    return `(${ddd}) ${primeiraParte}-${segundaParte}`;
+  }
+
+  private montarLinkWhatsapp(telefone: string): string {
+    const digitos = telefone.replace(/\D/g, '');
+    const numeroComDdi = digitos.startsWith('55') ? digitos : `55${digitos}`;
+    return `https://wa.me/${numeroComDdi}`;
   }
 }

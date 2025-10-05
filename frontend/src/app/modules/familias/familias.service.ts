@@ -78,6 +78,8 @@ export interface FamiliaListaResponse {
   tamanho: number;
   responsaveisAtivos: number;
   novosCadastros: number;
+  totalPessoas: number;
+  novasPessoasSemana: number;
 }
 
 @Injectable({ providedIn: 'root' })

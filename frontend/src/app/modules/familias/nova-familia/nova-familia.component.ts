@@ -371,6 +371,24 @@ export class NovaFamiliaComponent implements OnInit {
     }
   }
 
+  aoAlterarCepFamilia(valor: string): void {
+    if (typeof valor !== 'string') {
+      this.enderecoFamilia.cep = '';
+      return;
+    }
+
+    const apenasDigitos = valor.replace(/\D/g, '').slice(0, 8);
+
+    if (apenasDigitos.length <= 5) {
+      this.enderecoFamilia.cep = apenasDigitos;
+      return;
+    }
+
+    const prefixo = apenasDigitos.slice(0, 5);
+    const sufixo = apenasDigitos.slice(5);
+    this.enderecoFamilia.cep = `${prefixo}-${sufixo}`;
+  }
+
   aoAlterarCidadeFamilia(cidadeId: number | null): void {
     if (cidadeId === null) {
       this.enderecoFamilia.cidadeId = null;
@@ -840,8 +858,7 @@ export class NovaFamiliaComponent implements OnInit {
         this.salvandoFamilia = false;
         this.router.navigate(['/familias']);
       },
-      error: erro => {
-        console.error('Erro ao cadastrar família', erro);
+      error: _erro => {
         this.notificationService.showError(
           'Não foi possível cadastrar a família.',
           'Tente novamente.'
@@ -1025,48 +1042,45 @@ export class NovaFamiliaComponent implements OnInit {
       return '';
     }
 
-    if (numeros.length <= 10) {
-      return numeros.replace(/(\d{0,2})(\d{0,4})(\d{0,4})/, (_, ddd, parte1, parte2) => {
-        let resultado = '';
-        if (ddd) {
-          resultado += `(${ddd}`;
-          if (ddd.length === 2) {
-            resultado += ') ';
-          }
-        }
-        if (parte1) {
-          resultado += parte1;
-        }
-        if (parte2) {
-          resultado += `-${parte2}`;
-        }
-        return resultado.trim();
-      });
+    const partes = numeros.match(/^(\d{0,2})(\d{0,1})(\d{0,4})(\d{0,4})$/);
+    if (!partes) {
+      return '';
     }
 
-    return numeros.replace(/(\d{0,2})(\d{0,5})(\d{0,4})/, (_, ddd, parte1, parte2) => {
-      let resultado = '';
-      if (ddd) {
-        resultado += `(${ddd}`;
-        if (ddd.length === 2) {
-          resultado += ') ';
-        }
+    const [, ddd, primeiroDigito, bloco1, bloco2] = partes;
+
+    let resultado = '';
+
+    if (ddd) {
+      resultado += `(${ddd}`;
+      if (ddd.length === 2) {
+        resultado += ') ';
       }
-      if (parte1) {
-        resultado += parte1;
+    }
+
+    if (primeiroDigito) {
+      resultado += primeiroDigito;
+      if (bloco1 || bloco2) {
+        resultado += ' ';
       }
-      if (parte2) {
-        resultado += `-${parte2}`;
-      }
-      return resultado.trim();
-    });
+    }
+
+    if (bloco1) {
+      resultado += bloco1;
+    }
+
+    if (bloco2) {
+      resultado += `-${bloco2}`;
+    }
+
+    return resultado.trim();
   }
 
   private obterTelefoneLimpo(telefone: string): string | null {
     if (!telefone) {
       return null;
     }
-    const numeros = telefone.replace(/\D/g, '');
+    const numeros = telefone.replace(/\D/g, '').slice(0, 11);
     return numeros ? numeros : null;
   }
 
