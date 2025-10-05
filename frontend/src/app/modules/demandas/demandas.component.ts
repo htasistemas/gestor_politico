@@ -1,6 +1,7 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Subject, takeUntil } from 'rxjs';
+import { ActivatedRoute, Router } from '@angular/router';
 import { FamiliasService, FamiliaResponse } from '../familias/familias.service';
 import {
   CriarDemandaPayload,
@@ -47,14 +48,19 @@ export class DemandasComponent implements OnInit, OnDestroy {
   filtroBusca = '';
   secoes: SecaoDemandas[] = [];
   semDemandasFiltradas = false;
+  filtroFamiliaId: number | null = null;
   private todasDemandas: Demanda[] = [];
   private readonly destroy$ = new Subject<void>();
+  private familiaIdInicial: number | null = null;
+  private familiaPreSelecionadaAplicada = false;
 
   constructor(
     private readonly fb: FormBuilder,
     private readonly familiasService: FamiliasService,
     private readonly demandasService: DemandasService,
-    private readonly notificationService: NotificationService
+    private readonly notificationService: NotificationService,
+    private readonly route: ActivatedRoute,
+    private readonly router: Router
   ) {
     this.formulario = this.fb.group({
       familiaId: [null, Validators.required],
@@ -66,6 +72,7 @@ export class DemandasComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    this.observarQueryParams();
     this.carregarFamilias();
     this.demandasService
       .observarDemandas()
@@ -123,6 +130,7 @@ export class DemandasComponent implements OnInit, OnDestroy {
     this.filtroStatus = '';
     this.filtroUrgencia = '';
     this.filtroBusca = '';
+    this.removerFiltroFamilia();
     this.recalcularSecoes();
   }
 
@@ -181,6 +189,7 @@ export class DemandasComponent implements OnInit, OnDestroy {
       next: familias => {
         this.familias = familias;
         this.carregandoFamilias = false;
+        this.aplicarFamiliaPadrao();
         this.recalcularSecoes();
       },
       error: erro => {
@@ -223,6 +232,9 @@ export class DemandasComponent implements OnInit, OnDestroy {
     return this.todasDemandas
       .map(demanda => this.construirDemandaDetalhada(demanda))
       .filter(demanda => {
+        if (this.filtroFamiliaId !== null && demanda.familiaId !== this.filtroFamiliaId) {
+          return false;
+        }
         if (this.filtroStatus && demanda.status !== this.filtroStatus) {
           return false;
         }
@@ -290,5 +302,59 @@ export class DemandasComponent implements OnInit, OnDestroy {
       emAndamento: andamento,
       concluidas
     };
+  }
+
+  private observarQueryParams(): void {
+    this.route.queryParamMap.pipe(takeUntil(this.destroy$)).subscribe(params => {
+      const familiaIdParam = params.get('familiaId');
+      const id = familiaIdParam ? Number(familiaIdParam) : NaN;
+      if (Number.isFinite(id) && id > 0) {
+        if (this.familiaIdInicial !== id) {
+          this.familiaPreSelecionadaAplicada = false;
+        }
+        this.familiaIdInicial = id;
+        this.filtroFamiliaId = id;
+      } else {
+        this.familiaIdInicial = null;
+        this.filtroFamiliaId = null;
+        this.familiaPreSelecionadaAplicada = false;
+      }
+      this.aplicarFamiliaPadrao();
+      this.aplicarFiltros();
+    });
+  }
+
+  private aplicarFamiliaPadrao(): void {
+    if (this.familiaIdInicial === null || this.familiaPreSelecionadaAplicada) {
+      return;
+    }
+
+    const familiaExiste = this.familias.some(familia => familia.id === this.familiaIdInicial);
+    if (!familiaExiste) {
+      return;
+    }
+
+    this.formulario.patchValue({ familiaId: this.familiaIdInicial });
+    this.familiaPreSelecionadaAplicada = true;
+  }
+
+  removerFiltroFamilia(atualizarUrl = true): void {
+    if (this.filtroFamiliaId === null && atualizarUrl) {
+      return;
+    }
+
+    this.filtroFamiliaId = null;
+    this.familiaIdInicial = null;
+    this.familiaPreSelecionadaAplicada = false;
+
+    if (atualizarUrl) {
+      this.router.navigate([], {
+        relativeTo: this.route,
+        queryParams: { familiaId: null },
+        queryParamsHandling: 'merge'
+      });
+    }
+
+    this.aplicarFiltros();
   }
 }

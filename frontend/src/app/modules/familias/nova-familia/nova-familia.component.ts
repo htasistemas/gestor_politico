@@ -319,6 +319,14 @@ export class NovaFamiliaComponent implements OnInit {
     this.router.navigate(['/familias']);
   }
 
+  abrirDemandasFamilia(): void {
+    if (!this.familiaIdEdicao) {
+      return;
+    }
+
+    this.router.navigate(['/demandas'], { queryParams: { familiaId: this.familiaIdEdicao } });
+  }
+
   cancelarCadastro(): void {
     this.router.navigate(['/familias']);
   }
