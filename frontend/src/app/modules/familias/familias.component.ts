@@ -41,6 +41,8 @@ export class FamiliasComponent implements OnInit {
   totalFamilias = 0;
   responsaveisAtivos = 0;
   novosCadastros = 0;
+  totalPessoas = 0;
+  novasPessoasSemana = 0;
 
   familiaSelecionadaId: number | null = null;
   mostrarFiltrosAvancados = false;
@@ -258,6 +260,8 @@ export class FamiliasComponent implements OnInit {
         this.totalFamilias = resposta.total;
         this.responsaveisAtivos = resposta.responsaveisAtivos;
         this.novosCadastros = resposta.novosCadastros;
+        this.totalPessoas = resposta.totalPessoas;
+        this.novasPessoasSemana = resposta.novasPessoasSemana;
 
         const ultimaPagina = Math.max(this.totalPaginas - 1, 0);
         if (this.familias.length === 0 && this.totalFamilias > 0 && this.paginaAtual > ultimaPagina) {
@@ -404,8 +408,9 @@ export class FamiliasComponent implements OnInit {
 
   private atualizarDestaques(): void {
     const totalFamilias = this.totalFamilias;
-    const responsaveisAtivos = this.responsaveisAtivos;
+    const totalPessoas = this.totalPessoas;
     const novosCadastros = this.novosCadastros;
+    const novasPessoasSemana = this.novasPessoasSemana;
 
     this.destaques = [
       {
@@ -415,16 +420,22 @@ export class FamiliasComponent implements OnInit {
         descricao: 'total registrado na base'
       },
       {
-        titulo: 'Responsáveis ativos',
-        valor: responsaveisAtivos.toString(),
-        variacao: responsaveisAtivos > 0 ? `+${responsaveisAtivos}` : '+0',
-        descricao: 'famílias com responsável definido'
+        titulo: 'Pessoas cadastradas',
+        valor: totalPessoas.toString(),
+        variacao: totalPessoas > 0 ? `+${totalPessoas}` : '+0',
+        descricao: 'membros distribuídos nas famílias'
       },
       {
-        titulo: 'Novos cadastros',
+        titulo: 'Novas famílias na semana',
         valor: novosCadastros.toString(),
         variacao: `+${novosCadastros} nesta semana`,
-        descricao: 'entradas nos últimos 7 dias'
+        descricao: 'entradas de núcleos familiares'
+      },
+      {
+        titulo: 'Novas pessoas na semana',
+        valor: novasPessoasSemana.toString(),
+        variacao: `+${novasPessoasSemana} nesta semana`,
+        descricao: 'membros adicionados nos últimos 7 dias'
       }
     ];
   }

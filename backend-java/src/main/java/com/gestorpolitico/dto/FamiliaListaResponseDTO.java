@@ -10,6 +10,8 @@ public class FamiliaListaResponseDTO {
   private int tamanho;
   private long responsaveisAtivos;
   private long novosCadastros;
+  private long totalPessoas;
+  private long novasPessoasSemana;
 
   public FamiliaListaResponseDTO() {}
 
@@ -19,7 +21,9 @@ public class FamiliaListaResponseDTO {
     int pagina,
     int tamanho,
     long responsaveisAtivos,
-    long novosCadastros
+    long novosCadastros,
+    long totalPessoas,
+    long novasPessoasSemana
   ) {
     if (familias != null) {
       this.familias = familias;
@@ -29,6 +33,8 @@ public class FamiliaListaResponseDTO {
     this.tamanho = tamanho;
     this.responsaveisAtivos = responsaveisAtivos;
     this.novosCadastros = novosCadastros;
+    this.totalPessoas = totalPessoas;
+    this.novasPessoasSemana = novasPessoasSemana;
   }
 
   public List<FamiliaResponseDTO> getFamilias() {
@@ -77,5 +83,21 @@ public class FamiliaListaResponseDTO {
 
   public void setNovosCadastros(long novosCadastros) {
     this.novosCadastros = novosCadastros;
+  }
+
+  public long getTotalPessoas() {
+    return totalPessoas;
+  }
+
+  public void setTotalPessoas(long totalPessoas) {
+    this.totalPessoas = totalPessoas;
+  }
+
+  public long getNovasPessoasSemana() {
+    return novasPessoasSemana;
+  }
+
+  public void setNovasPessoasSemana(long novasPessoasSemana) {
+    this.novasPessoasSemana = novasPessoasSemana;
   }
 }
