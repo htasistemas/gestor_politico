@@ -9,6 +9,8 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.slf4j.Logger;
@@ -61,6 +63,7 @@ public class GeocodingService {
   private final String nominatimUrl;
   private final Object rateLimitLock = new Object();
   private Instant lastRequestTime = Instant.EPOCH;
+  private final Map<String, Optional<Coordenada>> coordenadasCache = new ConcurrentHashMap<>();
 
   public GeocodingService(
     WebClient webClient,
@@ -77,7 +80,10 @@ public class GeocodingService {
     }
     String enderecoNormalizado = normalizarEndereco(enderecoCompleto);
     if (!enderecoNormalizado.isBlank()) {
-      Optional<Coordenada> coordenada = consultarNominatim(enderecoNormalizado);
+      Optional<Coordenada> coordenada = buscarCoordenadaComCache(
+        enderecoNormalizado,
+        () -> consultarNominatim(enderecoNormalizado)
+      );
       if (coordenada.isPresent()) {
         return coordenada;
       }
@@ -88,11 +94,26 @@ public class GeocodingService {
       String enderecoSemBairroNormalizado = normalizarEndereco(enderecoSemBairro.get());
       if (!enderecoSemBairroNormalizado.isBlank()) {
         LOGGER.info("Tentando geocodificação sem bairro: {}", enderecoSemBairroNormalizado);
-        return consultarNominatim(enderecoSemBairroNormalizado);
+        return buscarCoordenadaComCache(
+          enderecoSemBairroNormalizado,
+          () -> consultarNominatim(enderecoSemBairroNormalizado)
+        );
       }
     }
 
     return Optional.empty();
+  }
+
+  private Optional<Coordenada> buscarCoordenadaComCache(String chave, Supplier<Optional<Coordenada>> consulta) {
+    Optional<Coordenada> coordenadaEmCache = coordenadasCache.get(chave);
+    if (coordenadaEmCache != null) {
+      LOGGER.debug("Coordenada recuperada do cache para: {}", chave);
+      return coordenadaEmCache;
+    }
+
+    Optional<Coordenada> resultado = consulta.get();
+    coordenadasCache.put(chave, resultado);
+    return resultado;
   }
 
   private void aplicarLimiteDeTaxa() {
