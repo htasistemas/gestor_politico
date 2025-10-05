@@ -34,15 +34,16 @@ export class GeoReferenciamentoComponent implements OnInit, AfterViewInit, OnDes
   private ajusteMapaTimeout: number | null = null;
   private readonly iconeFamilia = L.divIcon({
     html: `
+      <div class="familia-marker__shadow"></div>
       <div class="familia-marker__pulse"></div>
       <div class="familia-marker__icon">
         <i class="fa-solid fa-house-chimney-window" aria-hidden="true"></i>
       </div>
     `,
     className: 'familia-marker',
-    iconSize: [48, 48],
-    iconAnchor: [24, 24],
-    popupAnchor: [0, -32]
+    iconSize: [48, 64],
+    iconAnchor: [24, 60],
+    popupAnchor: [0, -56]
   });
 
   constructor(
