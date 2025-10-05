@@ -15,6 +15,7 @@ type ProbabilidadeVoto = 'Alta' | 'Média' | 'Baixa' | '';
 const PARENTESCO_RESPONSAVEL: GrauParentesco = GrauParentesco.RESPONSAVEL;
 
 interface MembroFamiliaForm {
+  id: number | null;
   nome: string;
   nascimento: string;
   profissao: string;
@@ -73,9 +74,17 @@ export class NovaFamiliaComponent implements OnInit {
   readonly ehAdministrador: boolean;
 
   modoEdicao = false;
+  modoParceiro = false;
   familiaIdEdicao: number | null = null;
   familiaCarregada: FamiliaResponse | null = null;
   carregandoFamilia = false;
+
+  parceiroTokenContext: string | null = null;
+  parceiroTokenAtivo: string | null = null;
+  termoBuscaParceiro = '';
+  familiasEncontradas: FamiliaResponse[] = [];
+  buscandoFamiliasParceiro = false;
+  erroBuscaParceiro = '';
 
   enderecoFamilia: FamiliaEnderecoForm = this.criarEnderecoFamilia();
   novaRegiaoGeradaPorCep = false;
@@ -125,8 +134,12 @@ export class NovaFamiliaComponent implements OnInit {
 
   ngOnInit(): void {
     combineLatest([this.route.paramMap, this.route.queryParamMap]).subscribe(([parametros, queryParams]) => {
-      const familiaIdParam =
-        parametros.get('id') ?? parametros.get('familiaId') ?? queryParams.get('familiaId');
+      const parceiroTokenParam = queryParams.get('parceiroToken');
+      this.definirContextoParceiro(parceiroTokenParam);
+
+      const familiaIdParam = this.modoParceiro
+        ? null
+        : parametros.get('id') ?? parametros.get('familiaId') ?? queryParams.get('familiaId');
       this.atualizarModoPorParametro(familiaIdParam);
     });
 
@@ -140,16 +153,61 @@ export class NovaFamiliaComponent implements OnInit {
     });
   }
 
+  private definirContextoParceiro(tokenParam: string | null): void {
+    const tokenNormalizado = tokenParam ? tokenParam.trim() : null;
+
+    if (tokenNormalizado && tokenNormalizado.length > 0) {
+      const mudouToken = tokenNormalizado !== this.parceiroTokenContext;
+      if (!this.modoParceiro || mudouToken) {
+        this.modoParceiro = true;
+        this.parceiroTokenContext = tokenNormalizado;
+        this.parceiroTokenAtivo = tokenNormalizado;
+        this.modoEdicao = false;
+        this.familiaIdEdicao = null;
+        this.familiaCarregada = null;
+        this.resetarFormularioParaCriacao();
+      }
+      return;
+    }
+
+    if (this.modoParceiro) {
+      this.modoParceiro = false;
+      this.parceiroTokenContext = null;
+      this.parceiroTokenAtivo = null;
+      this.termoBuscaParceiro = '';
+      this.familiasEncontradas = [];
+      this.erroBuscaParceiro = '';
+    }
+  }
+
   get tituloPagina(): string {
+    if (this.modoParceiro) {
+      return 'Cadastro de famílias para parceiros';
+    }
     return this.modoEdicao ? 'Editar Família' : 'Nova Família';
   }
 
   get descricaoPagina(): string {
+    if (this.modoParceiro) {
+      return 'Pesquise famílias existentes e cadastre novas famílias vinculadas ao seu link.';
+    }
     return this.modoEdicao ? 'Atualização de família e membros' : 'Cadastro de família e membros';
   }
 
   get textoBotaoPrincipal(): string {
+    if (this.modoParceiro) {
+      return 'Cadastrar nova família';
+    }
     return this.modoEdicao ? 'Atualizar Família' : 'Cadastrar Família';
+  }
+
+  get linkParceiroCompleto(): string | null {
+    if (!this.parceiroTokenContext) {
+      return null;
+    }
+
+    const origem = typeof window !== 'undefined' ? window.location.origin : '';
+    return `${origem}/familias/nova?parceiroToken=${this.parceiroTokenContext}`;
   }
 
   private atualizarModoPorParametro(familiaIdParam: string | null): void {
@@ -203,6 +261,36 @@ export class NovaFamiliaComponent implements OnInit {
     }
   }
 
+  buscarFamiliasParceiro(): void {
+    const termo = this.termoBuscaParceiro.trim();
+
+    if (!termo) {
+      this.erroBuscaParceiro = 'Informe um termo para buscar famílias já cadastradas.';
+      this.familiasEncontradas = [];
+      return;
+    }
+
+    this.buscandoFamiliasParceiro = true;
+    this.erroBuscaParceiro = '';
+    this.familiasService.buscarFamilias({ termo }, 0, 10).subscribe({
+      next: resposta => {
+        this.familiasEncontradas = resposta.familias;
+        this.buscandoFamiliasParceiro = false;
+      },
+      error: () => {
+        this.erroBuscaParceiro = 'Não foi possível realizar a busca de famílias.';
+        this.buscandoFamiliasParceiro = false;
+      }
+    });
+  }
+
+  limparBuscaParceiro(): void {
+    this.termoBuscaParceiro = '';
+    this.familiasEncontradas = [];
+    this.erroBuscaParceiro = '';
+    this.buscandoFamiliasParceiro = false;
+  }
+
   private carregarFamilia(id: number): void {
     this.carregandoFamilia = true;
     this.familiasService.obterFamilia(id).subscribe({
@@ -225,6 +313,13 @@ export class NovaFamiliaComponent implements OnInit {
   private aplicarFamiliaCarregada(): void {
     if (!this.familiaCarregada || this.cidades.length === 0) {
       return;
+    }
+
+    const parceiroCadastro = this.familiaCarregada.parceiroCadastro;
+    if (parceiroCadastro?.token) {
+      this.parceiroTokenAtivo = parceiroCadastro.token;
+    } else if (!this.modoParceiro) {
+      this.parceiroTokenAtivo = null;
     }
 
     const endereco = this.familiaCarregada.enderecoDetalhado;
@@ -289,6 +384,7 @@ export class NovaFamiliaComponent implements OnInit {
     this.membros = membrosResposta.map(membro => {
       const probabilidade = (membro.probabilidadeVoto as ProbabilidadeVoto) || '';
       return {
+        id: membro.id ?? null,
         nome: membro.nomeCompleto,
         nascimento: membro.dataNascimento ?? '',
         profissao: membro.profissao ?? '',
@@ -313,6 +409,7 @@ export class NovaFamiliaComponent implements OnInit {
     this.previaFamilia = null;
     this.novaRegiaoGeradaPorCep = false;
     this.novoBairroGeradoPorCep = false;
+    this.parceiroTokenAtivo = this.modoParceiro ? this.parceiroTokenContext : null;
   }
 
   voltarPagina(): void {
@@ -922,6 +1019,7 @@ export class NovaFamiliaComponent implements OnInit {
 
   private criarMembro(responsavelPrincipal: boolean): MembroFamiliaForm {
     return {
+      id: null,
       nome: '',
       nascimento: '',
       profissao: '',
@@ -1022,7 +1120,7 @@ export class NovaFamiliaComponent implements OnInit {
         ? this.enderecoFamilia.novaRegiao.trim() || null
         : regiaoSelecionada?.trim() || null;
 
-    return {
+    const payload: FamiliaPayload = {
       cep: this.enderecoFamilia.cep ? this.enderecoFamilia.cep.trim() : null,
       rua: this.enderecoFamilia.rua.trim(),
       numero: this.enderecoFamilia.numero.trim(),
@@ -1030,11 +1128,18 @@ export class NovaFamiliaComponent implements OnInit {
       novaRegiao,
       membros
     };
+
+    if (this.parceiroTokenAtivo !== null && this.parceiroTokenAtivo !== undefined) {
+      payload.parceiroToken = this.parceiroTokenAtivo;
+    }
+
+    return payload;
   }
 
   private mapearMembroPayload(membro: MembroFamiliaForm): FamiliaMembroPayload {
     const parentesco = membro.responsavel ? PARENTESCO_RESPONSAVEL : membro.parentesco;
     return {
+      id: membro.id ?? null,
       nomeCompleto: membro.nome.trim(),
       dataNascimento: membro.nascimento || null,
       profissao: membro.profissao ? membro.profissao.trim() : null,

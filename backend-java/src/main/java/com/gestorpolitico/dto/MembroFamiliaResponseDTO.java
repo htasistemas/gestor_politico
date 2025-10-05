@@ -14,6 +14,9 @@ public class MembroFamiliaResponseDTO {
   private String probabilidadeVoto;
   private String telefone;
   private OffsetDateTime criadoEm;
+  private boolean parceiro;
+  private Long parceiroId;
+  private String parceiroToken;
 
   public MembroFamiliaResponseDTO() {
   }
@@ -27,7 +30,10 @@ public class MembroFamiliaResponseDTO {
     boolean responsavelPrincipal,
     String probabilidadeVoto,
     String telefone,
-    OffsetDateTime criadoEm
+    OffsetDateTime criadoEm,
+    boolean parceiro,
+    Long parceiroId,
+    String parceiroToken
   ) {
     this.id = id;
     this.nomeCompleto = nomeCompleto;
@@ -38,6 +44,9 @@ public class MembroFamiliaResponseDTO {
     this.probabilidadeVoto = probabilidadeVoto;
     this.telefone = telefone;
     this.criadoEm = criadoEm;
+    this.parceiro = parceiro;
+    this.parceiroId = parceiroId;
+    this.parceiroToken = parceiroToken;
   }
 
   public Long getId() {
@@ -110,5 +119,29 @@ public class MembroFamiliaResponseDTO {
 
   public void setCriadoEm(OffsetDateTime criadoEm) {
     this.criadoEm = criadoEm;
+  }
+
+  public boolean isParceiro() {
+    return parceiro;
+  }
+
+  public void setParceiro(boolean parceiro) {
+    this.parceiro = parceiro;
+  }
+
+  public Long getParceiroId() {
+    return parceiroId;
+  }
+
+  public void setParceiroId(Long parceiroId) {
+    this.parceiroId = parceiroId;
+  }
+
+  public String getParceiroToken() {
+    return parceiroToken;
+  }
+
+  public void setParceiroToken(String parceiroToken) {
+    this.parceiroToken = parceiroToken;
   }
 }

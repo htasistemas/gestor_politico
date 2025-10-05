@@ -8,6 +8,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.PrePersist;
@@ -44,6 +45,10 @@ public class Familia {
 
   @OneToMany(mappedBy = "familia", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
   private List<MembroFamilia> membros = new ArrayList<>();
+
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "parceiro_cadastro_id")
+  private Parceiro parceiroCadastro;
 
   public Long getId() {
     return id;
@@ -96,6 +101,14 @@ public class Familia {
   public void adicionarMembro(MembroFamilia membro) {
     membro.setFamilia(this);
     this.membros.add(membro);
+  }
+
+  public Parceiro getParceiroCadastro() {
+    return parceiroCadastro;
+  }
+
+  public void setParceiroCadastro(Parceiro parceiroCadastro) {
+    this.parceiroCadastro = parceiroCadastro;
   }
 
   @PrePersist

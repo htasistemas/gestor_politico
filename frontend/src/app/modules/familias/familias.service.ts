@@ -5,6 +5,7 @@ import { buildApiUrl } from '../shared/api-url.util';
 import { GrauParentesco } from './parentesco.enum';
 
 export interface FamiliaMembroPayload {
+  id?: number | null;
   nomeCompleto: string;
   dataNascimento: string | null;
   profissao: string | null;
@@ -21,6 +22,7 @@ export interface FamiliaPayload {
   cidadeId: number;
   novaRegiao: string | null;
   membros: FamiliaMembroPayload[];
+  parceiroToken?: string | null;
 }
 
 export interface EnderecoFamiliaResponse {
@@ -46,6 +48,9 @@ export interface FamiliaMembroResponse {
   probabilidadeVoto: string;
   telefone: string | null;
   criadoEm: string;
+  parceiro: boolean;
+  parceiroId: number | null;
+  parceiroToken: string | null;
 }
 
 export interface FamiliaResponse {
@@ -55,6 +60,11 @@ export interface FamiliaResponse {
   criadoEm: string;
   enderecoDetalhado: EnderecoFamiliaResponse;
   membros: FamiliaMembroResponse[];
+  parceiroCadastro?: {
+    id: number;
+    nome: string | null;
+    token: string;
+  } | null;
 }
 
 export interface FamiliaFiltro {
@@ -125,5 +135,12 @@ export class FamiliasService {
 
   atualizarFamilia(id: number, payload: FamiliaPayload): Observable<FamiliaResponse> {
     return this.http.put<FamiliaResponse>(`${this.apiUrl}/${id}`, payload);
+  }
+
+  tornarMembroParceiro(familiaId: number, membroId: number): Observable<FamiliaMembroResponse> {
+    return this.http.post<FamiliaMembroResponse>(
+      `${this.apiUrl}/${familiaId}/membros/${membroId}/parceiro`,
+      {}
+    );
   }
 }

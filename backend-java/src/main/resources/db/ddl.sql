@@ -61,3 +61,16 @@ CREATE TABLE IF NOT EXISTS membro_familia (
   familia_id BIGINT NOT NULL REFERENCES familia (id) ON DELETE CASCADE,
   criado_em TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+CREATE TABLE IF NOT EXISTS parceiro (
+  id BIGSERIAL PRIMARY KEY,
+  membro_id BIGINT NOT NULL UNIQUE REFERENCES membro_familia (id) ON DELETE RESTRICT,
+  token VARCHAR(64) NOT NULL UNIQUE,
+  criado_em TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+ALTER TABLE familia
+  ADD COLUMN IF NOT EXISTS parceiro_cadastro_id BIGINT REFERENCES parceiro (id);
+
+CREATE INDEX IF NOT EXISTS idx_familia_parceiro_cadastro
+  ON familia (parceiro_cadastro_id);

@@ -11,6 +11,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotBlank;
@@ -59,6 +60,9 @@ public class MembroFamilia {
 
   @Column(name = "criado_em", nullable = false)
   private OffsetDateTime criadoEm = OffsetDateTime.now();
+
+  @OneToOne(mappedBy = "membro", fetch = FetchType.LAZY)
+  private Parceiro parceiro;
 
   public Long getId() {
     return id;
@@ -138,6 +142,14 @@ public class MembroFamilia {
 
   public void setCriadoEm(OffsetDateTime criadoEm) {
     this.criadoEm = criadoEm;
+  }
+
+  public Parceiro getParceiro() {
+    return parceiro;
+  }
+
+  public void setParceiro(Parceiro parceiro) {
+    this.parceiro = parceiro;
   }
 
   @PrePersist
