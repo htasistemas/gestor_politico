@@ -643,8 +643,7 @@ export class NovaFamiliaComponent implements OnInit {
         this.salvandoFamilia = false;
         this.router.navigate(['/familias']);
       },
-      error: erro => {
-        console.error('Erro ao cadastrar família', erro);
+      error: _erro => {
         this.notificationService.showError(
           'Não foi possível cadastrar a família.',
           'Tente novamente.'

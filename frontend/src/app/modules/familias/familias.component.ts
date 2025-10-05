@@ -13,6 +13,7 @@ import {
   Cidade,
   Regiao
 } from '../shared/services/localidades.service';
+import { NotificationService } from '../shared/services/notification.service';
 
 type RegiaoFiltro = Regiao & { cidadeId: number; cidadeNome: string };
 
@@ -52,7 +53,8 @@ export class FamiliasComponent implements OnInit {
     private readonly route: ActivatedRoute,
     private readonly fb: FormBuilder,
     private readonly localidadesService: LocalidadesService,
-    private readonly router: Router
+    private readonly router: Router,
+    private readonly notificationService: NotificationService
   ) {
     this.filtroForm = this.fb.group({
       cidadeId: [null],
@@ -84,8 +86,11 @@ export class FamiliasComponent implements OnInit {
         this.carregarRegioesIniciais(cidades);
         this.buscarFamilias();
       },
-      error: erro => {
-        console.error('Erro ao carregar cidades', erro);
+      error: _erro => {
+        this.notificationService.showError(
+          'Erro ao carregar cidades',
+          'Não foi possível carregar a lista de cidades. Tente novamente mais tarde.'
+        );
         this.buscarFamilias();
       }
     });
@@ -269,8 +274,11 @@ export class FamiliasComponent implements OnInit {
         this.atualizarDestaques();
         this.carregando = false;
       },
-      error: erro => {
-        console.error('Erro ao carregar famílias', erro);
+      error: _erro => {
+        this.notificationService.showError(
+          'Erro ao carregar famílias',
+          'Não foi possível carregar as famílias cadastradas. Tente novamente.'
+        );
         this.erroCarregamento = 'Não foi possível carregar as famílias cadastradas.';
         this.carregando = false;
       }
@@ -287,8 +295,11 @@ export class FamiliasComponent implements OnInit {
 
     const requisicoes = cidades.map(cidade =>
       this.localidadesService.listarRegioes(cidade.id).pipe(
-        catchError(erro => {
-          console.error(`Erro ao carregar regiões da cidade ${cidade.nome}`, erro);
+        catchError(_erro => {
+          this.notificationService.showError(
+            'Erro ao carregar regiões',
+            `Não foi possível carregar as regiões da cidade ${cidade.nome}.`
+          );
           return of<Regiao[]>([]);
         })
       )
@@ -316,8 +327,11 @@ export class FamiliasComponent implements OnInit {
     this.localidadesService
       .listarRegioes(cidadeId)
       .pipe(
-        catchError(erro => {
-          console.error(`Erro ao carregar regiões da cidade ${cidade.nome}`, erro);
+        catchError(_erro => {
+          this.notificationService.showError(
+            'Erro ao carregar regiões',
+            `Não foi possível carregar as regiões da cidade ${cidade.nome}.`
+          );
           return of<Regiao[]>([]);
         })
       )

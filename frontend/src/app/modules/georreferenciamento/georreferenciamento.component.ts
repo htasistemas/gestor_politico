@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 import * as L from 'leaflet';
 import { Subscription } from 'rxjs';
 import { FamiliasService, FamiliaResponse, EnderecoFamiliaResponse } from '../familias/familias.service';
+import { NotificationService } from '../shared/services/notification.service';
 interface FamiliaLocalizada {
   id: number;
   responsavel: string;
@@ -36,7 +37,11 @@ export class GeoReferenciamentoComponent implements OnInit, AfterViewInit, OnDes
 
   });
 
-  constructor(private readonly familiasService: FamiliasService, private readonly router: Router) {}
+  constructor(
+    private readonly familiasService: FamiliasService,
+    private readonly router: Router,
+    private readonly notificationService: NotificationService
+  ) {}
 
   ngOnInit(): void {
     this.carregarFamilias();
@@ -76,8 +81,11 @@ export class GeoReferenciamentoComponent implements OnInit, AfterViewInit, OnDes
         this.carregando = false;
         this.atualizarMapa();
       },
-      error: erro => {
-        console.error('Erro ao carregar famílias para georreferenciamento', erro);
+      error: _erro => {
+        this.notificationService.showError(
+          'Erro ao carregar famílias',
+          'Não foi possível carregar as famílias cadastradas para o mapa.'
+        );
         this.erroCarregamento = 'Não foi possível carregar as famílias cadastradas.';
         this.carregando = false;
       }
