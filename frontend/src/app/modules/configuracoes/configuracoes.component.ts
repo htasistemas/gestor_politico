@@ -35,11 +35,6 @@ export class ConfiguracoesComponent implements OnInit {
     bairrosIds: [[] as number[]]
   });
 
-  regiaoLivreForm = this.fb.group({
-    nomeRegiaoLivre: ['', [Validators.required, Validators.minLength(3)]],
-    bairrosIds: [[] as number[]]
-  });
-
   unificacaoForm = this.fb.group({
     bairroPrincipalId: [null as number | null, Validators.required],
     bairrosDuplicadosIds: [[] as number[]]
@@ -64,7 +59,6 @@ export class ConfiguracoesComponent implements OnInit {
     this.mensagemUnificacao = null;
     this.regiaoForm.reset();
     this.atribuicaoForm.reset();
-    this.regiaoLivreForm.reset();
     this.unificacaoForm.reset();
     this.carregarRegioes();
     this.carregarBairros();
@@ -107,14 +101,10 @@ export class ConfiguracoesComponent implements OnInit {
     });
   }
 
-  atualizarSelecaoBairros(event: Event, controle: 'atribuicao' | 'livre'): void {
+  atualizarSelecaoBairros(event: Event): void {
     const options = Array.from((event.target as HTMLSelectElement).selectedOptions);
     const ids = options.map(option => Number(option.value));
-    if (controle === 'atribuicao') {
-      this.atribuicaoForm.patchValue({ bairrosIds: ids });
-    } else {
-      this.regiaoLivreForm.patchValue({ bairrosIds: ids });
-    }
+    this.atribuicaoForm.patchValue({ bairrosIds: ids });
   }
 
   atualizarDuplicados(event: Event): void {
@@ -149,46 +139,6 @@ export class ConfiguracoesComponent implements OnInit {
       this.carregarBairros();
       this.carregarRegioes();
     });
-  }
-
-  atribuirRegiaoLivre(): void {
-    if (this.regiaoLivreForm.invalid || !this.cidadeSelecionadaId) {
-      this.regiaoLivreForm.markAllAsTouched();
-      return;
-    }
-    const nomeRegiao = this.regiaoLivreForm.value.nomeRegiaoLivre?.trim();
-    const bairrosIds = this.regiaoLivreForm.value.bairrosIds ?? [];
-    if (!nomeRegiao || bairrosIds.length === 0) {
-      window.alert('Informe um nome de região e selecione ao menos um bairro.');
-      return;
-    }
-
-    this.localidadesService
-      .atualizarRegiaoBairros({ bairrosIds, nomeRegiaoLivre: nomeRegiao })
-      .subscribe(() => {
-        this.regiaoLivreForm.reset();
-        this.carregarBairros();
-        this.carregarRegioes();
-      });
-  }
-
-  removerRegiaoDosBairros(): void {
-    if (!this.cidadeSelecionadaId) {
-      return;
-    }
-    const bairrosIds = this.regiaoLivreForm.value.bairrosIds ?? [];
-    if (bairrosIds.length === 0) {
-      window.alert('Selecione os bairros que terão a região removida.');
-      return;
-    }
-
-    this.localidadesService
-      .atualizarRegiaoBairros({ bairrosIds, regiaoId: null })
-      .subscribe(() => {
-        this.regiaoLivreForm.reset();
-        this.carregarBairros();
-        this.carregarRegioes();
-      });
   }
 
   unificarBairros(): void {
