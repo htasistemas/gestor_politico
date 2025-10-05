@@ -78,7 +78,7 @@
           <select
             multiple
             class="mt-1 w-full h-40 rounded-xl border-gray-200 focus:border-indigo-500 focus:ring-indigo-500"
-            (change)="atualizarSelecaoBairros($event, 'atribuicao')"
+            (change)="atualizarSelecaoBairros($event)"
           >
             <option *ngFor="let bairro of bairros" [value]="bairro.id">
               {{ bairro.nome }} <span *ngIf="bairro.regiao" class="text-gray-400">- {{ bairro.regiao }}</span>
@@ -137,51 +137,6 @@
           class="px-4 py-2 rounded-xl bg-red-600 text-white font-semibold hover:bg-red-700 transition"
         >
           {{ processandoUnificacao ? 'Unificando...' : 'Unificar bairros' }}
-        </button>
-      </div>
-    </form>
-  </div>
-
-  <div class="bg-white rounded-3xl shadow-xl p-8 space-y-6">
-    <h2 class="text-xl font-semibold text-gray-900">Gerenciar regiões manualmente</h2>
-    <form [formGroup]="regiaoLivreForm" class="space-y-4">
-      <div class="grid md:grid-cols-2 gap-6">
-        <div>
-          <label class="block text-sm font-medium text-gray-700">Nome da região *</label>
-          <input
-            type="text"
-            formControlName="nomeRegiaoLivre"
-            class="mt-1 w-full rounded-xl border-gray-200 focus:border-indigo-500 focus:ring-indigo-500"
-            placeholder="Região personalizada"
-          />
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-700">Bairros *</label>
-          <select
-            multiple
-            class="mt-1 w-full h-40 rounded-xl border-gray-200 focus:border-indigo-500 focus:ring-indigo-500"
-            (change)="atualizarSelecaoBairros($event, 'livre')"
-          >
-            <option *ngFor="let bairro of bairros" [value]="bairro.id">
-              {{ bairro.nome }} <span *ngIf="bairro.regiao" class="text-gray-400">- {{ bairro.regiao }}</span>
-            </option>
-          </select>
-        </div>
-      </div>
-      <div class="flex flex-wrap gap-4 justify-end">
-        <button
-          type="button"
-          class="px-4 py-2 rounded-xl border border-gray-300 text-gray-600 hover:bg-gray-100"
-          (click)="removerRegiaoDosBairros()"
-        >
-          Remover região
-        </button>
-        <button
-          type="button"
-          class="px-4 py-2 rounded-xl bg-indigo-600 text-white font-semibold hover:bg-indigo-700 transition"
-          (click)="atribuirRegiaoLivre()"
-        >
-          Atribuir região personalizada
         </button>
       </div>
     </form>
