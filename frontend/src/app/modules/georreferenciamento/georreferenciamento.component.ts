@@ -145,12 +145,10 @@ export class GeoReferenciamentoComponent implements OnInit, AfterViewInit, OnDes
       return;
     }
 
-    const coordenadas: L.LatLngExpression[] = [];
-    this.familiasLocalizadas.forEach(familia => {
-      const marcador = this.criarMarcador(familia);
-      marcador.addTo(this.camadaMarcadores as L.LayerGroup);
-      coordenadas.push([familia.latitudeMapa, familia.longitudeMapa]);
-    });
+    const coordenadas: L.LatLngExpression[] = this.familiasLocalizadas.map(familia => [
+      familia.latitudeMapa,
+      familia.longitudeMapa
+    ]);
 
 
     if (this.exibirMapaDeCalor) {
