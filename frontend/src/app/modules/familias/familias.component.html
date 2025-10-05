@@ -272,7 +272,34 @@
                     </div>
                     <div class="text-sm text-gray-500 text-left lg:text-right">
                       <div class="font-semibold text-gray-700">Contato do responsável</div>
-                      <div>{{ obterTelefoneResponsavel(familia) }}</div>
+                      <div class="mt-1 flex items-center gap-2 justify-start lg:justify-end">
+                        <span>{{ obterTelefoneResponsavel(familia) }}</span>
+                        <button
+                          *ngIf="possuiTelefoneResponsavel(familia)"
+                          type="button"
+                          class="p-2 rounded-full text-emerald-600 hover:bg-emerald-50 focus:outline-none focus:ring-2 focus:ring-emerald-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                          (click)="abrirWhatsapp($event, familia)"
+                          [disabled]="whatsappCarregandoId === familia.id"
+                          aria-label="Conversar no WhatsApp"
+                        >
+                          <ng-container *ngIf="whatsappCarregandoId === familia.id; else whatsappIcon">
+                            <div class="w-4 h-4 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+                          </ng-container>
+                          <ng-template #whatsappIcon>
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              viewBox="0 0 24 24"
+                              fill="currentColor"
+                              class="w-4 h-4"
+                              aria-hidden="true"
+                            >
+                              <path
+                                d="M20.52 3.48A11.77 11.77 0 0 0 12 .24 11.76 11.76 0 0 0 1.7 17.82L.24 23.76l6.09-1.6a11.77 11.77 0 0 0 5.67 1.44h0A11.76 11.76 0 0 0 20.52 3.48Zm-8.2 18.68h0a9.8 9.8 0 0 1-4.99-1.37l-.36-.21-3.62.95.97-3.53-.24-.36a9.82 9.82 0 1 1 18.23-5.28 9.8 9.8 0 0 1-9.99 9.8Zm5.38-7.3c-.29-.15-1.7-.84-1.96-.93s-.45-.14-.64.14-.73.93-.9 1.12-.33.21-.62.07a7.97 7.97 0 0 1-2.35-1.45 8.8 8.8 0 0 1-1.62-2.02c-.17-.29 0-.45.13-.6.13-.13.29-.33.43-.5a2 2 0 0 0 .29-.5.54.54 0 0 0-.03-.5c-.08-.15-.64-1.54-.88-2.11-.23-.56-.47-.49-.64-.5h-.55a1.05 1.05 0 0 0-.76.36c-.26.29-1 1-1 2.44s1.02 2.84 1.17 3.04a11.42 11.42 0 0 0 3.69 3.47c.52.28.93.45 1.24.57.52.16 1 .14 1.37.09.42-.06 1.29-.53 1.47-1.05s.18-.95.13-1.05-.24-.17-.52-.29Z"
+                              ></path>
+                            </svg>
+                          </ng-template>
+                        </button>
+                      </div>
                     </div>
                   </div>
 

@@ -44,6 +44,7 @@ export class FamiliasComponent implements OnInit {
 
   familiaSelecionadaId: number | null = null;
   mostrarFiltrosAvancados = false;
+  whatsappCarregandoId: number | null = null;
   private todasRegioes: RegiaoFiltro[] = [];
   private readonly regioesPorCidade = new Map<number, RegiaoFiltro[]>();
 
@@ -218,11 +219,32 @@ export class FamiliasComponent implements OnInit {
   }
 
   obterTelefoneResponsavel(familia: FamiliaResponse): string {
-    const responsavel = familia.membros.find(membro => membro.responsavelPrincipal);
+    const responsavel = this.encontrarResponsavelPrincipal(familia);
     if (!responsavel?.telefone) {
       return 'Telefone não informado';
     }
-    return responsavel.telefone;
+    return this.formatarTelefone(responsavel.telefone);
+  }
+
+  possuiTelefoneResponsavel(familia: FamiliaResponse): boolean {
+    const responsavel = this.encontrarResponsavelPrincipal(familia);
+    return Boolean(responsavel?.telefone);
+  }
+
+  abrirWhatsapp(evento: MouseEvent, familia: FamiliaResponse): void {
+    evento.stopPropagation();
+    const responsavel = this.encontrarResponsavelPrincipal(familia);
+    if (!responsavel?.telefone || this.whatsappCarregandoId === familia.id) {
+      return;
+    }
+
+    this.whatsappCarregandoId = familia.id;
+    const linkWhatsapp = this.montarLinkWhatsapp(responsavel.telefone);
+
+    setTimeout(() => {
+      window.open(linkWhatsapp, '_blank', 'noopener');
+      this.whatsappCarregandoId = null;
+    }, 300);
   }
 
   obterTotalMembros(familia: FamiliaResponse): number {
@@ -427,5 +449,33 @@ export class FamiliasComponent implements OnInit {
         descricao: 'entradas nos últimos 7 dias'
       }
     ];
+  }
+
+  private encontrarResponsavelPrincipal(familia: FamiliaResponse) {
+    return familia.membros.find(membro => membro.responsavelPrincipal);
+  }
+
+  private formatarTelefone(telefone: string): string {
+    const digitos = telefone.replace(/\D/g, '');
+    if (digitos.length < 10) {
+      return telefone;
+    }
+
+    const ddd = digitos.substring(0, 2);
+    if (digitos.length >= 11) {
+      const primeiraParte = digitos.substring(2, 7);
+      const segundaParte = digitos.substring(7, 11);
+      return `(${ddd}) ${primeiraParte}-${segundaParte}`;
+    }
+
+    const primeiraParte = digitos.substring(2, 6);
+    const segundaParte = digitos.substring(6, 10);
+    return `(${ddd}) ${primeiraParte}-${segundaParte}`;
+  }
+
+  private montarLinkWhatsapp(telefone: string): string {
+    const digitos = telefone.replace(/\D/g, '');
+    const numeroComDdi = digitos.startsWith('55') ? digitos : `55${digitos}`;
+    return `https://wa.me/${numeroComDdi}`;
   }
 }
