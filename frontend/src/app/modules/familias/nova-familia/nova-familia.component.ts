@@ -182,6 +182,24 @@ export class NovaFamiliaComponent implements OnInit {
     }
   }
 
+  aoAlterarCepFamilia(valor: string): void {
+    if (typeof valor !== 'string') {
+      this.enderecoFamilia.cep = '';
+      return;
+    }
+
+    const apenasDigitos = valor.replace(/\D/g, '').slice(0, 8);
+
+    if (apenasDigitos.length <= 5) {
+      this.enderecoFamilia.cep = apenasDigitos;
+      return;
+    }
+
+    const prefixo = apenasDigitos.slice(0, 5);
+    const sufixo = apenasDigitos.slice(5);
+    this.enderecoFamilia.cep = `${prefixo}-${sufixo}`;
+  }
+
   aoAlterarCidadeFamilia(cidadeId: number | null): void {
     if (cidadeId === null) {
       this.enderecoFamilia.cidadeId = null;
@@ -643,8 +661,7 @@ export class NovaFamiliaComponent implements OnInit {
         this.salvandoFamilia = false;
         this.router.navigate(['/familias']);
       },
-      error: erro => {
-        console.error('Erro ao cadastrar família', erro);
+      error: _erro => {
         this.notificationService.showError(
           'Não foi possível cadastrar a família.',
           'Tente novamente.'

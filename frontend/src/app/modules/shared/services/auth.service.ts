@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { BehaviorSubject, Observable, tap } from 'rxjs';
 import { buildApiUrl } from '../api-url.util';
+import { NotificationService } from './notification.service';
 
 export type PerfilUsuario = 'ADMINISTRADOR' | 'USUARIO';
 
@@ -18,7 +19,11 @@ export class AuthService {
   private readonly storageKey = 'gestor-politico-auth';
   private readonly usuarioSubject = new BehaviorSubject<UsuarioAutenticado | null>(this.carregarUsuario());
 
-  constructor(private readonly http: HttpClient, private readonly router: Router) {}
+  constructor(
+    private readonly http: HttpClient,
+    private readonly router: Router,
+    private readonly notificationService: NotificationService
+  ) {}
 
   get usuario$(): Observable<UsuarioAutenticado | null> {
     return this.usuarioSubject.asObservable();
@@ -76,7 +81,10 @@ export class AuthService {
         return usuario;
       }
     } catch (erro) {
-      console.error('Erro ao restaurar usuário autenticado', erro);
+      this.notificationService.showError(
+        'Erro ao restaurar sessão',
+        'Não foi possível restaurar as informações do usuário autenticado.'
+      );
     }
     localStorage.removeItem(this.storageKey);
     return null;

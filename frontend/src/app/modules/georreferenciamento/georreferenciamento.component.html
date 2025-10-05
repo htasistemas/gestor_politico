@@ -18,6 +18,37 @@
         </div>
       </div>
 
+      <div class="mapa-toolbar">
+        <div class="mapa-toolbar__descricao">
+          <h2 class="mapa-toolbar__titulo">Visualização do território</h2>
+          <p class="mapa-toolbar__texto">
+            Explore os pontos individuais ou destaque automaticamente as áreas com maior concentração de famílias.
+          </p>
+        </div>
+        <div class="mapa-view-toggle" role="group" aria-label="Alternar visualização do mapa">
+          <button
+            type="button"
+            class="mapa-view-toggle__botao"
+            [class.mapa-view-toggle__botao--ativo]="!exibirMapaDeCalor"
+            (click)="mostrarMarcadores()"
+            [attr.aria-pressed]="!exibirMapaDeCalor"
+          >
+            <i class="fa-solid fa-location-dot" aria-hidden="true"></i>
+            <span>Marcadores</span>
+          </button>
+          <button
+            type="button"
+            class="mapa-view-toggle__botao"
+            [class.mapa-view-toggle__botao--ativo]="exibirMapaDeCalor"
+            (click)="mostrarMapaDeCalor()"
+            [attr.aria-pressed]="exibirMapaDeCalor"
+          >
+            <i class="fa-solid fa-fire" aria-hidden="true"></i>
+            <span>Mapa de calor</span>
+          </button>
+        </div>
+      </div>
+
       <div class="relative">
         <div
           *ngIf="carregando"

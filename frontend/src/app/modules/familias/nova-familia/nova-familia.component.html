@@ -66,9 +66,12 @@
               <input
                 type="text"
                 class="w-full md:flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all duration-200"
-                [(ngModel)]="enderecoFamilia.cep"
+                [ngModel]="enderecoFamilia.cep"
+                (ngModelChange)="aoAlterarCepFamilia($event)"
                 name="cepFamilia"
                 placeholder="00000-000"
+                maxlength="9"
+                autocomplete="postal-code"
               />
               <div class="flex items-center space-x-2">
                 <button
@@ -313,7 +316,7 @@
                 [(ngModel)]="membro.probabilidade"
                 name="probabilidade_{{ i }}"
               >
-                <option value="">Selecione a probabilidade</option>
+                <option value=""></option>
                 <option value="Alta">Alta Probabilidade</option>
                 <option value="Média">Média Probabilidade</option>
                 <option value="Baixa">Baixa Probabilidade</option>
