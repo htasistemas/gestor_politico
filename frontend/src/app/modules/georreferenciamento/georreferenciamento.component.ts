@@ -10,6 +10,8 @@ interface FamiliaLocalizada {
   latitude: number;
   longitude: number;
   link: string;
+  telefoneFormatado: string | null;
+  telefoneWhatsapp: string | null;
 }
 
 @Component({
@@ -185,13 +187,19 @@ export class GeoReferenciamentoComponent implements OnInit, AfterViewInit, OnDes
       enderecoCompleto: this.montarEndereco(enderecoDetalhado),
       latitude,
       longitude,
-      link: this.montarLinkFamilia(familia.id)
+      link: this.montarLinkFamilia(familia.id),
+      ...this.processarTelefone(this.obterTelefoneResponsavel(familia))
     };
   }
 
   private obterResponsavel(familia: FamiliaResponse): string {
     const responsavel = familia.membros.find(membro => membro.responsavelPrincipal);
     return responsavel?.nomeCompleto || 'Responsável não informado';
+  }
+
+  private obterTelefoneResponsavel(familia: FamiliaResponse): string | null {
+    const responsavel = familia.membros.find(membro => membro.responsavelPrincipal);
+    return responsavel?.telefone ?? null;
   }
 
   private montarEndereco(endereco: EnderecoFamiliaResponse): string {
@@ -213,22 +221,52 @@ export class GeoReferenciamentoComponent implements OnInit, AfterViewInit, OnDes
     const titulo = this.escapeHtml(`Família de ${familia.responsavel}`);
     const endereco = this.escapeHtml(familia.enderecoCompleto);
     const link = this.escapeHtml(familia.link);
+    const telefone = familia.telefoneFormatado ? this.escapeHtml(familia.telefoneFormatado) : null;
+    const telefoneHtml = telefone
+      ? `
+        <div class="popup-telefone">
+          <span class="popup-telefone__label">Telefone</span>
+          <span class="popup-telefone__numero">${telefone}</span>
+        </div>
+      `
+      : `
+        <div class="popup-telefone popup-telefone--ausente">
+          <span class="popup-telefone__label">Telefone</span>
+          <span class="popup-telefone__numero">Não informado</span>
+        </div>
+      `;
+    const whatsappBotao = familia.telefoneWhatsapp
+      ? `
+        <button type="button" class="popup-whatsapp" data-telefone="${this.escapeHtml(familia.telefoneWhatsapp)}">
+          <i class="fa-brands fa-whatsapp" aria-hidden="true"></i>
+          <span class="popup-whatsapp__texto">Abrir WhatsApp</span>
+          <span class="popup-whatsapp__loading is-hidden">Abrindo...</span>
+        </button>
+      `
+      : '';
     return `
       <div class="popup-conteudo">
         <strong>${titulo}</strong>
         <div class="popup-endereco">${endereco}</div>
+        ${telefoneHtml}
         <a href="${link}" target="_blank" rel="noopener" class="popup-link">
           <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i>
           <span>Abrir cadastro</span>
         </a>
+        ${whatsappBotao}
       </div>
     `;
   }
 
   private criarMarcador(familia: FamiliaLocalizada): L.Marker {
-    return L.marker([familia.latitude, familia.longitude], {
+    const marcador = L.marker([familia.latitude, familia.longitude], {
       icon: this.iconeFamilia
     }).bindPopup(this.criarConteudoPopup(familia));
+    marcador.on('popupopen', evento => {
+      const elementoPopup = (evento.popup.getElement?.() as HTMLElement | undefined) ?? null;
+      this.configurarInteracoesPopup(elementoPopup);
+    });
+    return marcador;
   }
 
   private escapeHtml(valor: string): string {
@@ -271,5 +309,76 @@ export class GeoReferenciamentoComponent implements OnInit, AfterViewInit, OnDes
     }
 
     return maiorGrupo.map(familia => [familia.latitude, familia.longitude] as L.LatLngExpression);
+  }
+
+  private processarTelefone(telefone: string | null): { telefoneFormatado: string | null; telefoneWhatsapp: string | null } {
+    if (!telefone) {
+      return { telefoneFormatado: null, telefoneWhatsapp: null };
+    }
+
+    const digitosOriginais = telefone.replace(/\D/g, '');
+    if (!digitosOriginais) {
+      return { telefoneFormatado: telefone.trim() || null, telefoneWhatsapp: null };
+    }
+
+    let digitosParaFormatar = digitosOriginais;
+    if (digitosParaFormatar.startsWith('55') && (digitosParaFormatar.length === 12 || digitosParaFormatar.length === 13)) {
+      digitosParaFormatar = digitosParaFormatar.slice(2);
+    }
+
+    let telefoneFormatado: string | null = null;
+    let telefoneWhatsapp: string | null = null;
+
+    if (digitosParaFormatar.length === 11) {
+      telefoneFormatado = `(${digitosParaFormatar.slice(0, 2)}) ${digitosParaFormatar.slice(2, 7)}-${digitosParaFormatar.slice(7)}`;
+      telefoneWhatsapp = `55${digitosParaFormatar}`;
+    } else if (digitosParaFormatar.length === 10) {
+      telefoneFormatado = `(${digitosParaFormatar.slice(0, 2)}) ${digitosParaFormatar.slice(2, 6)}-${digitosParaFormatar.slice(6)}`;
+      telefoneWhatsapp = `55${digitosParaFormatar}`;
+    } else {
+      telefoneFormatado = telefone.trim() || null;
+    }
+
+    return {
+      telefoneFormatado,
+      telefoneWhatsapp
+    };
+  }
+
+  private configurarInteracoesPopup(elemento: HTMLElement | null): void {
+    if (!elemento || typeof window === 'undefined') {
+      return;
+    }
+
+    const botaoWhatsapp = elemento.querySelector<HTMLButtonElement>('.popup-whatsapp');
+    if (!botaoWhatsapp || botaoWhatsapp.dataset.listenerRegistrado === 'true') {
+      return;
+    }
+
+    botaoWhatsapp.dataset.listenerRegistrado = 'true';
+    botaoWhatsapp.addEventListener('click', () => {
+      const telefone = botaoWhatsapp.dataset.telefone;
+      if (!telefone) {
+        return;
+      }
+
+      const textoPadrao = botaoWhatsapp.querySelector<HTMLElement>('.popup-whatsapp__texto');
+      const textoLoading = botaoWhatsapp.querySelector<HTMLElement>('.popup-whatsapp__loading');
+
+      botaoWhatsapp.disabled = true;
+      textoPadrao?.classList.add('is-hidden');
+      textoLoading?.classList.remove('is-hidden');
+
+      try {
+        const url = `https://wa.me/${telefone}`;
+        window.open(url, '_blank', 'noopener');
+      } finally {
+        setTimeout(() => {
+          textoPadrao?.classList.remove('is-hidden');
+          textoLoading?.classList.add('is-hidden');
+          botaoWhatsapp.disabled = false;
+        }, 500);
+      }
+    });
   }
 }
