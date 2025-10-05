@@ -26,6 +26,20 @@ interface SecaoDemandas {
   demandas: DemandaDetalhada[];
 }
 
+interface FiltroFamiliaSelecao {
+  termo: string;
+  cidade: string;
+  regiao: string;
+  responsavel: string;
+  probabilidadeVoto: string;
+  dataInicio: string;
+  dataFim: string;
+  bairro: string;
+  rua: string;
+  numero: string;
+  cep: string;
+}
+
 @Component({
   standalone: false,
   selector: 'app-demandas',
@@ -47,6 +61,14 @@ export class DemandasComponent implements OnInit, OnDestroy {
   filtroBusca = '';
   secoes: SecaoDemandas[] = [];
   semDemandasFiltradas = false;
+  familiaSelecionada: FamiliaResponse | null = null;
+  mostrarModalSelecionarFamilia = false;
+  mostrarFiltrosAvancadosFamilias = false;
+  filtroFamiliasForm: FormGroup;
+  familiasFiltradasBusca: FamiliaResponse[] = [];
+  cidadesDisponiveis: string[] = [];
+  regioesDisponiveis: string[] = [];
+  probabilidadesVoto: string[] = ['Alta', 'Média', 'Baixa'];
   private todasDemandas: Demanda[] = [];
   private readonly destroy$ = new Subject<void>();
 
@@ -62,6 +84,20 @@ export class DemandasComponent implements OnInit, OnDestroy {
       descricao: [''],
       urgencia: ['Média', Validators.required],
       dataLimite: ['']
+    });
+
+    this.filtroFamiliasForm = this.fb.group({
+      termo: [''],
+      cidade: [''],
+      regiao: [''],
+      responsavel: [''],
+      probabilidadeVoto: [''],
+      dataInicio: [''],
+      dataFim: [''],
+      bairro: [''],
+      rua: [''],
+      numero: [''],
+      cep: ['']
     });
   }
 
@@ -113,6 +149,7 @@ export class DemandasComponent implements OnInit, OnDestroy {
       urgencia: 'Média',
       dataLimite: ''
     });
+    this.familiaSelecionada = null;
   }
 
   aplicarFiltros(): void {
@@ -174,6 +211,100 @@ export class DemandasComponent implements OnInit, OnDestroy {
     return `Família de ${this.obterResponsavel(familia)}`;
   }
 
+  abrirBuscaFamilias(): void {
+    if (this.carregandoFamilias) {
+      return;
+    }
+    this.mostrarModalSelecionarFamilia = true;
+    this.aplicarFiltroFamiliasBusca();
+  }
+
+  fecharBuscaFamilias(): void {
+    this.mostrarModalSelecionarFamilia = false;
+  }
+
+  alternarFiltrosFamilias(): void {
+    this.mostrarFiltrosAvancadosFamilias = !this.mostrarFiltrosAvancadosFamilias;
+  }
+
+  aplicarFiltroFamiliasBusca(): void {
+    const filtros = this.filtroFamiliasForm.value as FiltroFamiliaSelecao;
+    const filtradas = this.filtrarFamiliasParaSelecao(filtros);
+    this.familiasFiltradasBusca = this.ordenarFamilias(filtradas);
+  }
+
+  limparFiltroFamiliasBusca(): void {
+    this.filtroFamiliasForm.reset({
+      termo: '',
+      cidade: '',
+      regiao: '',
+      responsavel: '',
+      probabilidadeVoto: '',
+      dataInicio: '',
+      dataFim: '',
+      bairro: '',
+      rua: '',
+      numero: '',
+      cep: ''
+    });
+    this.aplicarFiltroFamiliasBusca();
+  }
+
+  selecionarFamilia(familia: FamiliaResponse): void {
+    this.formulario.patchValue({ familiaId: familia.id });
+    this.formulario.get('familiaId')?.markAsTouched();
+    this.familiaSelecionada = familia;
+    this.mostrarModalSelecionarFamilia = false;
+  }
+
+  obterIniciaisFamilia(familia: FamiliaResponse): string {
+    const responsavel = this.obterResponsavel(familia);
+    if (!responsavel) {
+      return 'NA';
+    }
+    const partes = responsavel.trim().split(/\s+/);
+    if (partes.length === 1) {
+      return partes[0].substring(0, 2).toUpperCase();
+    }
+    return (partes[0][0] + partes[partes.length - 1][0]).toUpperCase();
+  }
+
+  obterEnderecoResumido(familia: FamiliaResponse): string {
+    const endereco = familia.enderecoDetalhado;
+    if (!endereco) {
+      return 'Endereço não informado';
+    }
+    const partes: string[] = [];
+    if (endereco.rua) {
+      partes.push(endereco.rua);
+    }
+    if (endereco.numero) {
+      partes.push(`nº ${endereco.numero}`);
+    }
+    if (endereco.bairro) {
+      partes.push(endereco.bairro);
+    }
+    const cidadeUf = `${endereco.cidade} / ${endereco.uf}`;
+    partes.push(cidadeUf);
+    return partes.join(' • ');
+  }
+
+  obterProbabilidadeFamilia(familia: FamiliaResponse): string {
+    const responsavel = familia.membros.find(membro => membro.responsavelPrincipal);
+    return responsavel?.probabilidadeVoto || 'Não informada';
+  }
+
+  obterDataCadastroFamilia(data: string): string {
+    if (!data) {
+      return 'Não informada';
+    }
+    const formatada = this.formatarData(data);
+    if (formatada === 'Sem data limite' || formatada === 'Data inválida') {
+      return 'Não informada';
+    }
+    return formatada;
+  }
+
   private carregarFamilias(): void {
     this.carregandoFamilias = true;
     this.erroFamilias = '';
@@ -181,6 +312,9 @@ export class DemandasComponent implements OnInit, OnDestroy {
       next: familias => {
         this.familias = familias;
         this.carregandoFamilias = false;
+        this.atualizarOpcoesFiltroFamilias();
+        this.aplicarFiltroFamiliasBusca();
+        this.atualizarFamiliaSelecionada();
         this.recalcularSecoes();
       },
       error: erro => {
@@ -194,6 +328,35 @@ export class DemandasComponent implements OnInit, OnDestroy {
   private obterResponsavel(familia: FamiliaResponse): string {
     const responsavel = familia.membros.find(membro => membro.responsavelPrincipal);
     return responsavel?.nomeCompleto || 'Responsável não informado';
+  }
+
+  private atualizarOpcoesFiltroFamilias(): void {
+    const cidades = new Set<string>();
+    const regioes = new Set<string>();
+    this.familias.forEach(familia => {
+      const endereco = familia.enderecoDetalhado;
+      if (endereco) {
+        const cidadeUf = `${endereco.cidade} / ${endereco.uf}`;
+        if (cidadeUf.trim()) {
+          cidades.add(cidadeUf);
+        }
+        if (endereco.regiao) {
+          regioes.add(endereco.regiao);
+        }
+      }
+    });
+    this.cidadesDisponiveis = Array.from(cidades).sort((a, b) => a.localeCompare(b, 'pt-BR'));
+    this.regioesDisponiveis = Array.from(regioes).sort((a, b) => a.localeCompare(b, 'pt-BR'));
+  }
+
+  private atualizarFamiliaSelecionada(): void {
+    const familiaId = this.formulario.get('familiaId')?.value;
+    if (familiaId === null || familiaId === undefined) {
+      this.familiaSelecionada = null;
+      return;
+    }
+    const familia = this.familias.find(item => item.id === familiaId) || null;
+    this.familiaSelecionada = familia;
   }
 
   private construirDemandaDetalhada(demanda: Demanda): DemandaDetalhada {
@@ -216,6 +379,115 @@ export class DemandasComponent implements OnInit, OnDestroy {
       responsavel,
       endereco
     };
+  }
+
+  private filtrarFamiliasParaSelecao(filtros: FiltroFamiliaSelecao): FamiliaResponse[] {
+    const termo = this.normalizarTexto(filtros.termo);
+    const cidade = this.normalizarTexto(filtros.cidade);
+    const regiao = this.normalizarTexto(filtros.regiao);
+    const responsavelFiltro = this.normalizarTexto(filtros.responsavel);
+    const probabilidade = this.normalizarTexto(filtros.probabilidadeVoto);
+    const bairro = this.normalizarTexto(filtros.bairro);
+    const rua = this.normalizarTexto(filtros.rua);
+    const numero = this.normalizarTexto(filtros.numero);
+    const cep = this.normalizarTexto(filtros.cep);
+    const dataInicio = filtros.dataInicio ? this.obterDataNoInicioDoDia(filtros.dataInicio) : null;
+    const dataFim = filtros.dataFim ? this.obterDataNoFimDoDia(filtros.dataFim) : null;
+
+    return this.familias.filter(familia => {
+      const responsavel = this.obterResponsavel(familia);
+      const responsavelNormalizado = this.normalizarTexto(responsavel);
+      const nomeFamiliaNormalizado = this.normalizarTexto(this.obterFamiliaNome(familia.id));
+      const enderecoNormalizado = this.normalizarTexto(familia.endereco);
+      const enderecoDetalhado = familia.enderecoDetalhado;
+      const bairroFamilia = this.normalizarTexto(familia.bairro || enderecoDetalhado?.bairro || '');
+      const ruaFamilia = this.normalizarTexto(enderecoDetalhado?.rua || '');
+      const numeroFamilia = this.normalizarTexto(enderecoDetalhado?.numero || '');
+      const cepFamilia = this.normalizarTexto(enderecoDetalhado?.cep || '');
+      const regiaoFamilia = this.normalizarTexto(enderecoDetalhado?.regiao || '');
+      const cidadeFamilia = this.normalizarTexto(
+        enderecoDetalhado ? `${enderecoDetalhado.cidade} / ${enderecoDetalhado.uf}` : ''
+      );
+      const probabilidadeFamilia = this.normalizarTexto(this.obterProbabilidadeFamilia(familia));
+
+      if (termo) {
+        const conjunto = [responsavelNormalizado, nomeFamiliaNormalizado, enderecoNormalizado, bairroFamilia, ruaFamilia].join(
+          ' '
+        );
+        if (!conjunto.includes(termo)) {
+          return false;
+        }
+      }
+
+      if (cidade && cidadeFamilia !== cidade) {
+        return false;
+      }
+
+      if (regiao && regiaoFamilia !== regiao) {
+        return false;
+      }
+
+      if (responsavelFiltro && !responsavelNormalizado.includes(responsavelFiltro)) {
+        return false;
+      }
+
+      if (probabilidade && probabilidadeFamilia !== probabilidade) {
+        return false;
+      }
+
+      if (bairro && !bairroFamilia.includes(bairro)) {
+        return false;
+      }
+
+      if (rua && !ruaFamilia.includes(rua)) {
+        return false;
+      }
+
+      if (numero && !numeroFamilia.includes(numero)) {
+        return false;
+      }
+
+      if (cep && !cepFamilia.includes(cep)) {
+        return false;
+      }
+
+      if (dataInicio || dataFim) {
+        const criadoEm = new Date(familia.criadoEm);
+        if (!Number.isNaN(criadoEm.getTime())) {
+          if (dataInicio && criadoEm.getTime() < dataInicio.getTime()) {
+            return false;
+          }
+          if (dataFim && criadoEm.getTime() > dataFim.getTime()) {
+            return false;
+          }
+        }
+      }
+
+      return true;
+    });
+  }
+
+  private normalizarTexto(valor: string | null | undefined): string {
+    if (valor === null || valor === undefined) {
+      return '';
+    }
+    return valor.toString().trim().toLowerCase();
+  }
+
+  private obterDataNoInicioDoDia(valor: string): Date {
+    const data = new Date(valor);
+    data.setHours(0, 0, 0, 0);
+    return data;
+  }
+
+  private obterDataNoFimDoDia(valor: string): Date {
+    const data = new Date(valor);
+    data.setHours(23, 59, 59, 999);
+    return data;
+  }
+
+  private ordenarFamilias(familias: FamiliaResponse[]): FamiliaResponse[] {
+    return [...familias].sort((a, b) => this.obterResponsavel(a).localeCompare(this.obterResponsavel(b), 'pt-BR'));
   }
 
   private filtrarDemandas(): DemandaDetalhada[] {
