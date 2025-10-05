@@ -113,5 +113,86 @@
         <canvas #barChartCanvas></canvas>
       </div>
     </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div class="bg-white rounded-3xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300">
+        <div class="flex items-center justify-between mb-6">
+          <div class="flex items-center space-x-3">
+            <div class="w-12 h-12 bg-gradient-to-r from-rose-500 to-pink-500 rounded-2xl flex items-center justify-center">
+              <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+              </svg>
+            </div>
+            <div>
+              <h2 class="text-xl font-bold text-gray-900">Aniversariantes do mês de {{ nomeMesAtual }}</h2>
+              <p class="text-sm text-gray-600">Planeje as visitas e mensagens especiais para fortalecer o relacionamento</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="space-y-4">
+          <div
+            *ngFor="let aniversariante of aniversariantesOrdenados"
+            class="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-gray-100"
+          >
+            <div>
+              <div class="text-sm font-semibold text-gray-900">{{ aniversariante.nome }}</div>
+              <div class="text-xs text-gray-500">{{ aniversariante.bairro }} • {{ aniversariante.telefone }}</div>
+            </div>
+            <div class="flex items-center space-x-2">
+              <span class="text-xs uppercase tracking-wide text-gray-500">Dia</span>
+              <span class="text-2xl font-bold text-rose-600">{{ aniversariante.dia }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-3xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300">
+        <div class="flex items-center justify-between mb-6">
+          <div class="flex items-center space-x-3">
+            <div class="w-12 h-12 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-2xl flex items-center justify-center">
+              <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+              </svg>
+            </div>
+            <div>
+              <h2 class="text-xl font-bold text-gray-900">Top 10 cadastradores do mês</h2>
+              <p class="text-sm text-gray-600">Ranking com dados simulados para acompanhar o engajamento da equipe</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="space-y-3">
+          <div
+            *ngFor="let cadastrador of topCadastradores; index as i"
+            class="flex items-center justify-between p-4 rounded-2xl border"
+            [ngClass]="{
+              'bg-blue-50 border-blue-200': i < 3,
+              'bg-gray-50 border-gray-100': i >= 3
+            }"
+          >
+            <div class="flex items-center space-x-4">
+              <div
+                class="w-10 h-10 rounded-full flex items-center justify-center font-semibold"
+                [ngClass]="{
+                  'bg-blue-500 text-white': i < 3,
+                  'bg-white text-gray-700 border border-gray-200': i >= 3
+                }"
+              >
+                {{ i + 1 }}
+              </div>
+              <div>
+                <div class="text-sm font-semibold text-gray-900">{{ cadastrador.nome }}</div>
+                <div class="text-xs text-gray-500">{{ cadastrador.regiao }}</div>
+              </div>
+            </div>
+            <div class="text-right">
+              <div class="text-xl font-bold text-blue-600">{{ cadastrador.totalFamilias }}</div>
+              <div class="text-xs text-gray-500">novas famílias</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
