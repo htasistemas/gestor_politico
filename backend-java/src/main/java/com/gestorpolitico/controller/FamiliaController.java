@@ -9,7 +9,9 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -33,6 +35,12 @@ public class FamiliaController {
     return ResponseEntity.status(HttpStatus.CREATED).body(familia);
   }
 
+  @GetMapping("/{id}")
+  public ResponseEntity<FamiliaResponseDTO> buscarFamilia(@PathVariable Long id) {
+    FamiliaResponseDTO familia = familiaService.buscarFamilia(id);
+    return ResponseEntity.ok(familia);
+  }
+
   @GetMapping
   public ResponseEntity<FamiliaListaResponseDTO> listarFamilias(
     FamiliaFiltroRequestDTO filtro,
@@ -44,5 +52,14 @@ public class FamiliaController {
     Pageable pageable = PageRequest.of(paginaAjustada, tamanhoAjustado, Sort.by(Sort.Direction.DESC, "criadoEm"));
     FamiliaListaResponseDTO familias = familiaService.buscarFamilias(filtro, pageable);
     return ResponseEntity.ok(familias);
+  }
+
+  @PutMapping("/{id}")
+  public ResponseEntity<FamiliaResponseDTO> atualizarFamilia(
+    @PathVariable Long id,
+    @Valid @RequestBody FamiliaRequestDTO request
+  ) {
+    FamiliaResponseDTO familia = familiaService.atualizarFamilia(id, request);
+    return ResponseEntity.ok(familia);
   }
 }

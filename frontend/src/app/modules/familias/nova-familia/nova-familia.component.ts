@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
+import { combineLatest } from 'rxjs';
 import { FamiliasService, FamiliaMembroPayload, FamiliaPayload, FamiliaResponse } from '../familias.service';
 import { DESCRICOES_PARENTESCO, GrauParentesco } from '../parentesco.enum';
 import { Bairro, Cidade, LocalidadesService, Regiao } from '../../shared/services/localidades.service';
@@ -71,6 +72,11 @@ export class NovaFamiliaComponent implements OnInit {
   readonly valorNovoBairro = VALOR_NOVO_BAIRRO;
   readonly ehAdministrador: boolean;
 
+  modoEdicao = false;
+  familiaIdEdicao: number | null = null;
+  familiaCarregada: FamiliaResponse | null = null;
+  carregandoFamilia = false;
+
   enderecoFamilia: FamiliaEnderecoForm = this.criarEnderecoFamilia();
   novaRegiaoGeradaPorCep = false;
   novoBairroGeradoPorCep = false;
@@ -105,6 +111,7 @@ export class NovaFamiliaComponent implements OnInit {
   salvandoFamilia = false;
 
   constructor(
+    private readonly route: ActivatedRoute,
     private readonly router: Router,
     private readonly familiasService: FamiliasService,
     private readonly localidadesService: LocalidadesService,
@@ -117,13 +124,195 @@ export class NovaFamiliaComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    combineLatest([this.route.paramMap, this.route.queryParamMap]).subscribe(([parametros, queryParams]) => {
+      const familiaIdParam =
+        parametros.get('id') ?? parametros.get('familiaId') ?? queryParams.get('familiaId');
+      this.atualizarModoPorParametro(familiaIdParam);
+    });
+
     this.localidadesService.listarCidades().subscribe(cidades => {
       this.cidades = cidades;
-      const cidadePadrao = cidades.length > 0 ? cidades[0].id : null;
-      if (cidadePadrao !== null) {
-        this.aoAlterarCidadeFamilia(cidadePadrao);
+      if (this.modoEdicao) {
+        this.aplicarFamiliaCarregada();
+        return;
+      }
+      this.aplicarCidadePadraoQuandoDisponivel();
+    });
+  }
+
+  get tituloPagina(): string {
+    return this.modoEdicao ? 'Editar Família' : 'Nova Família';
+  }
+
+  get descricaoPagina(): string {
+    return this.modoEdicao ? 'Atualização de família e membros' : 'Cadastro de família e membros';
+  }
+
+  get textoBotaoPrincipal(): string {
+    return this.modoEdicao ? 'Atualizar Família' : 'Cadastrar Família';
+  }
+
+  private atualizarModoPorParametro(familiaIdParam: string | null): void {
+    if (!familiaIdParam) {
+      if (this.modoEdicao) {
+        this.modoEdicao = false;
+        this.familiaIdEdicao = null;
+        this.familiaCarregada = null;
+        this.carregandoFamilia = false;
+      }
+      this.resetarFormularioParaCriacao();
+      this.aplicarCidadePadraoQuandoDisponivel();
+      return;
+    }
+
+    const id = Number(familiaIdParam);
+    if (!Number.isFinite(id) || Number.isNaN(id) || id <= 0) {
+      this.modoEdicao = false;
+      this.familiaIdEdicao = null;
+      this.familiaCarregada = null;
+      this.carregandoFamilia = false;
+      this.resetarFormularioParaCriacao();
+      this.aplicarCidadePadraoQuandoDisponivel();
+      return;
+    }
+
+    if (this.modoEdicao && this.familiaIdEdicao === id) {
+      return;
+    }
+
+    this.modoEdicao = true;
+    this.familiaIdEdicao = id;
+    this.familiaCarregada = null;
+    this.carregandoFamilia = true;
+    this.resetarFormularioParaCriacao();
+    this.carregarFamilia(id);
+  }
+
+  private aplicarCidadePadraoQuandoDisponivel(): void {
+    if (this.modoEdicao) {
+      return;
+    }
+
+    if (this.enderecoFamilia.cidadeId !== null) {
+      return;
+    }
+
+    const cidadePadrao = this.cidades.length > 0 ? this.cidades[0].id : null;
+    if (cidadePadrao !== null) {
+      this.aoAlterarCidadeFamilia(cidadePadrao);
+    }
+  }
+
+  private carregarFamilia(id: number): void {
+    this.carregandoFamilia = true;
+    this.familiasService.obterFamilia(id).subscribe({
+      next: familia => {
+        this.carregandoFamilia = false;
+        this.familiaCarregada = familia;
+        this.aplicarFamiliaCarregada();
+      },
+      error: () => {
+        this.carregandoFamilia = false;
+        this.notificationService.showError(
+          'Não foi possível carregar os dados da família selecionada.',
+          'Tente novamente.'
+        );
+        this.router.navigate(['/familias']);
       }
     });
+  }
+
+  private aplicarFamiliaCarregada(): void {
+    if (!this.familiaCarregada || this.cidades.length === 0) {
+      return;
+    }
+
+    const endereco = this.familiaCarregada.enderecoDetalhado;
+    const base = this.criarEnderecoFamilia();
+    this.enderecoFamilia = {
+      ...base,
+      cep: endereco.cep ?? '',
+      rua: endereco.rua ?? '',
+      numero: endereco.numero ?? ''
+    };
+    this.novaRegiaoGeradaPorCep = false;
+    this.novoBairroGeradoPorCep = false;
+
+    const cidadeNome = endereco.cidade ?? '';
+    const uf = endereco.uf ?? '';
+    const cidade = cidadeNome && uf ? this.encontrarCidadeSimilar(cidadeNome, uf) : undefined;
+
+    if (cidade) {
+      this.definirCidadeFamilia(cidade.id);
+      this.enderecoFamilia.cep = endereco.cep ?? '';
+      this.enderecoFamilia.rua = endereco.rua ?? '';
+      this.enderecoFamilia.numero = endereco.numero ?? '';
+
+      const regiaoServidor = endereco.regiao ?? null;
+      this.carregarRegioesFamilia(cidade.id, () => {
+        if (regiaoServidor) {
+          const regiaoNormalizada = this.normalizarTexto(regiaoServidor);
+          const regiaoEncontrada = this.enderecoFamilia.regioes.find(
+            item => this.normalizarTexto(item.nome) === regiaoNormalizada
+          );
+
+          if (regiaoEncontrada) {
+            this.enderecoFamilia.regiaoSelecionada = regiaoEncontrada.nome;
+            this.enderecoFamilia.regiaoBloqueada = true;
+          } else {
+            this.enderecoFamilia.regiaoSelecionada = this.valorNovaRegiao;
+            this.enderecoFamilia.novaRegiao = regiaoServidor;
+            this.enderecoFamilia.regiaoBloqueada = false;
+          }
+        } else {
+          this.enderecoFamilia.regiaoSelecionada = null;
+          this.enderecoFamilia.regiaoBloqueada = false;
+        }
+
+        this.carregarBairrosFamilia(cidade.id, () => {
+          this.definirBairroFamiliaPorNome(endereco.bairro ?? undefined);
+        });
+      });
+    }
+
+    this.preencherMembrosFamilia(this.familiaCarregada.membros);
+    this.mostrarPrevia = false;
+    this.previaFamilia = null;
+  }
+
+  private preencherMembrosFamilia(membrosResposta: FamiliaResponse['membros']): void {
+    if (!membrosResposta || membrosResposta.length === 0) {
+      this.membros = [this.criarMembro(true)];
+      return;
+    }
+
+    this.membros = membrosResposta.map(membro => {
+      const probabilidade = (membro.probabilidadeVoto as ProbabilidadeVoto) || '';
+      return {
+        nome: membro.nomeCompleto,
+        nascimento: membro.dataNascimento ?? '',
+        profissao: membro.profissao ?? '',
+        parentesco: membro.responsavelPrincipal ? PARENTESCO_RESPONSAVEL : membro.parentesco,
+        responsavel: Boolean(membro.responsavelPrincipal),
+        probabilidade,
+        telefone: this.aplicarMascaraTelefone(membro.telefone ?? '')
+      };
+    });
+
+    const possuiResponsavel = this.membros.some(membro => membro.responsavel);
+    if (!possuiResponsavel && this.membros.length > 0) {
+      this.membros[0].responsavel = true;
+      this.membros[0].parentesco = PARENTESCO_RESPONSAVEL;
+    }
+  }
+
+  private resetarFormularioParaCriacao(): void {
+    this.enderecoFamilia = this.criarEnderecoFamilia();
+    this.membros = [this.criarMembro(true)];
+    this.mostrarPrevia = false;
+    this.previaFamilia = null;
+    this.novaRegiaoGeradaPorCep = false;
+    this.novoBairroGeradoPorCep = false;
   }
 
   voltarPagina(): void {
@@ -358,10 +547,11 @@ export class NovaFamiliaComponent implements OnInit {
       });
   }
 
-  private carregarRegioesFamilia(cidadeId: number): void {
+  private carregarRegioesFamilia(cidadeId: number, callback?: () => void): void {
     const cache = this.regioesCache.get(cidadeId);
     if (cache) {
       this.enderecoFamilia.regioes = cache;
+      callback?.();
       return;
     }
 
@@ -369,6 +559,7 @@ export class NovaFamiliaComponent implements OnInit {
       const ordenadas = [...regioes].sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
       this.regioesCache.set(cidadeId, ordenadas);
       this.enderecoFamilia.regioes = ordenadas;
+      callback?.();
     });
   }
 
@@ -622,7 +813,12 @@ export class NovaFamiliaComponent implements OnInit {
 
     this.salvandoFamilia = true;
     const payload = this.montarPayload();
-    this.familiasService.criarFamilia(payload).subscribe({
+    const emEdicao = this.modoEdicao && this.familiaIdEdicao !== null;
+    const requisicao = emEdicao
+      ? this.familiasService.atualizarFamilia(this.familiaIdEdicao!, payload)
+      : this.familiasService.criarFamilia(payload);
+
+    requisicao.subscribe({
       next: (resposta: FamiliaResponse | null) => {
         if (!resposta) {
           this.notificationService.showError(
@@ -636,8 +832,9 @@ export class NovaFamiliaComponent implements OnInit {
         const responsavel = this.obterResponsavelServidor(resposta) || 'Responsável não informado';
         const totalMembros = resposta.membros.length;
 
+        const tituloSucesso = emEdicao ? 'Família atualizada com sucesso!' : 'Família cadastrada com sucesso!';
         this.notificationService.showSuccess(
-          'Família cadastrada com sucesso!',
+          tituloSucesso,
           `Responsável: ${responsavel}\nMembros cadastrados: ${totalMembros}`
         );
         this.salvandoFamilia = false;

@@ -201,7 +201,7 @@ export class GeoReferenciamentoComponent implements OnInit, AfterViewInit, OnDes
   }
 
   private montarLinkFamilia(id: number): string {
-    const urlTree = this.router.createUrlTree(['/familias'], { queryParams: { familiaId: id } });
+    const urlTree = this.router.createUrlTree(['/familias', 'editar', id]);
     const url = this.router.serializeUrl(urlTree);
     if (typeof window !== 'undefined' && window.location) {
       return `${window.location.origin}${url}`;

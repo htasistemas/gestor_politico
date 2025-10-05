@@ -7,7 +7,8 @@ import { NovaFamiliaComponent } from './nova-familia/nova-familia.component';
 
 const routes: Routes = [
   { path: '', component: FamiliasComponent },
-  { path: 'nova', component: NovaFamiliaComponent }
+  { path: 'nova', component: NovaFamiliaComponent },
+  { path: 'editar/:id', component: NovaFamiliaComponent }
 ];
 
 @NgModule({
