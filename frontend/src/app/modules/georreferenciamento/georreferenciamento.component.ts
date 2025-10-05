@@ -11,6 +11,8 @@ interface FamiliaLocalizada {
   enderecoCompleto: string;
   latitude: number;
   longitude: number;
+  latitudeMapa: number;
+  longitudeMapa: number;
   link: string;
 }
 
@@ -31,13 +33,16 @@ export class GeoReferenciamentoComponent implements OnInit, AfterViewInit, OnDes
   private assinaturaFamilias: Subscription | null = null;
   private ajusteMapaTimeout: number | null = null;
   private readonly iconeFamilia = L.divIcon({
-
-    html: '<i class="fa-solid fa-house-chimney-window" aria-hidden="true"></i>',
+    html: `
+      <div class="familia-marker__pulse"></div>
+      <div class="familia-marker__icon">
+        <i class="fa-solid fa-house-chimney-window" aria-hidden="true"></i>
+      </div>
+    `,
     className: 'familia-marker',
-    iconSize: [40, 40],
-    iconAnchor: [20, 40],
-    popupAnchor: [0, -32]
-
+    iconSize: [48, 48],
+    iconAnchor: [24, 48],
+    popupAnchor: [0, -42]
   });
 
   constructor(
@@ -83,6 +88,7 @@ export class GeoReferenciamentoComponent implements OnInit, AfterViewInit, OnDes
         this.familiasLocalizadas = familias
           .map(familia => this.converterFamilia(familia))
           .filter((familia): familia is FamiliaLocalizada => familia !== null);
+        this.aplicarDeslocamentoMarcadores();
         this.carregando = false;
         this.atualizarMapa();
       },
@@ -139,7 +145,13 @@ export class GeoReferenciamentoComponent implements OnInit, AfterViewInit, OnDes
       return;
     }
 
-    const coordenadas = this.familiasLocalizadas.map(familia => [familia.latitude, familia.longitude] as L.LatLngExpression);
+    const coordenadas: L.LatLngExpression[] = [];
+    this.familiasLocalizadas.forEach(familia => {
+      const marcador = this.criarMarcador(familia);
+      marcador.addTo(this.camadaMarcadores as L.LayerGroup);
+      coordenadas.push([familia.latitudeMapa, familia.longitudeMapa]);
+    });
+
 
     if (this.exibirMapaDeCalor) {
       this.removerCamadaMarcadores();
@@ -184,6 +196,8 @@ export class GeoReferenciamentoComponent implements OnInit, AfterViewInit, OnDes
       enderecoCompleto: this.montarEndereco(enderecoDetalhado),
       latitude,
       longitude,
+      latitudeMapa: latitude,
+      longitudeMapa: longitude,
       link: this.montarLinkFamilia(familia.id)
     };
   }
@@ -225,7 +239,7 @@ export class GeoReferenciamentoComponent implements OnInit, AfterViewInit, OnDes
   }
 
   private criarMarcador(familia: FamiliaLocalizada): L.Marker {
-    return L.marker([familia.latitude, familia.longitude], {
+    return L.marker([familia.latitudeMapa, familia.longitudeMapa], {
       icon: this.iconeFamilia
     }).bindPopup(this.criarConteudoPopup(familia));
   }
@@ -364,6 +378,42 @@ export class GeoReferenciamentoComponent implements OnInit, AfterViewInit, OnDes
       return null;
     }
 
-    return maiorGrupo.map(familia => [familia.latitude, familia.longitude] as L.LatLngExpression);
+    return maiorGrupo.map(familia => [familia.latitudeMapa, familia.longitudeMapa] as L.LatLngExpression);
+  }
+
+  private aplicarDeslocamentoMarcadores(): void {
+    if (this.familiasLocalizadas.length === 0) {
+      return;
+    }
+
+    const grupos = new Map<string, FamiliaLocalizada[]>();
+
+    this.familiasLocalizadas.forEach(familia => {
+      familia.latitudeMapa = familia.latitude;
+      familia.longitudeMapa = familia.longitude;
+      const chave = `${familia.latitude.toFixed(6)}-${familia.longitude.toFixed(6)}`;
+      const grupoAtual = grupos.get(chave) ?? [];
+      grupoAtual.push(familia);
+      grupos.set(chave, grupoAtual);
+    });
+
+    grupos.forEach(grupo => {
+      if (grupo.length < 2) {
+        return;
+      }
+
+      const deslocamentoBase = 0.00005;
+      const anguloIncremento = (2 * Math.PI) / grupo.length;
+
+      grupo.forEach((familia, indice) => {
+        const angulo = anguloIncremento * indice;
+        const cosLatitude = Math.cos((familia.latitude * Math.PI) / 180);
+        const ajusteLongitude = Math.abs(cosLatitude) < 1e-6 ? 1 : cosLatitude;
+        const deslocamentoLat = deslocamentoBase * Math.sin(angulo);
+        const deslocamentoLng = (deslocamentoBase * Math.cos(angulo)) / ajusteLongitude;
+        familia.latitudeMapa = familia.latitude + deslocamentoLat;
+        familia.longitudeMapa = familia.longitude + deslocamentoLng;
+      });
+    });
   }
 }
