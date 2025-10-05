@@ -1,0 +1,319 @@
+<div class="min-h-screen bg-gradient-to-b from-blue-50 via-white to-white pb-24">
+  <div class="max-w-xl mx-auto px-4 pt-8 space-y-6">
+    <header class="space-y-4">
+      <div class="inline-flex items-center px-3 py-1 rounded-full bg-blue-100 text-blue-600 text-xs font-semibold">
+        Gestão de famílias
+      </div>
+      <div>
+        <h1 class="text-2xl font-bold text-gray-900">Famílias e núcleos sociais</h1>
+        <p class="text-sm text-gray-600">
+          Acompanhe as mesmas informações da visão web em um formato otimizado para navegação mobile.
+        </p>
+      </div>
+      <button
+        routerLink="/familias/nova"
+        class="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-2xl gradient-blue text-white text-sm font-semibold shadow-lg hover:opacity-90 transition"
+        type="button"
+      >
+        <span class="text-lg">+</span>
+        Nova família
+      </button>
+    </header>
+
+    <section *ngIf="destaques.length > 0" class="overflow-x-auto">
+      <div class="flex gap-4 pb-2">
+        <article
+          *ngFor="let destaque of destaques"
+          class="min-w-[200px] bg-white rounded-3xl p-5 shadow-md border border-white/60"
+        >
+          <div class="text-xs font-semibold text-blue-500 mb-2">{{ destaque.variacao }}</div>
+          <div class="text-2xl font-bold text-gray-900">{{ destaque.valor }}</div>
+          <div class="text-sm text-gray-600">{{ destaque.titulo }}</div>
+          <p class="mt-3 text-xs text-gray-400">{{ destaque.descricao }}</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="bg-white rounded-3xl shadow-lg border border-gray-100 overflow-hidden">
+      <div class="p-5 space-y-4">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-lg font-semibold text-gray-900">Rede familiar cadastrada</h2>
+            <p class="text-xs text-gray-500">Filtros e indicadores idênticos à versão desktop.</p>
+          </div>
+          <button
+            type="button"
+            (click)="alternarFiltros()"
+            class="p-2 rounded-full border border-gray-200 text-blue-600 hover:bg-blue-50"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h18M3 12h18M3 20h18" />
+            </svg>
+          </button>
+        </div>
+
+        <div class="grid grid-cols-3 gap-3 text-center">
+          <div class="bg-blue-50 rounded-2xl py-3">
+            <div class="text-xl font-semibold text-blue-600">{{ totalFamilias }}</div>
+            <div class="text-[11px] uppercase tracking-wide text-blue-500">registros</div>
+          </div>
+          <div class="bg-indigo-50 rounded-2xl py-3">
+            <div class="text-xl font-semibold text-indigo-600">{{ responsaveisAtivos }}</div>
+            <div class="text-[11px] uppercase tracking-wide text-indigo-500">responsáveis</div>
+          </div>
+          <div class="bg-cyan-50 rounded-2xl py-3">
+            <div class="text-xl font-semibold text-cyan-600">{{ novosCadastros }}</div>
+            <div class="text-[11px] uppercase tracking-wide text-cyan-500">novos</div>
+          </div>
+        </div>
+      </div>
+
+      <form
+        *ngIf="mostrarFiltros"
+        [formGroup]="filtroForm"
+        (ngSubmit)="aplicarFiltros()"
+        class="border-t border-gray-100 bg-gray-50 p-5 space-y-5"
+        autocomplete="off"
+      >
+        <div class="flex flex-col gap-2">
+          <label class="text-xs font-semibold text-gray-600 uppercase tracking-wide">Busca livre</label>
+          <input
+            type="text"
+            formControlName="termo"
+            placeholder="Nome, endereço ou palavra-chave"
+            class="px-4 py-3 rounded-2xl border border-gray-200 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+
+        <div class="grid grid-cols-1 gap-4">
+          <div class="flex flex-col gap-2">
+            <label class="text-xs font-semibold text-gray-600 uppercase tracking-wide">Cidade</label>
+            <select
+              formControlName="cidadeId"
+              class="px-4 py-3 rounded-2xl border border-gray-200 bg-white text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              (change)="onCidadeChange($event.target.value)"
+            >
+              <option [ngValue]="null">Todas as cidades</option>
+              <option *ngFor="let cidade of cidades" [ngValue]="cidade.id">{{ cidade.nome }} / {{ cidade.uf }}</option>
+            </select>
+          </div>
+
+          <div class="flex flex-col gap-2">
+            <label class="text-xs font-semibold text-gray-600 uppercase tracking-wide">Região</label>
+            <select
+              formControlName="regiao"
+              class="px-4 py-3 rounded-2xl border border-gray-200 bg-white text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">Todas as regiões</option>
+              <option *ngFor="let regiao of regioes" [value]="regiao.nome">
+                {{ regiao.nome }}{{ cidadeSelecionadaId === null && regiao.cidadeNome ? ' • ' + regiao.cidadeNome : '' }}
+              </option>
+            </select>
+          </div>
+
+          <div class="flex flex-col gap-2">
+            <label class="text-xs font-semibold text-gray-600 uppercase tracking-wide">Responsável</label>
+            <input
+              type="text"
+              formControlName="responsavel"
+              placeholder="Nome do responsável"
+              class="px-4 py-3 rounded-2xl border border-gray-200 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          <div class="flex flex-col gap-2">
+            <label class="text-xs font-semibold text-gray-600 uppercase tracking-wide">Probabilidade de voto</label>
+            <select
+              formControlName="probabilidadeVoto"
+              class="px-4 py-3 rounded-2xl border border-gray-200 bg-white text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">Todas</option>
+              <option *ngFor="let probabilidade of probabilidadesVoto" [value]="probabilidade">{{ probabilidade }}</option>
+            </select>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="flex flex-col gap-2">
+              <label class="text-xs font-semibold text-gray-600 uppercase tracking-wide">Data inicial</label>
+              <input
+                type="date"
+                formControlName="dataInicio"
+                class="px-4 py-3 rounded-2xl border border-gray-200 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div class="flex flex-col gap-2">
+              <label class="text-xs font-semibold text-gray-600 uppercase tracking-wide">Data final</label>
+              <input
+                type="date"
+                formControlName="dataFim"
+                class="px-4 py-3 rounded-2xl border border-gray-200 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          </div>
+
+          <div class="flex flex-col gap-2">
+            <label class="text-xs font-semibold text-gray-600 uppercase tracking-wide">Bairro</label>
+            <input
+              type="text"
+              formControlName="bairro"
+              placeholder="Nome do bairro"
+              class="px-4 py-3 rounded-2xl border border-gray-200 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          <div class="flex flex-col gap-2">
+            <label class="text-xs font-semibold text-gray-600 uppercase tracking-wide">Rua</label>
+            <input
+              type="text"
+              formControlName="rua"
+              placeholder="Logradouro"
+              class="px-4 py-3 rounded-2xl border border-gray-200 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          <div class="flex flex-col gap-2">
+            <label class="text-xs font-semibold text-gray-600 uppercase tracking-wide">Número</label>
+            <input
+              type="text"
+              formControlName="numero"
+              placeholder="Número"
+              class="px-4 py-3 rounded-2xl border border-gray-200 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          <div class="flex flex-col gap-2">
+            <label class="text-xs font-semibold text-gray-600 uppercase tracking-wide">CEP</label>
+            <input
+              type="text"
+              formControlName="cep"
+              placeholder="00000-000"
+              class="px-4 py-3 rounded-2xl border border-gray-200 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3 pt-2">
+          <button
+            type="button"
+            class="px-4 py-3 rounded-2xl border border-gray-300 text-sm font-medium text-gray-700 hover:bg-white"
+            (click)="limparFiltros()"
+          >
+            Limpar
+          </button>
+          <button
+            type="submit"
+            class="px-4 py-3 rounded-2xl gradient-blue text-white text-sm font-semibold shadow-md hover:opacity-90"
+          >
+            Aplicar
+          </button>
+        </div>
+      </form>
+    </section>
+
+    <section class="space-y-4">
+      <div *ngIf="carregando" class="bg-white rounded-3xl shadow-md border border-gray-100 p-5 text-center text-sm text-gray-500">
+        Carregando famílias...
+      </div>
+
+      <div *ngIf="!carregando && erroCarregamento" class="bg-red-50 border border-red-200 rounded-2xl p-4 text-sm text-red-600">
+        {{ erroCarregamento }}
+      </div>
+
+      <div *ngIf="!carregando && familias.length === 0 && !erroCarregamento" class="bg-white rounded-3xl shadow-md border border-gray-100 p-5 text-center text-sm text-gray-500">
+        Nenhuma família encontrada com os filtros aplicados.
+      </div>
+
+      <article
+        *ngFor="let familia of familias"
+        class="bg-white rounded-3xl shadow-md border border-gray-100 p-5 space-y-4"
+      >
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <h3 class="text-lg font-semibold text-gray-900">{{ obterResponsavel(familia) }}</h3>
+            <p class="text-xs text-gray-500">Responsável principal</p>
+          </div>
+          <button
+            type="button"
+            (click)="abrirFamilia(familia)"
+            class="px-3 py-1.5 text-xs font-semibold text-blue-600 bg-blue-50 rounded-full"
+          >
+            Detalhes
+          </button>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3 text-sm">
+          <div>
+            <span class="block text-xs text-gray-500 uppercase">Telefone</span>
+            <span class="font-medium text-gray-800">{{ obterTelefoneResponsavel(familia) }}</span>
+          </div>
+          <div>
+            <span class="block text-xs text-gray-500 uppercase">Total de membros</span>
+            <span class="font-medium text-gray-800">{{ obterTotalMembros(familia) }}</span>
+          </div>
+          <div>
+            <span class="block text-xs text-gray-500 uppercase">Probabilidade</span>
+            <span class="font-medium text-gray-800">{{ familia.probabilidadeVoto || 'Não informada' }}</span>
+          </div>
+          <div>
+            <span class="block text-xs text-gray-500 uppercase">Cadastro</span>
+            <span class="font-medium text-gray-800">{{ dataCadastro(familia) }}</span>
+          </div>
+        </div>
+
+        <div class="space-y-2">
+          <h4 class="text-xs font-semibold text-gray-500 uppercase">Membros secundários</h4>
+          <ng-container *ngIf="membrosSecundarios(familia) as secundarios">
+            <ul class="space-y-2">
+              <li
+                *ngFor="let membro of secundarios; let ultimo = last"
+                class="text-sm text-gray-700 flex items-center justify-between"
+              >
+                <span>{{ membro.nomeCompleto }}</span>
+                <span class="text-xs text-gray-500">{{ membro.relacaoFamiliar || 'Parente' }}</span>
+                <div *ngIf="!ultimo" class="hidden"></div>
+              </li>
+              <li *ngIf="secundarios.length === 0" class="text-sm text-gray-500">
+                Nenhum membro adicional cadastrado.
+              </li>
+            </ul>
+          </ng-container>
+        </div>
+      </article>
+    </section>
+
+    <footer *ngIf="totalFamilias > 0" class="sticky bottom-6 bg-white/90 backdrop-blur-sm rounded-3xl shadow-lg border border-gray-100 p-4 space-y-3">
+      <div class="flex items-center justify-between text-xs text-gray-500">
+        <span>Exibindo {{ inicioIntervalo }}-{{ fimIntervalo }} de {{ totalFamilias }}</span>
+        <label class="flex items-center gap-2">
+          <span>Tamanho</span>
+          <select
+            class="px-3 py-1.5 rounded-xl border border-gray-200 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            [value]="tamanhoPagina"
+            (change)="alterarTamanhoPagina($event)"
+          >
+            <option *ngFor="let tamanho of tamanhosPagina" [value]="tamanho">{{ tamanho }}</option>
+          </select>
+        </label>
+      </div>
+      <div class="flex items-center justify-between">
+        <button
+          type="button"
+          class="px-4 py-2 rounded-2xl border border-gray-200 text-sm font-medium text-gray-600 disabled:opacity-40"
+          (click)="alterarPagina(-1)"
+          [disabled]="paginaAtual === 0"
+        >
+          Anterior
+        </button>
+        <span class="text-sm font-semibold text-gray-700">Página {{ paginaAtual + 1 }} de {{ totalPaginas }}</span>
+        <button
+          type="button"
+          class="px-4 py-2 rounded-2xl border border-gray-200 text-sm font-medium text-gray-600 disabled:opacity-40"
+          (click)="alterarPagina(1)"
+          [disabled]="paginaAtual >= totalPaginas - 1"
+        >
+          Próxima
+        </button>
+      </div>
+    </footer>
+  </div>
+</div>
