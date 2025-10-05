@@ -181,9 +181,7 @@ export class FamiliasComponent implements OnInit, OnDestroy {
 
   abrirFamilia(familia: FamiliaResponse): void {
     this.familiaSelecionadaId = familia.id;
-    this.router.navigate(['/familias/nova'], {
-      queryParams: { familiaId: familia.id }
-    });
+    this.router.navigate(['/familias', 'editar', familia.id]);
   }
 
   alterarTamanhoPagina(evento: Event): void {

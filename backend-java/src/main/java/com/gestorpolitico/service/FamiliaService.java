@@ -70,48 +70,32 @@ public class FamiliaService {
 
   @Transactional
   public FamiliaResponseDTO salvarFamilia(FamiliaRequestDTO dto) {
-    if (dto.getMembros() == null || dto.getMembros().isEmpty()) {
-      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Informe ao menos um membro da família.");
-    }
-
-    boolean possuiResponsavel = dto.getMembros().stream()
-      .map(MembroFamiliaRequestDTO::getResponsavelPrincipal)
-      .anyMatch(Boolean.TRUE::equals);
-
-    if (!possuiResponsavel) {
-      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Defina um responsável principal para a família.");
-    }
-
-    Cidade cidade = cidadeRepository
-      .findById(dto.getCidadeId())
-      .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Cidade não encontrada"));
-
-    String cepSanitizado = sanitizarCep(dto.getCep());
-    if (cepSanitizado.length() != 8) {
-      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Informe um CEP válido com 8 dígitos.");
-    }
-
-    CepResultado cepResultado = cepService
-      .consultarCep(cepSanitizado)
-      .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "CEP não encontrado"));
-
-    validarCidadeComCep(cidade, cepResultado);
-
-    Bairro bairro = resolverBairroFamilia(dto, cidade, cepResultado);
-    Endereco endereco = construirEnderecoFamilia(dto, cidade, bairro, cepResultado, cepSanitizado);
-
+    DadosFamilia dados = prepararDadosFamilia(dto);
     Familia familia = new Familia();
-    familia.setEndereco(montarEnderecoResumo(dto));
-    familia.setBairro(bairro.getNome());
-    familia.setEnderecoDetalhado(endereco);
-
-    List<MembroFamilia> membros = dto.getMembros().stream()
-      .map(this::converterMembro)
-      .collect(Collectors.toList());
-    membros.forEach(familia::adicionarMembro);
-
+    aplicarDadosFamilia(familia, dados);
     Familia salvo = familiaRepository.save(familia);
     return converterFamilia(salvo);
+  }
+
+  @Transactional(readOnly = true)
+  public FamiliaResponseDTO buscarFamilia(Long id) {
+    Familia familia = familiaRepository
+      .findById(id)
+      .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Família não encontrada"));
+    return converterFamilia(familia);
+  }
+
+  @Transactional
+  public FamiliaResponseDTO atualizarFamilia(Long id, FamiliaRequestDTO dto) {
+    Familia familia = familiaRepository
+      .findById(id)
+      .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Família não encontrada"));
+
+    DadosFamilia dados = prepararDadosFamilia(dto);
+    familia.getMembros().clear();
+    aplicarDadosFamilia(familia, dados);
+    Familia atualizado = familiaRepository.save(familia);
+    return converterFamilia(atualizado);
   }
 
   @Transactional(readOnly = true)
@@ -163,6 +147,55 @@ public class FamiliaService {
       totalPessoas,
       novasPessoasSemana
     );
+  }
+
+  private DadosFamilia prepararDadosFamilia(FamiliaRequestDTO dto) {
+    validarMembros(dto);
+
+    Cidade cidade = cidadeRepository
+      .findById(dto.getCidadeId())
+      .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Cidade não encontrada"));
+
+    String cepSanitizado = sanitizarCep(dto.getCep());
+    if (cepSanitizado.length() != 8) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Informe um CEP válido com 8 dígitos.");
+    }
+
+    CepResultado cepResultado = cepService
+      .consultarCep(cepSanitizado)
+      .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "CEP não encontrado"));
+
+    validarCidadeComCep(cidade, cepResultado);
+
+    Bairro bairro = resolverBairroFamilia(dto, cidade, cepResultado);
+    Endereco endereco = construirEnderecoFamilia(dto, cidade, bairro, cepResultado, cepSanitizado);
+
+    List<MembroFamilia> membros = dto.getMembros().stream()
+      .map(this::converterMembro)
+      .collect(Collectors.toList());
+
+    return new DadosFamilia(montarEnderecoResumo(dto), bairro, endereco, membros);
+  }
+
+  private void aplicarDadosFamilia(Familia familia, DadosFamilia dados) {
+    familia.setEndereco(dados.enderecoResumo());
+    familia.setBairro(dados.bairro().getNome());
+    familia.setEnderecoDetalhado(dados.endereco());
+    dados.membros().forEach(familia::adicionarMembro);
+  }
+
+  private void validarMembros(FamiliaRequestDTO dto) {
+    if (dto.getMembros() == null || dto.getMembros().isEmpty()) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Informe ao menos um membro da família.");
+    }
+
+    boolean possuiResponsavel = dto.getMembros().stream()
+      .map(MembroFamiliaRequestDTO::getResponsavelPrincipal)
+      .anyMatch(Boolean.TRUE::equals);
+
+    if (!possuiResponsavel) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Defina um responsável principal para a família.");
+    }
   }
 
   private MembroFamilia converterMembro(MembroFamiliaRequestDTO dto) {
@@ -589,4 +622,11 @@ public class FamiliaService {
       .replaceAll("\\p{InCombiningDiacriticalMarks}+", "");
     return semAcento.toUpperCase(Locale.ROOT).replaceAll("\\s+", " ").trim();
   }
+
+  private record DadosFamilia(
+    String enderecoResumo,
+    Bairro bairro,
+    Endereco endereco,
+    List<MembroFamilia> membros
+  ) {}
 }

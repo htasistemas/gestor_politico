@@ -121,6 +121,59 @@ class FamiliaServiceTest {
     assertEquals(BigDecimal.valueOf(-46.876543), endereco.getLongitude());
   }
 
+  @Test
+  void deveAtualizarFamiliaExistente() {
+    Cidade cidade = new Cidade();
+    cidade.setId(1L);
+    cidade.setNome("São Paulo");
+    cidade.setUf("SP");
+    when(cidadeRepository.findById(1L)).thenReturn(Optional.of(cidade));
+
+    CepResultado cepResultado = new CepResultado(
+      "01001000",
+      "Praça da Sé",
+      "Sé",
+      "São Paulo",
+      "SP",
+      "3550308"
+    );
+    when(cepService.consultarCep("01001000")).thenReturn(Optional.of(cepResultado));
+
+    GeocodingService.Coordenada coordenada = new GeocodingService.Coordenada(1.234567, -46.876543);
+    when(geocodingService.buscarCoordenadas(any(String.class))).thenReturn(Optional.of(coordenada));
+
+    Familia existente = new Familia();
+    existente.setId(10L);
+    existente.setEndereco("Rua antiga, 10");
+    existente.setBairro("Sé");
+
+    Endereco enderecoExistente = new Endereco();
+    enderecoExistente.setRua("Rua antiga");
+    enderecoExistente.setNumero("10");
+    enderecoExistente.setCidade(cidade);
+    existente.setEnderecoDetalhado(enderecoExistente);
+
+    MembroFamilia membroExistente = new MembroFamilia();
+    membroExistente.setNomeCompleto("João Silva");
+    membroExistente.setResponsavelPrincipal(true);
+    existente.adicionarMembro(membroExistente);
+
+    when(familiaRepository.findById(10L)).thenReturn(Optional.of(existente));
+
+    FamiliaRequestDTO request = criarRequestFamilia();
+    request.setRua("Praça da Sé");
+    request.setNumero("200");
+
+    familiaService.atualizarFamilia(10L, request);
+
+    verify(familiaRepository).save(familiaCaptor.capture());
+    Familia atualizado = familiaCaptor.getValue();
+    assertEquals("Praça da Sé, 200", atualizado.getEndereco());
+    assertEquals("Praça da Sé", atualizado.getEnderecoDetalhado().getRua());
+    assertEquals(1, atualizado.getMembros().size());
+    assertEquals("Maria Silva", atualizado.getMembros().get(0).getNomeCompleto());
+  }
+
   private FamiliaRequestDTO criarRequestFamilia() {
     MembroFamiliaRequestDTO membro = new MembroFamiliaRequestDTO();
     membro.setNomeCompleto("Maria Silva");

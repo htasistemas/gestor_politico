@@ -12,13 +12,20 @@
           </svg>
         </button>
         <div class="w-10 h-10 gradient-blue rounded-xl flex items-center justify-center">
-          <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-          </svg>
+          <ng-container *ngIf="!modoEdicao; else editarIcone">
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+            </svg>
+          </ng-container>
+          <ng-template #editarIcone>
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5h2m-1 12v2m-7.657-7.657l1.414 1.414M18.364 7.05l1.414-1.414M5 13H3m18 0h-2m-2.05-5.95l-9.9 9.9a1.5 1.5 0 01-2.122-2.121l9.9-9.9A3 3 0 1119.95 7.05z"></path>
+            </svg>
+          </ng-template>
         </div>
         <div>
-          <h1 class="text-2xl font-bold text-gray-900">Nova Família</h1>
-          <p class="text-sm text-gray-600">Cadastro de família e membros</p>
+          <h1 class="text-2xl font-bold text-gray-900">{{ tituloPagina }}</h1>
+          <p class="text-sm text-gray-600">{{ descricaoPagina }}</p>
         </div>
       </div>
       <div class="flex items-center">
@@ -362,19 +369,42 @@
       <button
         type="button"
         (click)="visualizarPrevia()"
-        class="px-8 py-3 bg-gray-100 text-gray-700 rounded-xl font-semibold hover:bg-gray-200 transition-all duration-200"
+        [disabled]="carregandoFamilia"
+        class="px-8 py-3 bg-gray-100 text-gray-700 rounded-xl font-semibold hover:bg-gray-200 transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed"
       >
         Visualizar Prévia
       </button>
       <button
         type="button"
         (click)="cadastrarFamilia()"
-        [disabled]="salvandoFamilia"
+        [disabled]="salvandoFamilia || carregandoFamilia"
         class="px-8 py-3 gradient-blue text-white rounded-xl font-semibold hover:opacity-90 transition-all duration-200 transform hover:scale-105 disabled:opacity-60 disabled:cursor-not-allowed"
       >
-        {{ salvandoFamilia ? 'Salvando...' : 'Cadastrar Família' }}
+        {{ salvandoFamilia ? 'Salvando...' : textoBotaoPrincipal }}
       </button>
     </div>
+  </div>
+</div>
+
+<div
+  *ngIf="carregandoFamilia"
+  class="fixed inset-0 bg-white/70 backdrop-blur-sm flex items-center justify-center z-[55]"
+>
+  <div class="bg-white rounded-2xl shadow-xl border border-gray-200 px-6 py-5 flex items-center gap-3 text-gray-700">
+    <svg
+      class="w-6 h-6 text-blue-600 animate-spin"
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+    >
+      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+      <path
+        class="opacity-75"
+        fill="currentColor"
+        d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+      ></path>
+    </svg>
+    <span class="font-semibold">Carregando família...</span>
   </div>
 </div>
 

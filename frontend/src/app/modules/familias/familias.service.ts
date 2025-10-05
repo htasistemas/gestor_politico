@@ -115,7 +115,15 @@ export class FamiliasService {
     return this.buscarFamilias(filtros, 0, 1000).pipe(map(resposta => resposta.familias));
   }
 
+  obterFamilia(id: number): Observable<FamiliaResponse> {
+    return this.http.get<FamiliaResponse>(`${this.apiUrl}/${id}`);
+  }
+
   criarFamilia(payload: FamiliaPayload): Observable<FamiliaResponse> {
     return this.http.post<FamiliaResponse>(this.apiUrl, payload);
+  }
+
+  atualizarFamilia(id: number, payload: FamiliaPayload): Observable<FamiliaResponse> {
+    return this.http.put<FamiliaResponse>(`${this.apiUrl}/${id}`, payload);
   }
 }
