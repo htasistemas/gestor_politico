@@ -4,6 +4,7 @@ import com.gestorpolitico.dto.FamiliaFiltroRequestDTO;
 import com.gestorpolitico.dto.FamiliaListaResponseDTO;
 import com.gestorpolitico.dto.FamiliaRequestDTO;
 import com.gestorpolitico.dto.FamiliaResponseDTO;
+import com.gestorpolitico.dto.MembroFamiliaResponseDTO;
 import com.gestorpolitico.service.FamiliaService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -52,6 +53,15 @@ public class FamiliaController {
     Pageable pageable = PageRequest.of(paginaAjustada, tamanhoAjustado, Sort.by(Sort.Direction.DESC, "criadoEm"));
     FamiliaListaResponseDTO familias = familiaService.buscarFamilias(filtro, pageable);
     return ResponseEntity.ok(familias);
+  }
+
+  @PostMapping("/{familiaId}/membros/{membroId}/parceiro")
+  public ResponseEntity<MembroFamiliaResponseDTO> tornarMembroParceiro(
+    @PathVariable Long familiaId,
+    @PathVariable Long membroId
+  ) {
+    MembroFamiliaResponseDTO membro = familiaService.tornarParceiro(familiaId, membroId);
+    return ResponseEntity.ok(membro);
   }
 
   @PutMapping("/{id}")

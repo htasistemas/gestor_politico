@@ -8,6 +8,7 @@ import jakarta.validation.constraints.Size;
 import java.time.LocalDate;
 
 public class MembroFamiliaRequestDTO {
+  private Long id;
   @NotBlank(message = "O nome completo é obrigatório.")
   @Size(max = 255, message = "O nome completo deve ter no máximo 255 caracteres.")
   private String nomeCompleto;
@@ -31,6 +32,14 @@ public class MembroFamiliaRequestDTO {
   private String telefone;
 
   public MembroFamiliaRequestDTO() {
+  }
+
+  public Long getId() {
+    return id;
+  }
+
+  public void setId(Long id) {
+    this.id = id;
   }
 
   public String getNomeCompleto() {

@@ -29,6 +29,8 @@ public class FamiliaRequestDTO {
   @Valid
   private List<MembroFamiliaRequestDTO> membros;
 
+  private String parceiroToken;
+
   public FamiliaRequestDTO() {
   }
 
@@ -78,5 +80,13 @@ public class FamiliaRequestDTO {
 
   public void setMembros(List<MembroFamiliaRequestDTO> membros) {
     this.membros = membros;
+  }
+
+  public String getParceiroToken() {
+    return parceiroToken;
+  }
+
+  public void setParceiroToken(String parceiroToken) {
+    this.parceiroToken = parceiroToken;
   }
 }

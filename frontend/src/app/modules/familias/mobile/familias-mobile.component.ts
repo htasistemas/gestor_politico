@@ -6,6 +6,7 @@ import { catchError } from 'rxjs/operators';
 import {
   FamiliasService,
   FamiliaFiltro,
+  FamiliaMembroResponse,
   FamiliaResponse
 } from '../familias.service';
 import {
@@ -13,6 +14,8 @@ import {
   Cidade,
   Regiao
 } from '../../shared/services/localidades.service';
+import { DESCRICOES_PARENTESCO } from '../parentesco.enum';
+import { NotificationService } from '../../shared/services/notification.service';
 
 interface RegiaoFiltro extends Regiao {
   cidadeId: number;
@@ -33,6 +36,7 @@ export class FamiliasMobileComponent implements OnInit, OnDestroy {
   regioes: RegiaoFiltro[] = [];
   tamanhosPagina: number[] = [5, 10, 20];
   probabilidadesVoto: string[] = ['Alta', 'Média', 'Baixa'];
+  readonly descricoesParentesco = DESCRICOES_PARENTESCO;
 
   carregando = false;
   erroCarregamento = '';
@@ -47,12 +51,14 @@ export class FamiliasMobileComponent implements OnInit, OnDestroy {
   private todasRegioes: RegiaoFiltro[] = [];
   private readonly regioesPorCidade = new Map<number, RegiaoFiltro[]>();
   private assinaturaRegioes: Subscription | null = null;
+  private readonly parceirosEmCriacao = new Set<number>();
 
   constructor(
     private readonly familiasService: FamiliasService,
     private readonly localidadesService: LocalidadesService,
     private readonly router: Router,
-    private readonly fb: FormBuilder
+    private readonly fb: FormBuilder,
+    private readonly notificationService: NotificationService
   ) {
     this.filtroForm = this.fb.group({
       cidadeId: [null],
@@ -211,6 +217,58 @@ export class FamiliasMobileComponent implements OnInit, OnDestroy {
 
   membrosSecundarios(familia: FamiliaResponse): FamiliaResponse['membros'] {
     return familia.membros.filter(membro => !membro.responsavelPrincipal);
+  }
+
+  descricaoParentesco(membro: FamiliaMembroResponse): string {
+    if (membro.responsavelPrincipal) {
+      return 'Responsável';
+    }
+    return this.descricoesParentesco[membro.parentesco] ?? 'Parente';
+  }
+
+  emProcessoParceiro(membro: FamiliaMembroResponse): boolean {
+    return this.parceirosEmCriacao.has(membro.id);
+  }
+
+  tornarParceiro(evento: Event, familia: FamiliaResponse, membro: FamiliaMembroResponse): void {
+    evento.stopPropagation();
+    if (membro.parceiro || this.parceirosEmCriacao.has(membro.id)) {
+      return;
+    }
+
+    this.parceirosEmCriacao.add(membro.id);
+    this.familiasService.tornarMembroParceiro(familia.id, membro.id).subscribe({
+      next: atualizado => {
+        this.atualizarMembroFamilia(familia, atualizado);
+        this.notificationService.showSuccess(
+          'Parceiro habilitado!',
+          `${atualizado.nomeCompleto} agora pode cadastrar novas famílias.`
+        );
+      },
+      error: () => {
+        this.notificationService.showError(
+          'Não foi possível gerar o link do parceiro.',
+          'Tente novamente em instantes.'
+        );
+      },
+      complete: () => {
+        this.parceirosEmCriacao.delete(membro.id);
+      }
+    });
+  }
+
+  private atualizarMembroFamilia(
+    familia: FamiliaResponse,
+    membroAtualizado: FamiliaMembroResponse
+  ): void {
+    const indice = familia.membros.findIndex(item => item.id === membroAtualizado.id);
+    if (indice === -1) {
+      return;
+    }
+
+    familia.membros = familia.membros.map((item, posicao) =>
+      posicao === indice ? { ...item, ...membroAtualizado } : item
+    );
   }
 
   dataCadastro(familia: FamiliaResponse): string {

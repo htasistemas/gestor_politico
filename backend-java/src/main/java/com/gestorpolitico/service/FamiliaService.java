@@ -7,15 +7,19 @@ import com.gestorpolitico.dto.FamiliaRequestDTO;
 import com.gestorpolitico.dto.FamiliaResponseDTO;
 import com.gestorpolitico.dto.MembroFamiliaRequestDTO;
 import com.gestorpolitico.dto.MembroFamiliaResponseDTO;
+import com.gestorpolitico.dto.ParceiroResumoDTO;
 import com.gestorpolitico.entity.Bairro;
 import com.gestorpolitico.entity.Cidade;
 import com.gestorpolitico.entity.Endereco;
 import com.gestorpolitico.entity.Familia;
 import com.gestorpolitico.entity.MembroFamilia;
+import com.gestorpolitico.entity.Parceiro;
 import com.gestorpolitico.entity.Regiao;
 import com.gestorpolitico.repository.BairroRepository;
 import com.gestorpolitico.repository.CidadeRepository;
 import com.gestorpolitico.repository.FamiliaRepository;
+import com.gestorpolitico.repository.MembroFamiliaRepository;
+import com.gestorpolitico.repository.ParceiroRepository;
 import com.gestorpolitico.repository.RegiaoRepository;
 import com.gestorpolitico.service.CepService.CepResultado;
 import jakarta.persistence.criteria.Join;
@@ -28,9 +32,12 @@ import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,6 +58,8 @@ public class FamiliaService {
   private final RegiaoRepository regiaoRepository;
   private final GeocodingService geocodingService;
   private final CepService cepService;
+  private final MembroFamiliaRepository membroFamiliaRepository;
+  private final ParceiroRepository parceiroRepository;
 
   public FamiliaService(
     FamiliaRepository familiaRepository,
@@ -58,7 +67,9 @@ public class FamiliaService {
     BairroRepository bairroRepository,
     RegiaoRepository regiaoRepository,
     GeocodingService geocodingService,
-    CepService cepService
+    CepService cepService,
+    MembroFamiliaRepository membroFamiliaRepository,
+    ParceiroRepository parceiroRepository
   ) {
     this.familiaRepository = familiaRepository;
     this.cidadeRepository = cidadeRepository;
@@ -66,6 +77,8 @@ public class FamiliaService {
     this.regiaoRepository = regiaoRepository;
     this.geocodingService = geocodingService;
     this.cepService = cepService;
+    this.membroFamiliaRepository = membroFamiliaRepository;
+    this.parceiroRepository = parceiroRepository;
   }
 
   @Transactional
@@ -149,6 +162,31 @@ public class FamiliaService {
     );
   }
 
+  @Transactional
+  public MembroFamiliaResponseDTO tornarParceiro(Long familiaId, Long membroId) {
+    Familia familia = familiaRepository
+      .findById(familiaId)
+      .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Família não encontrada"));
+
+    MembroFamilia membro = familia
+      .getMembros()
+      .stream()
+      .filter(item -> membroId.equals(item.getId()))
+      .findFirst()
+      .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Membro não encontrado na família"));
+
+    Parceiro parceiro = membro.getParceiro();
+    if (parceiro == null) {
+      parceiro = parceiroRepository
+        .findByMembroId(membroId)
+        .orElseGet(() -> criarParceiroParaMembro(membro));
+      membro.setParceiro(parceiro);
+      membroFamiliaRepository.save(membro);
+    }
+
+    return converterMembroResponse(membro);
+  }
+
   private DadosFamilia prepararDadosFamilia(FamiliaRequestDTO dto) {
     validarMembros(dto);
 
@@ -170,18 +208,32 @@ public class FamiliaService {
     Bairro bairro = resolverBairroFamilia(dto, cidade, cepResultado);
     Endereco endereco = construirEnderecoFamilia(dto, cidade, bairro, cepResultado, cepSanitizado);
 
-    List<MembroFamilia> membros = dto.getMembros().stream()
-      .map(this::converterMembro)
-      .collect(Collectors.toList());
+    List<MembroFamiliaRequestDTO> membros = new ArrayList<>(dto.getMembros());
 
-    return new DadosFamilia(montarEnderecoResumo(dto), bairro, endereco, membros);
+    boolean parceiroInformado = false;
+    Parceiro parceiroCadastro = null;
+    String parceiroToken = dto.getParceiroToken();
+    if (parceiroToken != null) {
+      parceiroInformado = true;
+      String tokenNormalizado = parceiroToken.trim();
+      if (!tokenNormalizado.isEmpty()) {
+        parceiroCadastro = parceiroRepository
+          .findByToken(tokenNormalizado)
+          .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Parceiro não encontrado."));
+      }
+    }
+
+    return new DadosFamilia(montarEnderecoResumo(dto), bairro, endereco, membros, parceiroCadastro, parceiroInformado);
   }
 
   private void aplicarDadosFamilia(Familia familia, DadosFamilia dados) {
     familia.setEndereco(dados.enderecoResumo());
     familia.setBairro(dados.bairro().getNome());
     familia.setEnderecoDetalhado(dados.endereco());
-    dados.membros().forEach(familia::adicionarMembro);
+    sincronizarMembrosFamilia(familia, dados.membros());
+    if (dados.parceiroInformado()) {
+      familia.setParceiroCadastro(dados.parceiroCadastro());
+    }
   }
 
   private void validarMembros(FamiliaRequestDTO dto) {
@@ -198,8 +250,65 @@ public class FamiliaService {
     }
   }
 
-  private MembroFamilia converterMembro(MembroFamiliaRequestDTO dto) {
-    MembroFamilia membro = new MembroFamilia();
+  private void sincronizarMembrosFamilia(Familia familia, List<MembroFamiliaRequestDTO> membrosDto) {
+    List<MembroFamilia> atuais = new ArrayList<>(familia.getMembros());
+    Set<Long> idsSolicitados = new HashSet<>();
+
+    for (MembroFamiliaRequestDTO membroDto : membrosDto) {
+      if (membroDto.getId() != null) {
+        idsSolicitados.add(membroDto.getId());
+      }
+    }
+
+    for (MembroFamilia atual : atuais) {
+      Long id = atual.getId();
+      if (id != null && !idsSolicitados.contains(id) && atual.getParceiro() != null) {
+        throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST,
+          "Não é possível remover um membro que está habilitado como parceiro."
+        );
+      }
+    }
+
+    familia.getMembros().clear();
+
+    for (MembroFamiliaRequestDTO membroDto : membrosDto) {
+      MembroFamilia membro = localizarMembroExistente(familia, atuais, membroDto.getId());
+      aplicarDadosMembro(membro, membroDto);
+      familia.adicionarMembro(membro);
+    }
+  }
+
+  private MembroFamilia localizarMembroExistente(
+    Familia familia,
+    List<MembroFamilia> atuais,
+    Long membroId
+  ) {
+    if (membroId == null) {
+      return new MembroFamilia();
+    }
+
+    return atuais
+      .stream()
+      .filter(membro -> membroId.equals(membro.getId()))
+      .findFirst()
+      .orElseGet(() -> {
+        MembroFamilia recuperado = membroFamiliaRepository
+          .findById(membroId)
+          .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Membro da família não encontrado."));
+
+        if (recuperado.getFamilia() != null && !recuperado.getFamilia().getId().equals(familia.getId())) {
+          throw new ResponseStatusException(
+            HttpStatus.BAD_REQUEST,
+            "O membro informado não pertence à família selecionada."
+          );
+        }
+
+        return recuperado;
+      });
+  }
+
+  private void aplicarDadosMembro(MembroFamilia membro, MembroFamiliaRequestDTO dto) {
     membro.setNomeCompleto(dto.getNomeCompleto());
     membro.setDataNascimento(dto.getDataNascimento());
     membro.setProfissao(dto.getProfissao());
@@ -207,7 +316,6 @@ public class FamiliaService {
     membro.setResponsavelPrincipal(Boolean.TRUE.equals(dto.getResponsavelPrincipal()));
     membro.setProbabilidadeVoto(dto.getProbabilidadeVoto());
     membro.setTelefone(dto.getTelefone());
-    return membro;
   }
 
   private Bairro resolverBairroFamilia(FamiliaRequestDTO dto, Cidade cidade, CepResultado cepResultado) {
@@ -586,18 +694,16 @@ public class FamiliaService {
     );
 
     List<MembroFamiliaResponseDTO> membros = familia.getMembros().stream()
-      .map(membro -> new MembroFamiliaResponseDTO(
-        membro.getId(),
-        membro.getNomeCompleto(),
-        membro.getDataNascimento(),
-        membro.getProfissao(),
-        membro.getParentesco(),
-        Boolean.TRUE.equals(membro.getResponsavelPrincipal()),
-        membro.getProbabilidadeVoto(),
-        membro.getTelefone(),
-        membro.getCriadoEm()
-      ))
+      .map(this::converterMembroResponse)
       .collect(Collectors.toList());
+
+    Parceiro parceiroCadastro = familia.getParceiroCadastro();
+    ParceiroResumoDTO parceiroCadastroDTO = null;
+    if (parceiroCadastro != null) {
+      MembroFamilia membroParceiro = parceiroCadastro.getMembro();
+      String nomeParceiro = membroParceiro != null ? membroParceiro.getNomeCompleto() : null;
+      parceiroCadastroDTO = new ParceiroResumoDTO(parceiroCadastro.getId(), nomeParceiro, parceiroCadastro.getToken());
+    }
 
     return new FamiliaResponseDTO(
       familia.getId(),
@@ -605,8 +711,43 @@ public class FamiliaService {
       familia.getBairro(),
       familia.getCriadoEm(),
       enderecoDTO,
-      membros
+      membros,
+      parceiroCadastroDTO
     );
+  }
+
+  private MembroFamiliaResponseDTO converterMembroResponse(MembroFamilia membro) {
+    Parceiro parceiro = membro.getParceiro();
+    return new MembroFamiliaResponseDTO(
+      membro.getId(),
+      membro.getNomeCompleto(),
+      membro.getDataNascimento(),
+      membro.getProfissao(),
+      membro.getParentesco(),
+      Boolean.TRUE.equals(membro.getResponsavelPrincipal()),
+      membro.getProbabilidadeVoto(),
+      membro.getTelefone(),
+      membro.getCriadoEm(),
+      parceiro != null,
+      parceiro != null ? parceiro.getId() : null,
+      parceiro != null ? parceiro.getToken() : null
+    );
+  }
+
+  private Parceiro criarParceiroParaMembro(MembroFamilia membro) {
+    Parceiro parceiro = new Parceiro();
+    parceiro.setMembro(membro);
+    parceiro.setToken(gerarTokenParceiro());
+    parceiro.setCriadoEm(OffsetDateTime.now());
+    return parceiroRepository.save(parceiro);
+  }
+
+  private String gerarTokenParceiro() {
+    String token;
+    do {
+      token = UUID.randomUUID().toString().replace("-", "");
+    } while (parceiroRepository.existsByToken(token));
+    return token;
   }
 
   private String montarEnderecoResumo(FamiliaRequestDTO dto) {
@@ -627,6 +768,8 @@ public class FamiliaService {
     String enderecoResumo,
     Bairro bairro,
     Endereco endereco,
-    List<MembroFamilia> membros
+    List<MembroFamiliaRequestDTO> membros,
+    Parceiro parceiroCadastro,
+    boolean parceiroInformado
   ) {}
 }
