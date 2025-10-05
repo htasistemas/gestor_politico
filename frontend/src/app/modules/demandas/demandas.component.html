@@ -1,0 +1,315 @@
+<div class="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50 pb-16">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10">
+    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 mb-10">
+      <div>
+        <div class="inline-flex items-center px-3 py-1 rounded-full bg-blue-50 text-blue-600 text-xs font-semibold mb-3">
+          Fila de acompanhamentos
+        </div>
+        <h1 class="text-3xl font-bold text-gray-900 mb-2">Demandas das famílias</h1>
+        <p class="text-gray-600 max-w-2xl">
+          Cadastre e acompanhe as solicitações feitas pelos núcleos familiares, organizando por urgência e andamento.
+        </p>
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 w-full lg:w-auto">
+        <div class="bg-white rounded-2xl shadow-card border border-gray-100 p-4">
+          <div class="text-xs uppercase text-gray-500">Pendentes</div>
+          <div class="text-2xl font-bold text-amber-600">{{ resumoDemandas.pendentes }}</div>
+          <div class="text-[11px] text-gray-400">Aguardando início</div>
+        </div>
+        <div class="bg-white rounded-2xl shadow-card border border-gray-100 p-4">
+          <div class="text-xs uppercase text-gray-500">Em andamento</div>
+          <div class="text-2xl font-bold text-blue-600">{{ resumoDemandas.emAndamento }}</div>
+          <div class="text-[11px] text-gray-400">Em tratamento</div>
+        </div>
+        <div class="bg-white rounded-2xl shadow-card border border-gray-100 p-4">
+          <div class="text-xs uppercase text-gray-500">Concluídas</div>
+          <div class="text-2xl font-bold text-emerald-600">{{ resumoDemandas.concluidas }}</div>
+          <div class="text-[11px] text-gray-400">Finalizadas</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-8">
+      <div class="xl:col-span-1">
+        <div class="bg-white rounded-3xl shadow-card border border-gray-100 p-7">
+          <div class="flex items-center gap-3 mb-6">
+            <div class="w-10 h-10 gradient-blue rounded-2xl flex items-center justify-center text-white">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              </svg>
+            </div>
+            <div>
+              <h2 class="text-lg font-semibold text-gray-900">Registrar nova demanda</h2>
+              <p class="text-sm text-gray-500">Associe a demanda a uma família e defina prioridade.</p>
+            </div>
+          </div>
+
+          <ng-container *ngIf="!erroFamilias; else erroCarregamento">
+            <form [formGroup]="formulario" (ngSubmit)="registrarDemanda()" class="space-y-5" autocomplete="off">
+              <div class="flex flex-col gap-2">
+                <label class="text-xs font-semibold text-gray-600 uppercase tracking-wide">Família *</label>
+                <select
+                  formControlName="familiaId"
+                  class="px-4 py-3 rounded-xl border border-gray-200 bg-white text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  [disabled]="carregandoFamilias"
+                >
+                  <option [ngValue]="null">Selecione a família</option>
+                  <ng-container *ngIf="familias.length > 0; else nenhumaFamilia">
+                    <option *ngFor="let familia of familias" [ngValue]="familia.id">
+                      {{ obterFamiliaNome(familia.id) }}
+                    </option>
+                  </ng-container>
+                </select>
+                <p *ngIf="carregandoFamilias" class="text-xs text-blue-600">Carregando famílias cadastradas...</p>
+                <p *ngIf="formulario.get('familiaId')?.touched && formulario.get('familiaId')?.invalid" class="text-xs text-red-500">
+                  Selecione a família responsável pela demanda.
+                </p>
+              </div>
+
+              <div class="flex flex-col gap-2">
+                <label class="text-xs font-semibold text-gray-600 uppercase tracking-wide">Título da demanda *</label>
+                <input
+                  type="text"
+                  formControlName="titulo"
+                  placeholder="Ex: Cirurgia de joelho para Maria"
+                  class="px-4 py-3 rounded-xl border border-gray-200 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <p *ngIf="formulario.get('titulo')?.touched && formulario.get('titulo')?.invalid" class="text-xs text-red-500">
+                  Informe um título com pelo menos 3 caracteres.
+                </p>
+              </div>
+
+              <div class="flex flex-col gap-2">
+                <label class="text-xs font-semibold text-gray-600 uppercase tracking-wide">Descrição</label>
+                <textarea
+                  rows="4"
+                  formControlName="descricao"
+                  placeholder="Detalhes adicionais sobre a necessidade, encaminhamentos ou contatos."
+                  class="px-4 py-3 rounded-xl border border-gray-200 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                ></textarea>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="flex flex-col gap-2">
+                  <label class="text-xs font-semibold text-gray-600 uppercase tracking-wide">Urgência *</label>
+                  <select
+                    formControlName="urgencia"
+                    class="px-4 py-3 rounded-xl border border-gray-200 bg-white text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="Baixa">Baixa</option>
+                    <option value="Média">Média</option>
+                    <option value="Alta">Alta</option>
+                  </select>
+                </div>
+                <div class="flex flex-col gap-2">
+                  <label class="text-xs font-semibold text-gray-600 uppercase tracking-wide">Data limite</label>
+                  <input
+                    type="date"
+                    formControlName="dataLimite"
+                    class="px-4 py-3 rounded-xl border border-gray-200 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                class="w-full px-5 py-3 rounded-xl gradient-blue text-white text-sm font-semibold shadow-md hover:opacity-90 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                [disabled]="formulario.invalid || carregandoFamilias"
+              >
+                {{ carregandoFamilias ? 'Carregando famílias...' : 'Adicionar demanda' }}
+              </button>
+            </form>
+          </ng-container>
+        </div>
+      </div>
+
+      <div class="xl:col-span-2 space-y-6">
+        <div class="bg-white rounded-3xl shadow-card border border-gray-100 p-7">
+          <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+              <h2 class="text-lg font-semibold text-gray-900">Demandas cadastradas</h2>
+              <p class="text-sm text-gray-500">Filtre por status, urgência ou busque pelo título.</p>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-3 w-full lg:w-auto">
+              <input
+                type="text"
+                [(ngModel)]="filtroBusca"
+                (ngModelChange)="aplicarFiltros()"
+                placeholder="Buscar por título, família ou descrição"
+                class="md:col-span-2 px-4 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <select
+                [(ngModel)]="filtroStatus"
+                (ngModelChange)="aplicarFiltros()"
+                class="px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option [ngValue]="''">Todos os status</option>
+                <option value="Pendente">Pendentes</option>
+                <option value="Em andamento">Em andamento</option>
+                <option value="Concluída">Concluídas</option>
+              </select>
+              <select
+                [(ngModel)]="filtroUrgencia"
+                (ngModelChange)="aplicarFiltros()"
+                class="px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option [ngValue]="''">Todas as urgências</option>
+                <option value="Baixa">Baixa</option>
+                <option value="Média">Média</option>
+                <option value="Alta">Alta</option>
+              </select>
+            </div>
+            <button
+              type="button"
+              (click)="limparFiltros()"
+              class="px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-all"
+            >
+              Limpar filtros
+            </button>
+          </div>
+        </div>
+
+        <div *ngFor="let secao of secoes" class="bg-white rounded-3xl shadow-card border border-gray-100 p-7">
+          <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
+            <div class="flex items-center gap-4">
+              <div class="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center">
+                <svg class="w-6 h-6" [ngClass]="secao.cor" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path [attr.d]="secao.icone" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+                </svg>
+              </div>
+              <div>
+                <h3 class="text-xl font-semibold text-gray-900">{{ secao.titulo }}</h3>
+                <p class="text-sm text-gray-500">{{ secao.descricao }}</p>
+              </div>
+            </div>
+            <div class="px-4 py-2 rounded-full bg-gray-100 text-gray-600 text-sm font-medium">
+              {{ secao.demandas.length }} demanda{{ secao.demandas.length === 1 ? '' : 's' }}
+            </div>
+          </div>
+
+          <ng-container *ngIf="secao.demandas.length > 0; else secaoVazia">
+            <div class="space-y-5">
+              <div *ngFor="let demanda of secao.demandas" class="border border-gray-100 rounded-2xl p-5 hover:border-blue-200 transition-all">
+                <div class="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                  <div>
+                    <div class="flex flex-wrap items-center gap-2">
+                      <h4 class="text-lg font-semibold text-gray-900">{{ demanda.titulo }}</h4>
+                      <span
+                        class="px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide"
+                        [ngClass]="{
+                          'bg-emerald-100 text-emerald-700': demanda.urgencia === 'Baixa',
+                          'bg-amber-100 text-amber-700': demanda.urgencia === 'Média',
+                          'bg-red-100 text-red-700': demanda.urgencia === 'Alta'
+                        }"
+                      >
+                        Urgência {{ demanda.urgencia }}
+                      </span>
+                      <span
+                        *ngIf="demanda.dataLimite"
+                        class="px-3 py-1 rounded-full text-xs font-medium"
+                        [ngClass]="{
+                          'bg-red-100 text-red-700': estaAtrasada(demanda),
+                          'bg-blue-50 text-blue-600': !estaAtrasada(demanda)
+                        }"
+                      >
+                        {{ estaAtrasada(demanda) ? 'Atrasada' : 'Data limite: ' + formatarData(demanda.dataLimite) }}
+                      </span>
+                      <span
+                        *ngIf="demanda.status === 'Concluída' && demanda.dataConclusao"
+                        class="px-3 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-600"
+                      >
+                        Concluída em {{ formatarData(demanda.dataConclusao) }}
+                      </span>
+                    </div>
+                    <p class="text-sm text-gray-600 mt-2" *ngIf="demanda.descricao">{{ demanda.descricao }}</p>
+                  </div>
+                  <div class="text-sm text-gray-500 space-y-1">
+                    <div class="font-semibold text-gray-700">{{ demanda.familiaNome }}</div>
+                    <div>{{ demanda.endereco }}</div>
+                    <div class="text-xs text-gray-400">Registrada em {{ formatarData(demanda.dataCriacao) }}</div>
+                  </div>
+                </div>
+
+                <div class="flex flex-wrap items-center gap-3 mt-4">
+                  <ng-container [ngSwitch]="secao.status">
+                    <ng-container *ngSwitchCase="'Pendente'">
+                      <button
+                        type="button"
+                        class="px-4 py-2 rounded-xl bg-blue-100 text-blue-700 text-sm font-medium hover:bg-blue-200 transition-colors"
+                        (click)="atualizarStatus(demanda, 'Em andamento')"
+                      >
+                        Iniciar atendimento
+                      </button>
+                      <button
+                        type="button"
+                        class="px-4 py-2 rounded-xl bg-emerald-100 text-emerald-700 text-sm font-medium hover:bg-emerald-200 transition-colors"
+                        (click)="atualizarStatus(demanda, 'Concluída')"
+                      >
+                        Marcar como concluída
+                      </button>
+                    </ng-container>
+                    <ng-container *ngSwitchCase="'Em andamento'">
+                      <button
+                        type="button"
+                        class="px-4 py-2 rounded-xl bg-amber-100 text-amber-700 text-sm font-medium hover:bg-amber-200 transition-colors"
+                        (click)="atualizarStatus(demanda, 'Pendente')"
+                      >
+                        Voltar para pendente
+                      </button>
+                      <button
+                        type="button"
+                        class="px-4 py-2 rounded-xl bg-emerald-100 text-emerald-700 text-sm font-medium hover:bg-emerald-200 transition-colors"
+                        (click)="atualizarStatus(demanda, 'Concluída')"
+                      >
+                        Concluir atendimento
+                      </button>
+                    </ng-container>
+                    <ng-container *ngSwitchCase="'Concluída'">
+                      <button
+                        type="button"
+                        class="px-4 py-2 rounded-xl bg-blue-100 text-blue-700 text-sm font-medium hover:bg-blue-200 transition-colors"
+                        (click)="atualizarStatus(demanda, 'Pendente')"
+                      >
+                        Reabrir demanda
+                      </button>
+                    </ng-container>
+                  </ng-container>
+                  <button
+                    type="button"
+                    class="px-4 py-2 rounded-xl border border-red-200 text-sm font-medium text-red-600 hover:bg-red-50 transition-colors"
+                    (click)="removerDemanda(demanda)"
+                  >
+                    Remover
+                  </button>
+                </div>
+              </div>
+            </div>
+          </ng-container>
+        </div>
+
+        <div
+          *ngIf="semDemandasFiltradas"
+          class="bg-white rounded-3xl shadow-card border border-dashed border-gray-200 p-12 text-center text-gray-500"
+        >
+          Nenhuma demanda encontrada com os filtros atuais.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<ng-template #erroCarregamento>
+  <div class="p-6 bg-red-50 rounded-2xl border border-red-100 text-sm text-red-600">
+    {{ erroFamilias }}
+  </div>
+</ng-template>
+
+<ng-template #nenhumaFamilia>
+  <option disabled>Nenhuma família disponível</option>
+</ng-template>
+
+<ng-template #secaoVazia>
+  <div class="border border-dashed border-gray-200 rounded-2xl p-8 text-center text-sm text-gray-500">
+    Nenhuma demanda neste estágio.
+  </div>
+</ng-template>

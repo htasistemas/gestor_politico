@@ -80,6 +80,12 @@ export class TopNavComponent implements OnDestroy {
         description: 'Gestão de núcleos familiares',
         icon: 'M12 7a4 4 0 110 8 4 4 0 010-8zm0-5a6 6 0 016 6v1.26a8 8 0 014 6.91V21h-2v-4a4 4 0 00-4-4h-8a4 4 0 00-4 4v4H2v-4.83a',
         route: '/familias'
+      },
+      {
+        label: 'Demandas',
+        description: 'Fila de solicitações das famílias',
+        icon: 'M5 3a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V9.414A2 2 0 0020.414 8L15 2.586A2 2 0 0013.586 2H5zm7 1.414L19.586 12H12z',
+        route: '/demandas'
       }
     ];
 
