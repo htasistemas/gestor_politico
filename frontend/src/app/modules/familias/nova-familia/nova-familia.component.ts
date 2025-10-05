@@ -319,6 +319,14 @@ export class NovaFamiliaComponent implements OnInit {
     this.router.navigate(['/familias']);
   }
 
+  abrirDemandasFamilia(): void {
+    if (!this.familiaIdEdicao) {
+      return;
+    }
+
+    this.router.navigate(['/demandas'], { queryParams: { familiaId: this.familiaIdEdicao } });
+  }
+
   cancelarCadastro(): void {
     this.router.navigate(['/familias']);
   }
@@ -329,7 +337,7 @@ export class NovaFamiliaComponent implements OnInit {
 
   removerMembro(indice: number): void {
     if (indice === 0 || this.membros.length <= 1) {
-      window.alert('É necessário manter pelo menos um responsável cadastrado.');
+      this.notificationService.showError('É necessário manter pelo menos um responsável cadastrado.');
       return;
     }
 
@@ -359,7 +367,7 @@ export class NovaFamiliaComponent implements OnInit {
 
     const existeOutroResponsavel = this.membros.some((membro, posicao) => posicao !== indice && membro.responsavel);
     if (!existeOutroResponsavel) {
-      window.alert('A família precisa ter um responsável principal.');
+      this.notificationService.showError('A família precisa ter um responsável principal.');
       this.membros[indice].responsavel = true;
       this.membros[indice].parentesco = PARENTESCO_RESPONSAVEL;
       return;
@@ -423,7 +431,7 @@ export class NovaFamiliaComponent implements OnInit {
 
     if (this.enderecoFamilia.regiaoSelecionada === this.valorNovaRegiao) {
       if (!this.ehAdministrador && !this.novaRegiaoGeradaPorCep) {
-        window.alert(
+        this.notificationService.showError(
           'A criação de novas regiões está restrita a administradores ou ao preenchimento automático pelo CEP.'
         );
         this.enderecoFamilia.regiaoSelecionada = null;
@@ -448,7 +456,7 @@ export class NovaFamiliaComponent implements OnInit {
 
     if (this.enderecoFamilia.bairroSelecionado === this.valorNovoBairro) {
       if (!this.ehAdministrador && !this.novoBairroGeradoPorCep) {
-        window.alert(
+        this.notificationService.showError(
           'A criação de novos bairros está restrita a administradores ou ao preenchimento automático pelo CEP.'
         );
         this.enderecoFamilia.bairroSelecionado = null;
@@ -741,7 +749,9 @@ export class NovaFamiliaComponent implements OnInit {
       },
       error: () => {
         this.enderecoFamilia.atualizandoRegiao = false;
-        window.alert('Não foi possível vincular o bairro à região selecionada. Tente novamente.');
+        this.notificationService.showError(
+          'Não foi possível vincular o bairro à região selecionada. Tente novamente.'
+        );
         this.enderecoFamilia.regiaoSelecionada = null;
         this.enderecoFamilia.regiaoBloqueada = false;
       }
@@ -896,13 +906,13 @@ export class NovaFamiliaComponent implements OnInit {
 
   abrirWhatsApp(telefone: string): void {
     if (!telefone) {
-      window.alert('Informe um telefone para contatar via WhatsApp.');
+      this.notificationService.showError('Informe um telefone para contatar via WhatsApp.');
       return;
     }
 
     const somenteNumeros = this.obterTelefoneLimpo(telefone);
     if (!somenteNumeros) {
-      window.alert('Telefone inválido para contato via WhatsApp.');
+      this.notificationService.showError('Telefone inválido para contato via WhatsApp.');
       return;
     }
 
@@ -952,27 +962,29 @@ export class NovaFamiliaComponent implements OnInit {
     const novaRegiao = this.normalizarTexto(this.enderecoFamilia.novaRegiao);
 
     if (!rua || !numero) {
-      window.alert('Por favor, preencha rua e número da família.');
+      this.notificationService.showError('Por favor, preencha rua e número da família.');
       return false;
     }
 
     if (cidadeId === null) {
-      window.alert('Selecione a cidade do endereço da família.');
+      this.notificationService.showError('Selecione a cidade do endereço da família.');
       return false;
     }
 
     if (!bairroSelecionado) {
-      window.alert('Selecione um bairro para o endereço da família ou cadastre um novo.');
+      this.notificationService.showError(
+        'Selecione um bairro para o endereço da família ou cadastre um novo.'
+      );
       return false;
     }
 
     if (bairroSelecionado === this.valorNovoBairro && !novoBairro) {
-      window.alert('Informe o nome do novo bairro da família.');
+      this.notificationService.showError('Informe o nome do novo bairro da família.');
       return false;
     }
 
     if (regiaoSelecionada === this.valorNovaRegiao && !novaRegiao) {
-      window.alert('Informe o nome da nova região da família.');
+      this.notificationService.showError('Informe o nome da nova região da família.');
       return false;
     }
 
@@ -985,14 +997,16 @@ export class NovaFamiliaComponent implements OnInit {
       const responsavel = this.normalizarResponsavel(membro.responsavel);
 
       if (!nome || !nascimento || !probabilidade || (!responsavel && !parentesco)) {
-        window.alert(`Preencha todos os campos obrigatórios do ${indice + 1}º membro da família.`);
+        this.notificationService.showError(
+          `Preencha todos os campos obrigatórios do ${indice + 1}º membro da família.`
+        );
         return false;
       }
     }
 
     const possuiResponsavel = this.membros.some(membro => this.normalizarResponsavel(membro.responsavel));
     if (!possuiResponsavel) {
-      window.alert('Selecione um responsável principal para a família.');
+      this.notificationService.showError('Selecione um responsável principal para a família.');
       return false;
     }
 

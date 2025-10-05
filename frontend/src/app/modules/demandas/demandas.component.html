@@ -175,6 +175,25 @@
               Limpar filtros
             </button>
           </div>
+          <div
+            *ngIf="filtroFamiliaId !== null"
+            class="mt-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-4 py-3 rounded-2xl border border-blue-100 bg-blue-50 text-blue-700"
+          >
+            <div class="text-sm">
+              <span class="font-semibold">Filtrando por família:</span>
+              <span>{{ obterFamiliaNome(filtroFamiliaId) }}</span>
+            </div>
+            <button
+              type="button"
+              (click)="removerFiltroFamilia()"
+              class="flex items-center gap-2 text-sm font-semibold text-blue-600 hover:underline"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+              </svg>
+              Remover filtro
+            </button>
+          </div>
         </div>
 
         <div *ngFor="let secao of secoes" class="bg-white rounded-3xl shadow-card border border-gray-100 p-7">

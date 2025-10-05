@@ -202,7 +202,7 @@ export class FamiliasMobileComponent implements OnInit, OnDestroy {
 
   obterTelefoneResponsavel(familia: FamiliaResponse): string {
     const responsavel = familia.membros.find(membro => membro.responsavelPrincipal);
-    return responsavel?.telefones?.[0]?.numero || 'Sem telefone';
+    return responsavel?.telefone || 'Sem telefone';
   }
 
   obterTotalMembros(familia: FamiliaResponse): number {
@@ -214,7 +214,7 @@ export class FamiliasMobileComponent implements OnInit, OnDestroy {
   }
 
   dataCadastro(familia: FamiliaResponse): string {
-    const data = familia.dataCadastro ? new Date(familia.dataCadastro) : null;
+    const data = familia.criadoEm ? new Date(familia.criadoEm) : null;
     return data ? data.toLocaleDateString() : 'Data não informada';
   }
 
@@ -284,7 +284,7 @@ export class FamiliasMobileComponent implements OnInit, OnDestroy {
 
     this.familiasService.buscarFamilias(filtros, this.paginaAtual, this.tamanhoPagina).subscribe({
       next: resposta => {
-        this.familias = resposta.itens;
+        this.familias = resposta.familias;
         this.totalFamilias = resposta.total;
         this.responsaveisAtivos = resposta.responsaveisAtivos ?? 0;
         this.novosCadastros = resposta.novosCadastros ?? 0;

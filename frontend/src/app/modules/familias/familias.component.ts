@@ -63,7 +63,7 @@ export class FamiliasComponent implements OnInit, OnDestroy {
     private readonly localidadesService: LocalidadesService,
     private readonly router: Router,
 
-    private readonly notificationService: NotificationService
+    private readonly notificationService: NotificationService,
 
     private readonly demandasService: DemandasService
 
