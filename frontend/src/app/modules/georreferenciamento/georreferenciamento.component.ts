@@ -41,8 +41,8 @@ export class GeoReferenciamentoComponent implements OnInit, AfterViewInit, OnDes
     `,
     className: 'familia-marker',
     iconSize: [48, 48],
-    iconAnchor: [24, 48],
-    popupAnchor: [0, -42]
+    iconAnchor: [24, 24],
+    popupAnchor: [0, -32]
   });
 
   constructor(
