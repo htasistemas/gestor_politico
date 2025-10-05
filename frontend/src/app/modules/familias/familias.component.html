@@ -11,9 +11,6 @@
         </p>
       </div>
       <div class="flex items-center gap-3">
-        <button class="px-5 py-3 rounded-2xl border border-gray-200 text-gray-600 text-sm font-medium hover:bg-white transition-all">
-          Importar planilha
-        </button>
         <button
           routerLink="/familias/nova"
           class="px-5 py-3 rounded-2xl gradient-blue text-white text-sm font-semibold shadow-lg hover:opacity-90 transition-all"
@@ -263,9 +260,20 @@
                         {{ obterIniciais(obterResponsavel(familia)) }}
                       </div>
                       <div>
-                        <h2 class="text-lg font-semibold text-gray-900 mb-1">
-                          Família de {{ obterResponsavel(familia) }}
-                        </h2>
+                        <div class="flex flex-wrap items-center gap-2 mb-1">
+                          <h2 class="text-lg font-semibold text-gray-900">
+                            Família de {{ obterResponsavel(familia) }}
+                          </h2>
+                          <span
+                            *ngIf="temDemandasPendentes(familia)"
+                            class="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-amber-100 text-amber-700 text-xs font-semibold"
+                          >
+                            <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                              <path d="M10 2a1 1 0 01.894.553l7 14A1 1 0 0117 18H3a1 1 0 01-.894-1.447l7-14A1 1 0 0110 2zm0 4a.75.75 0 00-.75.75v4.5a.75.75 0 001.5 0v-4.5A.75.75 0 0010 6zm0 8a1 1 0 100 2 1 1 0 000-2z" />
+                            </svg>
+                            {{ contarDemandasPendentes(familia) }} demanda{{ contarDemandasPendentes(familia) === 1 ? '' : 's' }} pendente{{ contarDemandasPendentes(familia) === 1 ? '' : 's' }}
+                          </span>
+                        </div>
                         <div class="text-sm text-gray-500 flex flex-wrap items-center gap-2">
                           <span *ngIf="familia.enderecoDetalhado?.bairro">{{ familia.enderecoDetalhado.bairro }}</span>
                           <span *ngIf="familia.enderecoDetalhado?.regiao">• Região {{ familia.enderecoDetalhado.regiao }}</span>
@@ -275,7 +283,34 @@
                     </div>
                     <div class="text-sm text-gray-500 text-left lg:text-right">
                       <div class="font-semibold text-gray-700">Contato do responsável</div>
-                      <div>{{ obterTelefoneResponsavel(familia) }}</div>
+                      <div class="mt-1 flex items-center gap-2 justify-start lg:justify-end">
+                        <span>{{ obterTelefoneResponsavel(familia) }}</span>
+                        <button
+                          *ngIf="possuiTelefoneResponsavel(familia)"
+                          type="button"
+                          class="p-2 rounded-full text-emerald-600 hover:bg-emerald-50 focus:outline-none focus:ring-2 focus:ring-emerald-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                          (click)="abrirWhatsapp($event, familia)"
+                          [disabled]="whatsappCarregandoId === familia.id"
+                          aria-label="Conversar no WhatsApp"
+                        >
+                          <ng-container *ngIf="whatsappCarregandoId === familia.id; else whatsappIcon">
+                            <div class="w-4 h-4 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+                          </ng-container>
+                          <ng-template #whatsappIcon>
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              viewBox="0 0 24 24"
+                              fill="currentColor"
+                              class="w-4 h-4"
+                              aria-hidden="true"
+                            >
+                              <path
+                                d="M20.52 3.48A11.77 11.77 0 0 0 12 .24 11.76 11.76 0 0 0 1.7 17.82L.24 23.76l6.09-1.6a11.77 11.77 0 0 0 5.67 1.44h0A11.76 11.76 0 0 0 20.52 3.48Zm-8.2 18.68h0a9.8 9.8 0 0 1-4.99-1.37l-.36-.21-3.62.95.97-3.53-.24-.36a9.82 9.82 0 1 1 18.23-5.28 9.8 9.8 0 0 1-9.99 9.8Zm5.38-7.3c-.29-.15-1.7-.84-1.96-.93s-.45-.14-.64.14-.73.93-.9 1.12-.33.21-.62.07a7.97 7.97 0 0 1-2.35-1.45 8.8 8.8 0 0 1-1.62-2.02c-.17-.29 0-.45.13-.6.13-.13.29-.33.43-.5a2 2 0 0 0 .29-.5.54.54 0 0 0-.03-.5c-.08-.15-.64-1.54-.88-2.11-.23-.56-.47-.49-.64-.5h-.55a1.05 1.05 0 0 0-.76.36c-.26.29-1 1-1 2.44s1.02 2.84 1.17 3.04a11.42 11.42 0 0 0 3.69 3.47c.52.28.93.45 1.24.57.52.16 1 .14 1.37.09.42-.06 1.29-.53 1.47-1.05s.18-.95.13-1.05-.24-.17-.52-.29Z"
+                              ></path>
+                            </svg>
+                          </ng-template>
+                        </button>
+                      </div>
                     </div>
                   </div>
 
