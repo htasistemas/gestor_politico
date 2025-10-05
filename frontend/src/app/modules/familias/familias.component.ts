@@ -1,8 +1,8 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { forkJoin, of } from 'rxjs';
-import { catchError } from 'rxjs/operators';
+import { Subject, forkJoin, of } from 'rxjs';
+import { catchError, takeUntil } from 'rxjs/operators';
 import {
   FamiliasService,
   FamiliaFiltro,
@@ -13,6 +13,7 @@ import {
   Cidade,
   Regiao
 } from '../shared/services/localidades.service';
+import { DemandasService, Demanda } from '../shared/services/demandas.service';
 
 type RegiaoFiltro = Regiao & { cidadeId: number; cidadeNome: string };
 
@@ -24,7 +25,7 @@ type RegiaoFiltro = Regiao & { cidadeId: number; cidadeNome: string };
   templateUrl: './familias.component.html',
   styleUrls: ['./familias.component.css']
 })
-export class FamiliasComponent implements OnInit {
+export class FamiliasComponent implements OnInit, OnDestroy {
   destaques: { titulo: string; valor: string; variacao: string; descricao: string }[] = [];
   familias: FamiliaResponse[] = [];
   carregando = false;
@@ -46,13 +47,16 @@ export class FamiliasComponent implements OnInit {
   mostrarFiltrosAvancados = false;
   private todasRegioes: RegiaoFiltro[] = [];
   private readonly regioesPorCidade = new Map<number, RegiaoFiltro[]>();
+  private readonly destroy$ = new Subject<void>();
+  private demandasAbertas = new Map<number, number>();
 
   constructor(
     private readonly familiasService: FamiliasService,
     private readonly route: ActivatedRoute,
     private readonly fb: FormBuilder,
     private readonly localidadesService: LocalidadesService,
-    private readonly router: Router
+    private readonly router: Router,
+    private readonly demandasService: DemandasService
   ) {
     this.filtroForm = this.fb.group({
       cidadeId: [null],
@@ -70,6 +74,11 @@ export class FamiliasComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.demandasService
+      .observarDemandas()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(demandas => this.atualizarDemandasAbertas(demandas));
+
     const familiaIdParam = this.route.snapshot.queryParamMap.get('familiaId');
     if (familiaIdParam) {
       const id = Number(familiaIdParam);
@@ -89,6 +98,11 @@ export class FamiliasComponent implements OnInit {
         this.buscarFamilias();
       }
     });
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   alternarFiltrosAvancados(): void {
@@ -225,6 +239,14 @@ export class FamiliasComponent implements OnInit {
     return responsavel.telefone;
   }
 
+  contarDemandasPendentes(familia: FamiliaResponse): number {
+    return this.demandasAbertas.get(familia.id) ?? 0;
+  }
+
+  temDemandasPendentes(familia: FamiliaResponse): boolean {
+    return this.contarDemandasPendentes(familia) > 0;
+  }
+
   obterTotalMembros(familia: FamiliaResponse): number {
     return familia.membros.length;
   }
@@ -304,6 +326,18 @@ export class FamiliasComponent implements OnInit {
       this.atualizarTodasRegioesDisponiveis();
       this.regioes = this.todasRegioes;
     });
+  }
+
+  private atualizarDemandasAbertas(demandas: Demanda[]): void {
+    const mapa = new Map<number, number>();
+    demandas.forEach(demanda => {
+      if (demanda.status === 'Concluída') {
+        return;
+      }
+      const total = mapa.get(demanda.familiaId) ?? 0;
+      mapa.set(demanda.familiaId, total + 1);
+    });
+    this.demandasAbertas = mapa;
   }
 
   private carregarRegioesPorCidade(cidadeId: number): void {
