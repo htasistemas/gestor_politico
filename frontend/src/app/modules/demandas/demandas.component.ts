@@ -60,6 +60,7 @@ export class DemandasComponent implements OnInit, OnDestroy {
   filtroStatus: '' | DemandaStatus = '';
   filtroUrgencia: '' | DemandaUrgencia = '';
   filtroBusca = '';
+  filtroFamiliaId: number | null = null;
   secoes: SecaoDemandas[] = [];
   semDemandasFiltradas = false;
 
