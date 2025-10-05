@@ -142,13 +142,26 @@ public class FamiliaService {
       .filter(familia -> familia.getCriadoEm() != null && familia.getCriadoEm().isAfter(seteDiasAtras))
       .count();
 
+    long totalPessoas = familiasFiltradas
+      .stream()
+      .mapToLong(familia -> familia.getMembros().size())
+      .sum();
+
+    long novasPessoasSemana = familiasFiltradas
+      .stream()
+      .flatMap(familia -> familia.getMembros().stream())
+      .filter(membro -> membro.getCriadoEm() != null && membro.getCriadoEm().isAfter(seteDiasAtras))
+      .count();
+
     return new FamiliaListaResponseDTO(
       familias,
       pagina.getTotalElements(),
       pagina.getNumber(),
       pagina.getSize(),
       responsaveisAtivos,
-      novosCadastros
+      novosCadastros,
+      totalPessoas,
+      novasPessoasSemana
     );
   }
 
