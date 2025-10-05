@@ -1,7 +1,13 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { combineLatest } from 'rxjs';
-import { FamiliasService, FamiliaMembroPayload, FamiliaPayload, FamiliaResponse } from '../familias.service';
+import {
+  FamiliasService,
+  FamiliaMembroPayload,
+  FamiliaMembroResponse,
+  FamiliaPayload,
+  FamiliaResponse
+} from '../familias.service';
 import { DESCRICOES_PARENTESCO, GrauParentesco } from '../parentesco.enum';
 import { Bairro, Cidade, LocalidadesService, Regiao } from '../../shared/services/localidades.service';
 import { ViaCepResponse, ViaCepService } from '../../shared/services/via-cep.service';
@@ -23,6 +29,8 @@ interface MembroFamiliaForm {
   responsavel: boolean;
   probabilidade: ProbabilidadeVoto;
   telefone: string;
+  parceiro: boolean;
+  parceiroToken: string | null;
 }
 
 interface PreviaMembro {
@@ -114,6 +122,7 @@ export class NovaFamiliaComponent implements OnInit {
   ];
 
   membros: MembroFamiliaForm[];
+  private readonly parceirosEmCriacao = new Set<number>();
 
   mostrarPrevia = false;
   previaFamilia: PreviaFamilia | null = null;
@@ -376,6 +385,7 @@ export class NovaFamiliaComponent implements OnInit {
   }
 
   private preencherMembrosFamilia(membrosResposta: FamiliaResponse['membros']): void {
+    this.parceirosEmCriacao.clear();
     if (!membrosResposta || membrosResposta.length === 0) {
       this.membros = [this.criarMembro(true)];
       return;
@@ -391,7 +401,9 @@ export class NovaFamiliaComponent implements OnInit {
         parentesco: membro.responsavelPrincipal ? PARENTESCO_RESPONSAVEL : membro.parentesco,
         responsavel: Boolean(membro.responsavelPrincipal),
         probabilidade,
-        telefone: this.aplicarMascaraTelefone(membro.telefone ?? '')
+        telefone: this.aplicarMascaraTelefone(membro.telefone ?? ''),
+        parceiro: Boolean(membro.parceiro),
+        parceiroToken: membro.parceiroToken ?? null
       };
     });
 
@@ -410,6 +422,7 @@ export class NovaFamiliaComponent implements OnInit {
     this.novaRegiaoGeradaPorCep = false;
     this.novoBairroGeradoPorCep = false;
     this.parceiroTokenAtivo = this.modoParceiro ? this.parceiroTokenContext : null;
+    this.parceirosEmCriacao.clear();
   }
 
   voltarPagina(): void {
@@ -430,6 +443,77 @@ export class NovaFamiliaComponent implements OnInit {
 
   adicionarMembro(): void {
     this.membros.push(this.criarMembro(false));
+  }
+
+  exibirAcoesParceiro(membro: MembroFamiliaForm): boolean {
+    return !this.modoParceiro && this.modoEdicao && this.familiaIdEdicao !== null && membro.id !== null;
+  }
+
+  parceiroAtivo(membro: MembroFamiliaForm): boolean {
+    return Boolean(membro.parceiro && membro.parceiroToken);
+  }
+
+  emProcessoParceiro(membro: MembroFamiliaForm): boolean {
+    if (membro.id === null) {
+      return false;
+    }
+    return this.parceirosEmCriacao.has(membro.id);
+  }
+
+  gerarLinkParceiro(membro: MembroFamiliaForm): void {
+    if (!this.exibirAcoesParceiro(membro) || membro.id === null || this.familiaIdEdicao === null) {
+      return;
+    }
+
+    const membroId = membro.id;
+
+    if (membro.parceiro || this.parceirosEmCriacao.has(membroId)) {
+      return;
+    }
+
+    this.parceirosEmCriacao.add(membroId);
+    this.familiasService.tornarMembroParceiro(this.familiaIdEdicao, membroId).subscribe({
+      next: atualizado => {
+        this.atualizarMembroParceiro(atualizado);
+        this.notificationService.showSuccess(
+          'Parceiro habilitado!',
+          `${atualizado.nomeCompleto} agora pode cadastrar novas famílias.`
+        );
+      },
+      error: () => {
+        this.notificationService.showError(
+          'Não foi possível gerar o link do parceiro.',
+          'Tente novamente em instantes.'
+        );
+        this.parceirosEmCriacao.delete(membroId);
+      },
+      complete: () => {
+        this.parceirosEmCriacao.delete(membroId);
+      }
+    });
+  }
+
+  private atualizarMembroParceiro(membroAtualizado: FamiliaMembroResponse): void {
+    this.membros = this.membros.map(membro => {
+      if (membro.id !== membroAtualizado.id) {
+        return membro;
+      }
+
+      return {
+        ...membro,
+        nome: membroAtualizado.nomeCompleto,
+        nascimento: membroAtualizado.dataNascimento ?? '',
+        profissao: membroAtualizado.profissao ?? '',
+        parentesco: membroAtualizado.responsavelPrincipal
+          ? PARENTESCO_RESPONSAVEL
+          : membroAtualizado.parentesco,
+        responsavel: Boolean(membroAtualizado.responsavelPrincipal),
+        probabilidade: (membroAtualizado.probabilidadeVoto as ProbabilidadeVoto) || '',
+        telefone: this.aplicarMascaraTelefone(membroAtualizado.telefone ?? ''),
+        parceiro: Boolean(membroAtualizado.parceiro),
+        parceiroToken: membroAtualizado.parceiroToken ?? null
+      };
+    });
   }
 
   removerMembro(indice: number): void {
@@ -1026,7 +1110,9 @@ export class NovaFamiliaComponent implements OnInit {
       parentesco: responsavelPrincipal ? PARENTESCO_RESPONSAVEL : '',
       responsavel: responsavelPrincipal,
       probabilidade: '',
-      telefone: ''
+      telefone: '',
+      parceiro: false,
+      parceiroToken: null
     };
   }
 
