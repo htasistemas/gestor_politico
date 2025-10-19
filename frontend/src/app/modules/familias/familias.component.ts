@@ -255,6 +255,24 @@ export class FamiliasComponent implements OnInit, OnDestroy {
     return Boolean(responsavel?.telefone);
   }
 
+  obterParceiroCadastroDescricao(familia: FamiliaResponse): string | null {
+    const parceiro = familia.parceiroCadastro;
+    if (!parceiro) {
+      return null;
+    }
+
+    const nome = parceiro.nome?.trim();
+    if (nome) {
+      return nome;
+    }
+
+    if (parceiro.id) {
+      return `Parceiro #${parceiro.id}`;
+    }
+
+    return `Token ${parceiro.token}`;
+  }
+
   abrirWhatsapp(evento: MouseEvent, familia: FamiliaResponse): void {
     evento.stopPropagation();
     const responsavel = this.encontrarResponsavelPrincipal(familia);
