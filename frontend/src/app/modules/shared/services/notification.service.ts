@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
 
-type NotificationType = 'success' | 'error' | 'info';
+type NotificationType = 'success' | 'error' | 'info' | 'warning';
 
 export interface NotificationData {
   type: NotificationType;
@@ -30,6 +30,10 @@ export class NotificationService {
 
   showInfo(title: string, message?: string, durationMs = 6000): void {
     this.show({ type: 'info', title, message }, durationMs);
+  }
+
+  showWarning(title: string, message?: string, durationMs = 6000): void {
+    this.show({ type: 'warning', title, message }, durationMs);
   }
 
   dismiss(): void {

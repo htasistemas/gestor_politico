@@ -102,6 +102,18 @@
   color: #1e40af;
 }
 
+.notification-warning {
+  --accent-color: #f59e0b;
+}
+
+.notification-warning .notification-title {
+  color: #d97706;
+}
+
+.notification-warning .notification-message {
+  color: #b45309;
+}
+
 @keyframes fadeIn {
   from {
     opacity: 0;
