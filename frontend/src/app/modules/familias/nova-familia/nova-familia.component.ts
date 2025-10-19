@@ -3,6 +3,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { combineLatest } from 'rxjs';
 import {
   FamiliasService,
+  FamiliaFiltro,
   FamiliaMembroPayload,
   FamiliaMembroResponse,
   FamiliaPayload,
@@ -99,6 +100,8 @@ export class NovaFamiliaComponent implements OnInit {
   novoBairroGeradoPorCep = false;
 
   cidades: Cidade[] = [];
+  private cidadesCarregadas = false;
+  private cepFamiliaPendente: ViaCepResponse | null = null;
   private readonly regioesCache = new Map<number, Regiao[]>();
   private readonly bairrosCache = new Map<number, Bairro[]>();
 
@@ -153,13 +156,23 @@ export class NovaFamiliaComponent implements OnInit {
       this.atualizarModoPorParametro(familiaIdParam);
     });
 
-    this.localidadesService.listarCidades().subscribe(cidades => {
-      this.cidades = cidades;
-      if (this.modoEdicao) {
-        this.aplicarFamiliaCarregada();
-        return;
+    this.localidadesService.listarCidades().subscribe({
+      next: cidades => {
+        this.cidades = cidades;
+        this.cidadesCarregadas = true;
+        if (this.modoEdicao) {
+          this.aplicarFamiliaCarregada();
+          this.aplicarCepFamiliaPendenteSeNecessario();
+          return;
+        }
+        this.aplicarCidadePadraoQuandoDisponivel();
+        this.aplicarCepFamiliaPendenteSeNecessario();
+      },
+      error: () => {
+        this.cidades = [];
+        this.cidadesCarregadas = true;
+        this.aplicarCepFamiliaPendenteSeNecessario();
       }
-      this.aplicarCidadePadraoQuandoDisponivel();
     });
   }
 
@@ -220,6 +233,28 @@ export class NovaFamiliaComponent implements OnInit {
     return `${origem}/familias/nova?parceiroToken=${this.parceiroTokenContext}`;
   }
 
+  get linkParceiroTexto(): string {
+    if (this.linkParceiroCompleto) {
+      return this.linkParceiroCompleto;
+    }
+
+    if (this.parceiroTokenContext) {
+      return `/familias/nova?parceiroToken=${this.parceiroTokenContext}`;
+    }
+
+    return '';
+  }
+
+  get mensagemWhatsappParceiro(): string | null {
+    const link = this.linkParceiroTexto;
+    if (!link) {
+      return null;
+    }
+
+    const mensagem = `Olá! Acesse seu link de cadastro: ${link}`;
+    return encodeURIComponent(mensagem);
+  }
+
   private atualizarModoPorParametro(familiaIdParam: string | null): void {
     if (!familiaIdParam) {
       if (this.modoEdicao) {
@@ -273,16 +308,21 @@ export class NovaFamiliaComponent implements OnInit {
 
   buscarFamiliasParceiro(): void {
     const termo = this.termoBuscaParceiro.trim();
+    const filtros = this.montarFiltrosBuscaParceiro(termo);
+    const possuiFiltros = Object.values(filtros).some(
+      valor => valor !== null && valor !== undefined && String(valor).trim() !== ''
+    );
 
-    if (!termo) {
-      this.erroBuscaParceiro = 'Informe um termo para buscar famílias já cadastradas.';
+    if (!possuiFiltros) {
+      this.erroBuscaParceiro =
+        'Informe um termo ou utilize os dados do endereço para buscar famílias já cadastradas.';
       this.familiasEncontradas = [];
       return;
     }
 
     this.buscandoFamiliasParceiro = true;
     this.erroBuscaParceiro = '';
-    this.familiasService.buscarFamilias({ termo }, 0, 10).subscribe({
+    this.familiasService.buscarFamilias(filtros, 0, 10).subscribe({
       next: resposta => {
         this.familiasEncontradas = resposta.familias;
         this.buscandoFamiliasParceiro = false;
@@ -299,6 +339,82 @@ export class NovaFamiliaComponent implements OnInit {
     this.familiasEncontradas = [];
     this.erroBuscaParceiro = '';
     this.buscandoFamiliasParceiro = false;
+  }
+
+  private montarFiltrosBuscaParceiro(termo: string): FamiliaFiltro {
+    const filtros: FamiliaFiltro = {};
+
+    if (termo) {
+      filtros.termo = termo;
+    }
+
+    const cidadeId = this.enderecoFamilia.cidadeId;
+    if (cidadeId) {
+      filtros.cidadeId = cidadeId;
+    }
+
+    const regiao = this.obterRegiaoParaFiltro();
+    if (regiao) {
+      filtros.regiao = regiao;
+    }
+
+    const bairro = this.obterBairroParaFiltro();
+    if (bairro) {
+      filtros.bairro = bairro;
+    }
+
+    const rua = this.enderecoFamilia.rua.trim();
+    if (rua) {
+      filtros.rua = rua;
+    }
+
+    const numero = this.enderecoFamilia.numero.trim();
+    if (numero) {
+      filtros.numero = numero;
+    }
+
+    const cep = this.obterCepSanitizado();
+    if (cep) {
+      filtros.cep = cep;
+    }
+
+    return filtros;
+  }
+
+  private obterRegiaoParaFiltro(): string | null {
+    const selecionada = this.enderecoFamilia.regiaoSelecionada;
+    if (!selecionada) {
+      const nova = this.enderecoFamilia.novaRegiao.trim();
+      return nova ? nova : null;
+    }
+
+    if (selecionada === this.valorNovaRegiao) {
+      const nova = this.enderecoFamilia.novaRegiao.trim();
+      return nova ? nova : null;
+    }
+
+    return selecionada;
+  }
+
+  private obterBairroParaFiltro(): string | null {
+    const selecionado = this.enderecoFamilia.bairroSelecionado;
+    if (!selecionado) {
+      const novo = this.enderecoFamilia.novoBairro.trim();
+      return novo ? novo : null;
+    }
+
+    if (selecionado === this.valorNovoBairro) {
+      const novo = this.enderecoFamilia.novoBairro.trim();
+      return novo ? novo : null;
+    }
+
+    const bairro = this.obterBairroSelecionado();
+    return bairro?.nome ?? null;
+  }
+
+  private obterCepSanitizado(): string | null {
+    const cep = this.enderecoFamilia.cep.replace(/\D/g, '');
+    return cep.length === 8 ? cep : null;
   }
 
   private carregarFamilia(id: number): void {
@@ -426,6 +542,7 @@ export class NovaFamiliaComponent implements OnInit {
     this.parceiroTokenAtivo = this.modoParceiro ? this.parceiroTokenContext : null;
     this.parceirosEmCriacao.clear();
     this.parceirosEmRevogacao.clear();
+    this.cepFamiliaPendente = null;
   }
 
   voltarPagina(): void {
@@ -763,6 +880,8 @@ export class NovaFamiliaComponent implements OnInit {
   }
 
   private aplicarDadosViaCepFamilia(resposta: ViaCepResponse): void {
+    this.cepFamiliaPendente = null;
+
     const cepResposta = resposta.cep?.trim();
     if (cepResposta) {
       this.enderecoFamilia.cep = this.formatarCep(cepResposta);
@@ -780,6 +899,11 @@ export class NovaFamiliaComponent implements OnInit {
 
     if (!nomeCidade || !uf) {
       this.enderecoFamilia.erroCep = 'Cidade ou UF não informados pelo CEP consultado.';
+      return;
+    }
+
+    if (!this.cidadesCarregadas) {
+      this.cepFamiliaPendente = resposta;
       return;
     }
 
@@ -805,6 +929,16 @@ export class NovaFamiliaComponent implements OnInit {
           this.enderecoFamilia.erroCep = 'Não foi possível cadastrar a cidade retornada pelo CEP.';
         }
       });
+  }
+
+  private aplicarCepFamiliaPendenteSeNecessario(): void {
+    if (!this.cepFamiliaPendente) {
+      return;
+    }
+
+    const pendente = this.cepFamiliaPendente;
+    this.cepFamiliaPendente = null;
+    this.aplicarDadosViaCepFamilia(pendente);
   }
 
   private carregarRegioesFamilia(cidadeId: number, callback?: () => void): void {
