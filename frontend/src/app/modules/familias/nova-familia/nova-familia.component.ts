@@ -736,15 +736,15 @@ export class NovaFamiliaComponent implements OnInit {
         if (!resposta) {
           this.enderecoFamilia.erroCep = 'CEP não encontrado. Preencha os dados manualmente.';
           return;
+        }
+        this.aplicarDadosViaCepFamilia(resposta);
+      },
+      error: () => {
+        this.enderecoFamilia.carregandoCep = false;
+        this.enderecoFamilia.erroCep = 'Não foi possível consultar o CEP. Tente novamente.';
       }
-      this.aplicarDadosViaCepFamilia(resposta);
-    },
-    error: () => {
-      this.enderecoFamilia.carregandoCep = false;
-      this.enderecoFamilia.erroCep = 'Não foi possível consultar o CEP. Tente novamente.';
-    }
-  });
-}
+    });
+  }
 
   private definirCidadeFamilia(cidadeId: number): void {
     this.enderecoFamilia.cidadeId = cidadeId;
