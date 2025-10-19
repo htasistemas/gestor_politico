@@ -22,30 +22,8 @@
         <div class="mapa-toolbar__descricao">
           <h2 class="mapa-toolbar__titulo">Visualização do território</h2>
           <p class="mapa-toolbar__texto">
-            Explore os pontos individuais ou destaque automaticamente as áreas com maior concentração de famílias.
+            Utilize o mapa de calor para identificar automaticamente as áreas com maior concentração de famílias.
           </p>
-        </div>
-        <div class="mapa-view-toggle" role="group" aria-label="Alternar visualização do mapa">
-          <button
-            type="button"
-            class="mapa-view-toggle__botao"
-            [class.mapa-view-toggle__botao--ativo]="!exibirMapaDeCalor"
-            (click)="mostrarMarcadores()"
-            [attr.aria-pressed]="!exibirMapaDeCalor"
-          >
-            <i class="fa-solid fa-location-dot" aria-hidden="true"></i>
-            <span>Marcadores</span>
-          </button>
-          <button
-            type="button"
-            class="mapa-view-toggle__botao"
-            [class.mapa-view-toggle__botao--ativo]="exibirMapaDeCalor"
-            (click)="mostrarMapaDeCalor()"
-            [attr.aria-pressed]="exibirMapaDeCalor"
-          >
-            <i class="fa-solid fa-fire" aria-hidden="true"></i>
-            <span>Mapa de calor</span>
-          </button>
         </div>
       </div>
 
@@ -80,11 +58,11 @@
           </li>
           <li class="flex items-start gap-3">
             <span class="w-8 h-8 rounded-xl bg-green-100 text-green-600 font-semibold flex items-center justify-center">2</span>
-            <span>Os marcadores exibem o responsável principal e o endereço completo informado no cadastro.</span>
+            <span>O mapa de calor destaca regiões com maior densidade de famílias cadastradas, facilitando a análise territorial.</span>
           </li>
           <li class="flex items-start gap-3">
             <span class="w-8 h-8 rounded-xl bg-green-100 text-green-600 font-semibold flex items-center justify-center">3</span>
-            <span>Ao clicar em um ponto do mapa, acesse rapidamente o cadastro da família em uma nova aba.</span>
+            <span>Ajuste o zoom e navegue pelo mapa para explorar os bairros e regiões de forma dinâmica.</span>
           </li>
         </ul>
       </div>
