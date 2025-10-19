@@ -14,7 +14,8 @@ export class NotificationComponent {
   readonly typeClassMap: Record<NotificationData['type'], string> = {
     success: 'notification-success',
     error: 'notification-error',
-    info: 'notification-info'
+    info: 'notification-info',
+    warning: 'notification-warning'
   };
 
   constructor(private readonly notificationService: NotificationService) {
