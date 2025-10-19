@@ -123,6 +123,7 @@ export class NovaFamiliaComponent implements OnInit {
 
   membros: MembroFamiliaForm[];
   private readonly parceirosEmCriacao = new Set<number>();
+  private readonly parceirosEmRevogacao = new Set<number>();
 
   mostrarPrevia = false;
   previaFamilia: PreviaFamilia | null = null;
@@ -386,6 +387,7 @@ export class NovaFamiliaComponent implements OnInit {
 
   private preencherMembrosFamilia(membrosResposta: FamiliaResponse['membros']): void {
     this.parceirosEmCriacao.clear();
+    this.parceirosEmRevogacao.clear();
     if (!membrosResposta || membrosResposta.length === 0) {
       this.membros = [this.criarMembro(true)];
       return;
@@ -423,6 +425,7 @@ export class NovaFamiliaComponent implements OnInit {
     this.novoBairroGeradoPorCep = false;
     this.parceiroTokenAtivo = this.modoParceiro ? this.parceiroTokenContext : null;
     this.parceirosEmCriacao.clear();
+    this.parceirosEmRevogacao.clear();
   }
 
   voltarPagina(): void {
@@ -460,6 +463,13 @@ export class NovaFamiliaComponent implements OnInit {
     return this.parceirosEmCriacao.has(membro.id);
   }
 
+  emRevogacaoParceiro(membro: MembroFamiliaForm): boolean {
+    if (membro.id === null) {
+      return false;
+    }
+    return this.parceirosEmRevogacao.has(membro.id);
+  }
+
   gerarLinkParceiro(membro: MembroFamiliaForm): void {
     if (!this.exibirAcoesParceiro(membro) || membro.id === null || this.familiaIdEdicao === null) {
       return;
@@ -489,6 +499,41 @@ export class NovaFamiliaComponent implements OnInit {
       },
       complete: () => {
         this.parceirosEmCriacao.delete(membroId);
+      }
+    });
+  }
+
+  revogarLinkParceiro(membro: MembroFamiliaForm): void {
+    if (!this.exibirAcoesParceiro(membro) || membro.id === null || this.familiaIdEdicao === null) {
+      return;
+    }
+
+    const confirmar = window.confirm(
+      `Deseja realmente revogar o link do parceiro "${membro.nome}"?`
+    );
+    if (!confirmar) {
+      return;
+    }
+
+    const membroId = membro.id;
+    this.parceirosEmRevogacao.add(membroId);
+    this.familiasService.revogarParceiro(this.familiaIdEdicao, membroId).subscribe({
+      next: atualizado => {
+        this.atualizarMembroParceiro(atualizado);
+        this.notificationService.showSuccess(
+          'Link revogado!',
+          `${membro.nome} não poderá mais cadastrar novas famílias até gerar um novo link.`
+        );
+      },
+      error: () => {
+        this.notificationService.showError(
+          'Não foi possível revogar o link do parceiro.',
+          'Tente novamente em instantes.'
+        );
+        this.parceirosEmRevogacao.delete(membroId);
+      },
+      complete: () => {
+        this.parceirosEmRevogacao.delete(membroId);
       }
     });
   }

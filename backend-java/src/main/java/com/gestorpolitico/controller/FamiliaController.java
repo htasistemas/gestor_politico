@@ -9,6 +9,7 @@ import com.gestorpolitico.service.FamiliaService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -61,6 +62,15 @@ public class FamiliaController {
     @PathVariable Long membroId
   ) {
     MembroFamiliaResponseDTO membro = familiaService.tornarParceiro(familiaId, membroId);
+    return ResponseEntity.ok(membro);
+  }
+
+  @DeleteMapping("/{familiaId}/membros/{membroId}/parceiro")
+  public ResponseEntity<MembroFamiliaResponseDTO> revogarMembroParceiro(
+    @PathVariable Long familiaId,
+    @PathVariable Long membroId
+  ) {
+    MembroFamiliaResponseDTO membro = familiaService.revogarParceiro(familiaId, membroId);
     return ResponseEntity.ok(membro);
   }
 
