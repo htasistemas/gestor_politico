@@ -143,4 +143,10 @@ export class FamiliasService {
       {}
     );
   }
+
+  revogarParceiro(familiaId: number, membroId: number): Observable<FamiliaMembroResponse> {
+    return this.http.delete<FamiliaMembroResponse>(
+      `${this.apiUrl}/${familiaId}/membros/${membroId}/parceiro`
+    );
+  }
 }

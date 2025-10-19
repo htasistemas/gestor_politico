@@ -187,6 +187,35 @@ public class FamiliaService {
     return converterMembroResponse(membro);
   }
 
+  @Transactional
+  public MembroFamiliaResponseDTO revogarParceiro(Long familiaId, Long membroId) {
+    Familia familia = familiaRepository
+      .findById(familiaId)
+      .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Família não encontrada"));
+
+    MembroFamilia membro = familia
+      .getMembros()
+      .stream()
+      .filter(item -> membroId.equals(item.getId()))
+      .findFirst()
+      .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Membro não encontrado na família"));
+
+    Parceiro parceiro = membro.getParceiro();
+    if (parceiro == null) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Este membro não possui um link ativo de parceiro.");
+    }
+
+    membro.setParceiro(null);
+    membroFamiliaRepository.save(membro);
+
+    List<Familia> familiasVinculadas = familiaRepository.findByParceiroCadastro(parceiro);
+    familiasVinculadas.forEach(familiaVinculada -> familiaVinculada.setParceiroCadastro(null));
+
+    parceiroRepository.delete(parceiro);
+
+    return converterMembroResponse(membro);
+  }
+
   private DadosFamilia prepararDadosFamilia(FamiliaRequestDTO dto) {
     validarMembros(dto);
 
