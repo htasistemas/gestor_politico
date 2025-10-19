@@ -611,16 +611,19 @@ export class NovaFamiliaComponent implements OnInit {
       return;
     }
 
+    this.enderecoFamilia.cep = this.formatarCep(valor);
+  }
+
+  private formatarCep(valor: string): string {
     const apenasDigitos = valor.replace(/\D/g, '').slice(0, 8);
 
     if (apenasDigitos.length <= 5) {
-      this.enderecoFamilia.cep = apenasDigitos;
-      return;
+      return apenasDigitos;
     }
 
     const prefixo = apenasDigitos.slice(0, 5);
     const sufixo = apenasDigitos.slice(5);
-    this.enderecoFamilia.cep = `${prefixo}-${sufixo}`;
+    return `${prefixo}-${sufixo}`;
   }
 
   aoAlterarCidadeFamilia(cidadeId: number | null): void {
@@ -760,11 +763,14 @@ export class NovaFamiliaComponent implements OnInit {
   }
 
   private aplicarDadosViaCepFamilia(resposta: ViaCepResponse): void {
-    if (resposta.cep) {
-      this.enderecoFamilia.cep = resposta.cep;
+    const cepResposta = resposta.cep?.trim();
+    if (cepResposta) {
+      this.enderecoFamilia.cep = this.formatarCep(cepResposta);
     }
-    if (resposta.logradouro) {
-      this.enderecoFamilia.rua = resposta.logradouro;
+
+    const logradouro = resposta.logradouro?.trim();
+    if (logradouro) {
+      this.enderecoFamilia.rua = logradouro;
     }
 
     this.enderecoFamilia.erroCep = null;
@@ -778,8 +784,10 @@ export class NovaFamiliaComponent implements OnInit {
     }
 
     const cidadeSimilar = this.encontrarCidadeSimilar(nomeCidade, uf);
+    const bairro = resposta.bairro?.trim() || undefined;
+
     if (cidadeSimilar) {
-      this.aplicarCidadeDoCep(cidadeSimilar, resposta.bairro);
+      this.aplicarCidadeDoCep(cidadeSimilar, bairro);
       return;
     }
 
@@ -790,7 +798,7 @@ export class NovaFamiliaComponent implements OnInit {
         next: cidade => {
           this.enderecoFamilia.carregandoCep = false;
           this.adicionarCidadeOrdenada(cidade);
-          this.aplicarCidadeDoCep(cidade, resposta.bairro);
+          this.aplicarCidadeDoCep(cidade, bairro);
         },
         error: () => {
           this.enderecoFamilia.carregandoCep = false;

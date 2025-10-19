@@ -16,6 +16,7 @@ import {
 } from '../../shared/services/localidades.service';
 import { DESCRICOES_PARENTESCO } from '../parentesco.enum';
 import { NotificationService } from '../../shared/services/notification.service';
+import { ViaCepService, ViaCepResponse } from '../../shared/services/via-cep.service';
 
 interface RegiaoFiltro extends Regiao {
   cidadeId: number;
@@ -52,10 +53,13 @@ export class FamiliasMobileComponent implements OnInit, OnDestroy {
   private readonly regioesPorCidade = new Map<number, RegiaoFiltro[]>();
   private assinaturaRegioes: Subscription | null = null;
   private readonly parceirosEmCriacao = new Set<number>();
+  consultandoCep = false;
+  erroCepFiltro = '';
 
   constructor(
     private readonly familiasService: FamiliasService,
     private readonly localidadesService: LocalidadesService,
+    private readonly viaCepService: ViaCepService,
     private readonly router: Router,
     private readonly fb: FormBuilder,
     private readonly notificationService: NotificationService
@@ -115,6 +119,8 @@ export class FamiliasMobileComponent implements OnInit, OnDestroy {
       cep: ''
     });
     this.regioes = this.todasRegioes;
+    this.erroCepFiltro = '';
+    this.consultandoCep = false;
     this.aplicarFiltros();
   }
 
@@ -163,6 +169,35 @@ export class FamiliasMobileComponent implements OnInit, OnDestroy {
     this.tamanhoPagina = valor;
     this.paginaAtual = 0;
     this.buscarFamilias();
+  }
+
+  buscarCepFiltros(): void {
+    const cepControl = this.filtroForm.get('cep');
+    const valorCep = typeof cepControl?.value === 'string' ? cepControl.value : '';
+    const cepNumerico = valorCep.replace(/\D/g, '');
+
+    if (cepNumerico.length !== 8) {
+      this.erroCepFiltro = 'Informe um CEP válido com 8 dígitos.';
+      return;
+    }
+
+    this.consultandoCep = true;
+    this.erroCepFiltro = '';
+
+    this.viaCepService.buscarCep(cepNumerico).subscribe({
+      next: resposta => {
+        this.consultandoCep = false;
+        if (!resposta) {
+          this.erroCepFiltro = 'CEP não encontrado. Preencha os filtros manualmente.';
+          return;
+        }
+        this.preencherFiltrosComCep(resposta);
+      },
+      error: () => {
+        this.consultandoCep = false;
+        this.erroCepFiltro = 'Não foi possível consultar o CEP. Tente novamente.';
+      }
+    });
   }
 
   abrirFamilia(familia: FamiliaResponse): void {
@@ -335,6 +370,101 @@ export class FamiliasMobileComponent implements OnInit, OnDestroy {
     return cidade ? cidade.nome : '';
   }
 
+  private preencherFiltrosComCep(resposta: ViaCepResponse): void {
+    const cepResposta = resposta.cep?.trim();
+    if (cepResposta) {
+      this.filtroForm.patchValue({ cep: this.formatarCep(cepResposta) }, { emitEvent: false });
+    }
+
+    const logradouro = resposta.logradouro?.trim();
+    if (logradouro) {
+      this.filtroForm.patchValue({ rua: logradouro }, { emitEvent: false });
+    }
+
+    const bairro = resposta.bairro?.trim();
+    if (bairro) {
+      this.filtroForm.patchValue({ bairro }, { emitEvent: false });
+    }
+
+    const cidadeNome = resposta.localidade?.trim() ?? '';
+    const uf = resposta.uf?.trim().toUpperCase() ?? '';
+
+    if (!cidadeNome || !uf) {
+      this.notificationService.showWarning(
+        'Cidade não identificada pelo CEP consultado.',
+        'Informe a cidade manualmente para refinar os filtros.'
+      );
+      return;
+    }
+
+    const cidade = this.encontrarCidadeSimilar(cidadeNome, uf);
+    if (!cidade) {
+      this.notificationService.showWarning(
+        'Cidade não encontrada na base de dados.',
+        'Selecione manualmente a cidade correspondente ao CEP.'
+      );
+      return;
+    }
+
+    this.definirCidadeFiltrosPorCep(cidade.id);
+  }
+
+  private definirCidadeFiltrosPorCep(cidadeId: number): void {
+    this.filtroForm.patchValue({ cidadeId, regiao: '' }, { emitEvent: false });
+    const regioesCidade = this.regioesPorCidade.get(cidadeId);
+    if (regioesCidade) {
+      this.regioes = regioesCidade;
+    } else {
+      this.regioes = [];
+      this.carregarRegioesPorCidade(cidadeId);
+    }
+  }
+
+  private encontrarCidadeSimilar(nomeCidade: string, uf: string): Cidade | undefined {
+    const cidadeNormalizada = this.normalizarTexto(nomeCidade);
+    const ufNormalizada = uf.toUpperCase();
+
+    const exata = this.cidades.find(cidade => {
+      const mesmoNome = this.normalizarTexto(cidade.nome) === cidadeNormalizada;
+      const mesmaUf = cidade.uf.toUpperCase() === ufNormalizada;
+      return mesmoNome && mesmaUf;
+    });
+
+    if (exata) {
+      return exata;
+    }
+
+    return this.cidades.find(cidade => {
+      if (cidade.uf.toUpperCase() !== ufNormalizada) {
+        return false;
+      }
+      const nomeNormalizado = this.normalizarTexto(cidade.nome);
+      return nomeNormalizado.includes(cidadeNormalizada) || cidadeNormalizada.includes(nomeNormalizado);
+    });
+  }
+
+  private normalizarTexto(valor: string | null | undefined): string {
+    if (!valor) {
+      return '';
+    }
+    return valor
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toUpperCase()
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  private formatarCep(valor: string): string {
+    const apenasDigitos = valor.replace(/\D/g, '').slice(0, 8);
+    if (apenasDigitos.length <= 5) {
+      return apenasDigitos;
+    }
+    const prefixo = apenasDigitos.slice(0, 5);
+    const sufixo = apenasDigitos.slice(5);
+    return `${prefixo}-${sufixo}`;
+  }
+
   private buscarFamilias(): void {
     const filtros = this.montarFiltros();
     this.carregando = true;
@@ -380,7 +510,13 @@ export class FamiliasMobileComponent implements OnInit, OnDestroy {
     registrar('bairro', valores.bairro);
     registrar('rua', valores.rua);
     registrar('numero', valores.numero);
-    registrar('cep', valores.cep);
+
+    if (typeof valores.cep === 'string') {
+      const cepSanitizado = valores.cep.replace(/\D/g, '');
+      if (cepSanitizado !== '') {
+        filtros.cep = cepSanitizado;
+      }
+    }
 
     return filtros;
   }

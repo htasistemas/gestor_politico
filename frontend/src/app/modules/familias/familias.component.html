@@ -352,6 +352,23 @@
                       {{ familia.enderecoDetalhado.cidade }}/{{ familia.enderecoDetalhado.uf }}
                     </span>
                   </div>
+                  <div
+                    class="mt-2 flex items-center gap-2 text-xs text-blue-600"
+                    *ngIf="obterParceiroCadastroDescricao(familia) as parceiroDescricao"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="currentColor"
+                      class="w-4 h-4"
+                      aria-hidden="true"
+                    >
+                      <path
+                        d="M3.172 5.172a4 4 0 0 1 5.656 0L12 8.343l3.172-3.171a4 4 0 0 1 5.656 5.656l-6 6a4 4 0 0 1-5.656 0l-6-6a4 4 0 0 1 0-5.656Z"
+                      />
+                    </svg>
+                    <span>Cadastrada por {{ parceiroDescricao }}</span>
+                  </div>
                 </div>
               </div>
             </ng-container>
