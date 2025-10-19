@@ -233,6 +233,28 @@ export class NovaFamiliaComponent implements OnInit {
     return `${origem}/familias/nova?parceiroToken=${this.parceiroTokenContext}`;
   }
 
+  get linkParceiroTexto(): string {
+    if (this.linkParceiroCompleto) {
+      return this.linkParceiroCompleto;
+    }
+
+    if (this.parceiroTokenContext) {
+      return `/familias/nova?parceiroToken=${this.parceiroTokenContext}`;
+    }
+
+    return '';
+  }
+
+  get mensagemWhatsappParceiro(): string | null {
+    const link = this.linkParceiroTexto;
+    if (!link) {
+      return null;
+    }
+
+    const mensagem = `Olá! Acesse seu link de cadastro: ${link}`;
+    return encodeURIComponent(mensagem);
+  }
+
   private atualizarModoPorParametro(familiaIdParam: string | null): void {
     if (!familiaIdParam) {
       if (this.modoEdicao) {
