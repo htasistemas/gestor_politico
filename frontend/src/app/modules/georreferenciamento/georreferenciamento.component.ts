@@ -40,10 +40,10 @@ export class GeoReferenciamentoComponent implements OnInit, AfterViewInit, OnDes
         <i class="fa-solid fa-house-chimney-window" aria-hidden="true"></i>
       </div>
     `,
-    className: 'familia-marker',
+    className: 'leaflet-div-icon familia-marker',
     iconSize: [48, 64],
-    iconAnchor: [24, 60],
-    popupAnchor: [0, -56]
+    iconAnchor: [24, 64],
+    popupAnchor: [0, -58]
   });
 
   constructor(
@@ -130,6 +130,7 @@ export class GeoReferenciamentoComponent implements OnInit, AfterViewInit, OnDes
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
+      detectRetina: true,
       attribution: '&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contribuidores'
     }).addTo(this.mapa);
   }

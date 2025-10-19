@@ -121,7 +121,6 @@
 }
 
 .familia-marker {
-  position: relative;
   width: 48px;
   height: 64px;
 }
@@ -173,4 +172,12 @@
 .familia-marker .fa-solid {
   font-size: 1.1rem;
   filter: drop-shadow(0 2px 4px rgba(15, 23, 42, 0.35));
+}
+
+:host ::ng-deep .leaflet-container img,
+:host ::ng-deep .leaflet-container .leaflet-marker-icon,
+:host ::ng-deep .leaflet-container .leaflet-marker-shadow,
+:host ::ng-deep .leaflet-pane > img,
+:host ::ng-deep .leaflet-tile {
+  max-width: none !important;
 }
