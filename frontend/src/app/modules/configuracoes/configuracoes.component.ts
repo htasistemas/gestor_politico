@@ -6,6 +6,7 @@ import {
   Cidade,
   Regiao
 } from '../shared/services/localidades.service';
+import { DashboardService } from '../shared/services/dashboard.service';
 
 @Component({
   standalone: false,
@@ -21,6 +22,8 @@ export class ConfiguracoesComponent implements OnInit {
   cidadeSelecionadaId: number | null = null;
   mensagemUnificacao: string | null = null;
   processandoUnificacao = false;
+  mensagemMeta: string | null = null;
+  salvandoMeta = false;
 
   get possuiRegioesNaoCadastradas(): boolean {
     return this.regioes.some(regiao => regiao.id === null);
@@ -40,8 +43,13 @@ export class ConfiguracoesComponent implements OnInit {
     bairrosDuplicadosIds: [[] as number[]]
   });
 
+  dashboardMetaForm = this.fb.group({
+    metaTotalPessoas: [null as number | null, [Validators.required, Validators.min(0)]]
+  });
+
   constructor(
     private readonly localidadesService: LocalidadesService,
+    private readonly dashboardService: DashboardService,
     private readonly fb: FormBuilder
   ) {}
 
@@ -52,6 +60,7 @@ export class ConfiguracoesComponent implements OnInit {
         this.selecionarCidade(cidades[0].id);
       }
     });
+    this.carregarDashboardMeta();
   }
 
   selecionarCidade(cidadeId: number): void {
@@ -98,6 +107,38 @@ export class ConfiguracoesComponent implements OnInit {
     this.localidadesService.criarRegiao(this.cidadeSelecionadaId, nome).subscribe(() => {
       this.regiaoForm.reset();
       this.carregarRegioes();
+    });
+  }
+
+  carregarDashboardMeta(): void {
+    this.dashboardService.obterMeta().subscribe(resposta => {
+      this.dashboardMetaForm.patchValue({ metaTotalPessoas: resposta.metaTotalPessoas });
+    });
+  }
+
+  salvarDashboardMeta(): void {
+    if (this.dashboardMetaForm.invalid) {
+      this.dashboardMetaForm.markAllAsTouched();
+      return;
+    }
+
+    const meta = this.dashboardMetaForm.value.metaTotalPessoas;
+    if (meta === null || meta === undefined) {
+      return;
+    }
+
+    this.salvandoMeta = true;
+    this.mensagemMeta = null;
+    this.dashboardService.atualizarMeta(meta).subscribe({
+      next: resposta => {
+        this.salvandoMeta = false;
+        this.dashboardMetaForm.patchValue({ metaTotalPessoas: resposta.metaTotalPessoas });
+        this.mensagemMeta = 'Meta atualizada com sucesso.';
+      },
+      error: () => {
+        this.salvandoMeta = false;
+        window.alert('Não foi possível atualizar a meta. Tente novamente.');
+      }
     });
   }
 

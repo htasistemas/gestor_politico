@@ -1,5 +1,11 @@
-import { AfterViewInit, Component, ElementRef, OnDestroy, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import Chart from 'chart.js/auto';
+import {
+  DashboardAniversariante,
+  DashboardDistribuicaoProbabilidadeItem,
+  DashboardService,
+  DashboardTopParceiro
+} from '../shared/services/dashboard.service';
 
 interface PieItem {
   label: string;
@@ -15,10 +21,9 @@ interface AniversarianteDoMes {
   telefone: string;
 }
 
-interface TopCadastrador {
+interface TopParceiro {
   nome: string;
   totalFamilias: number;
-  regiao: string;
 }
 
 @Component({
@@ -26,62 +31,47 @@ interface TopCadastrador {
   selector: 'app-dashboard',
   templateUrl: './dashboard.component.html'
 })
-export class DashboardComponent implements AfterViewInit, OnDestroy {
-  totalCadastrados = 15847;
-  meta = 20000;
-  altaProbabilidade = 4704;
-  mediaProbabilidade = 7892;
-  baixaProbabilidade = 3251;
+export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
+  totalCadastrados = 0;
+  meta: number | null = null;
+  altaProbabilidade = 0;
+  mediaProbabilidade = 0;
+  baixaProbabilidade = 0;
 
   tendenciaSemanal = [40, 60, 80, 100, 70, 90, 95];
   tendenciaCores = ['bg-blue-300', 'bg-blue-400', 'bg-blue-500', 'bg-blue-600', 'bg-blue-500', 'bg-blue-600', 'bg-blue-700'];
   diasSemana = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
 
-  pieData: PieItem[] = [
-    { label: 'Alta probabilidade', value: this.altaProbabilidade, color: '#10B981', accent: '#d1fae5' },
-    { label: 'Média probabilidade', value: this.mediaProbabilidade, color: '#FBBF24', accent: '#fef3c7' },
-    { label: 'Baixa probabilidade', value: this.baixaProbabilidade, color: '#F87171', accent: '#fee2e2' }
-  ];
-
-  meses = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai'];
-  barSeries = [
-    { label: 'Alta', color: '#10B981', border: '#047857', valores: [2100, 2800, 3500, 4100, 4704] },
-    { label: 'Média', color: '#FBBF24', border: '#D97706', valores: [4200, 5100, 6800, 7200, 7892] },
-    { label: 'Baixa', color: '#F87171', border: '#DC2626', valores: [2200, 2300, 2500, 2600, 3251] }
-  ];
+  pieData: PieItem[] = [];
 
   private readonly dataAtual = new Date();
   nomeMesAtual = this.formatarNomeMes(this.dataAtual);
 
-  aniversariantesDoMes: AniversarianteDoMes[] = [
-    { nome: 'Ana Paula Ferreira', dia: 3, bairro: 'Centro', telefone: '(11) 98877-4521' },
-    { nome: 'Carlos Eduardo Lima', dia: 7, bairro: 'Vila Nova', telefone: '(11) 99654-2018' },
-    { nome: 'Mariana Souza', dia: 11, bairro: 'Jardim das Flores', telefone: '(11) 99761-3358' },
-    { nome: 'Rafael Oliveira', dia: 15, bairro: 'Parque Industrial', telefone: '(11) 98941-7754' },
-    { nome: 'Juliana Costa', dia: 18, bairro: 'Alto da Serra', telefone: '(11) 98254-4477' },
-    { nome: 'Felipe Andrade', dia: 21, bairro: 'Vila Mariana', telefone: '(11) 98562-9981' }
-  ];
+  aniversariantesDoMes: AniversarianteDoMes[] = [];
 
-  topCadastradores: TopCadastrador[] = [
-    { nome: 'Patrícia Gomes', totalFamilias: 82, regiao: 'Zona Norte' },
-    { nome: 'Lucas Almeida', totalFamilias: 76, regiao: 'Zona Leste' },
-    { nome: 'Fernanda Ribeiro', totalFamilias: 74, regiao: 'Zona Sul' },
-    { nome: 'João Pedro Silva', totalFamilias: 71, regiao: 'Centro' },
-    { nome: 'Aline Martins', totalFamilias: 69, regiao: 'Zona Oeste' },
-    { nome: 'Bruno Carvalho', totalFamilias: 65, regiao: 'Zona Norte' },
-    { nome: 'Renata Fernandes', totalFamilias: 63, regiao: 'Zona Leste' },
-    { nome: 'Marcelo Teixeira', totalFamilias: 59, regiao: 'Centro' },
-    { nome: 'Gabriela Nunes', totalFamilias: 57, regiao: 'Zona Sul' },
-    { nome: 'Cláudia Araujo', totalFamilias: 55, regiao: 'Zona Oeste' }
-  ];
+  topParceiros: TopParceiro[] = [];
 
   @ViewChild('pieChartCanvas') pieChartCanvas?: ElementRef<HTMLCanvasElement>;
-  @ViewChild('barChartCanvas') barChartCanvas?: ElementRef<HTMLCanvasElement>;
 
   private pieChart?: Chart;
-  private barChart?: Chart;
+  private viewInicializada = false;
+  private probabilidadesExtras: PieItem[] = [];
+  private readonly coresExtras = ['#6366F1', '#8B5CF6', '#EC4899', '#F97316', '#22D3EE'];
+  private readonly tonsExtras = ['#e0e7ff', '#ede9fe', '#fce7f3', '#ffedd5', '#cffafe'];
+
+  constructor(private readonly dashboardService: DashboardService) {}
+
+  ngOnInit(): void {
+    this.carregarResumo();
+    this.carregarDistribuicao();
+    this.carregarAniversariantes();
+    this.carregarTopParceiros();
+  }
 
   get progressoMeta(): number {
+    if (!this.meta || this.meta <= 0) {
+      return 0;
+    }
     return Math.min(100, Math.round((this.totalCadastrados / this.meta) * 100));
   }
 
@@ -90,18 +80,102 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
   }
 
   ngAfterViewInit(): void {
+    this.viewInicializada = true;
     this.renderPieChart();
-    this.renderBarChart();
   }
 
   ngOnDestroy(): void {
     this.pieChart?.destroy();
-    this.barChart?.destroy();
+  }
+
+  private carregarResumo(): void {
+    this.dashboardService.obterResumo().subscribe(resumo => {
+      this.totalCadastrados = resumo.totalCadastrados ?? 0;
+      this.meta = resumo.metaTotalPessoas ?? null;
+    });
+  }
+
+  private carregarDistribuicao(): void {
+    this.dashboardService.obterDistribuicaoProbabilidade().subscribe(items => {
+      this.atualizarValoresProbabilidade(items);
+      this.pieData = this.montarPieData();
+      this.atualizarGraficoPizza();
+    });
+  }
+
+  private carregarAniversariantes(): void {
+    this.dashboardService.listarAniversariantes().subscribe(aniversariantes => {
+      if (aniversariantes.length > 0) {
+        this.nomeMesAtual = this.formatarNomeMesNumero(aniversariantes[0].mes);
+      } else {
+        this.nomeMesAtual = this.formatarNomeMes(this.dataAtual);
+      }
+      this.aniversariantesDoMes = aniversariantes.map(this.mapearAniversariante);
+    });
+  }
+
+  private carregarTopParceiros(): void {
+    this.dashboardService.listarTopParceiros().subscribe(parceiros => {
+      this.topParceiros = parceiros.map(parceiro => ({
+        nome: parceiro.nome || 'Parceiro sem nome',
+        totalFamilias: parceiro.totalFamilias
+      }));
+    });
+  }
+
+  private mapearAniversariante(aniversariante: DashboardAniversariante): AniversarianteDoMes {
+    return {
+      nome: aniversariante.nome,
+      dia: aniversariante.dia,
+      bairro: aniversariante.bairro || 'Bairro não informado',
+      telefone: aniversariante.telefone || 'Telefone não informado'
+    };
+  }
+
+  private atualizarValoresProbabilidade(items: DashboardDistribuicaoProbabilidadeItem[]): void {
+    this.altaProbabilidade = 0;
+    this.mediaProbabilidade = 0;
+    this.baixaProbabilidade = 0;
+    this.probabilidadesExtras = [];
+
+    items.forEach((item, index) => {
+      const valorNormalizado = item.probabilidade?.trim().toLowerCase();
+      if (valorNormalizado === 'alta') {
+        this.altaProbabilidade = item.quantidade;
+      } else if (valorNormalizado === 'média' || valorNormalizado === 'media') {
+        this.mediaProbabilidade = item.quantidade;
+      } else if (valorNormalizado === 'baixa') {
+        this.baixaProbabilidade = item.quantidade;
+      } else {
+        const cor = this.coresExtras[index % this.coresExtras.length];
+        const fundo = this.tonsExtras[index % this.tonsExtras.length];
+        this.probabilidadesExtras.push({
+          label: item.probabilidade || 'Não informado',
+          value: item.quantidade,
+          color: cor,
+          accent: fundo
+        });
+      }
+    });
+  }
+
+  private montarPieData(): PieItem[] {
+    const dados: PieItem[] = [
+      { label: 'Alta probabilidade', value: this.altaProbabilidade, color: '#10B981', accent: '#d1fae5' },
+      { label: 'Média probabilidade', value: this.mediaProbabilidade, color: '#FBBF24', accent: '#fef3c7' },
+      { label: 'Baixa probabilidade', value: this.baixaProbabilidade, color: '#F87171', accent: '#fee2e2' }
+    ];
+    return [...dados, ...this.probabilidadesExtras];
   }
 
   private formatarNomeMes(data: Date): string {
     const nome = new Intl.DateTimeFormat('pt-BR', { month: 'long' }).format(data);
     return nome.charAt(0).toUpperCase() + nome.slice(1);
+  }
+
+  private formatarNomeMesNumero(mes: number): string {
+    const data = new Date(this.dataAtual.getFullYear(), mes - 1, 1);
+    return this.formatarNomeMes(data);
   }
 
   private renderPieChart(): void {
@@ -110,6 +184,9 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
     if (!context) return;
 
     this.pieChart?.destroy();
+    if (this.pieData.length === 0) {
+      return;
+    }
     this.pieChart = new Chart(context, {
       type: 'doughnut',
       data: {
@@ -133,47 +210,17 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
     });
   }
 
-  private renderBarChart(): void {
-    const canvas = this.barChartCanvas?.nativeElement;
-    const context = canvas?.getContext('2d');
-    if (!context) return;
+  private atualizarGraficoPizza(): void {
+    if (!this.viewInicializada) {
+      return;
+    }
+    this.renderPieChart();
+  }
 
-    this.barChart?.destroy();
-    this.barChart = new Chart(context, {
-      type: 'bar',
-      data: {
-        labels: this.meses,
-        datasets: this.barSeries.map(serie => ({
-          label: serie.label,
-          data: serie.valores,
-          backgroundColor: serie.color,
-          borderColor: serie.border,
-          borderRadius: 12,
-          barPercentage: 0.6
-        }))
-      },
-      options: {
-        responsive: true,
-        plugins: {
-          legend: {
-            position: 'bottom',
-            labels: {
-              usePointStyle: true,
-              pointStyle: 'circle'
-            }
-          }
-        },
-        scales: {
-          x: {
-            stacked: false,
-            grid: { display: false }
-          },
-          y: {
-            beginAtZero: true,
-            grid: { color: '#f3f4f6' }
-          }
-        }
-      }
-    });
+  calcularPercentual(valor: number): number {
+    if (this.totalCadastrados <= 0) {
+      return 0;
+    }
+    return (valor * 100) / this.totalCadastrados;
   }
 }

@@ -22,6 +22,41 @@
     </div>
   </div>
 
+  <div class="bg-white rounded-3xl shadow-xl p-8">
+    <div class="flex items-center justify-between mb-6">
+      <div>
+        <h2 class="text-xl font-semibold text-gray-900">Meta do painel</h2>
+        <p class="text-sm text-gray-500">Defina o número alvo de pessoas cadastradas para o dashboard.</p>
+      </div>
+      <svg class="w-10 h-10 text-green-500" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m6-6H6" />
+      </svg>
+    </div>
+
+    <form [formGroup]="dashboardMetaForm" (ngSubmit)="salvarDashboardMeta()" class="space-y-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-700">Meta total de pessoas *</label>
+        <input
+          type="number"
+          formControlName="metaTotalPessoas"
+          min="0"
+          class="mt-1 w-full rounded-xl border-gray-200 focus:border-indigo-500 focus:ring-indigo-500"
+          placeholder="Ex.: 20000"
+        />
+        <p class="text-xs text-gray-400 mt-1">Utilizado para calcular o progresso exibido no dashboard.</p>
+      </div>
+      <div class="flex items-center justify-between">
+        <span *ngIf="mensagemMeta" class="text-sm text-green-600">{{ mensagemMeta }}</span>
+        <button
+          type="submit"
+          class="px-4 py-2 rounded-xl bg-green-600 text-white font-semibold hover:bg-green-700 transition"
+        >
+          {{ salvandoMeta ? 'Salvando...' : 'Salvar meta' }}
+        </button>
+      </div>
+    </form>
+  </div>
+
   <div class="grid lg:grid-cols-2 gap-8">
     <div class="bg-white rounded-3xl shadow-xl p-8 space-y-6">
       <h2 class="text-xl font-semibold text-gray-900">Nova região</h2>
