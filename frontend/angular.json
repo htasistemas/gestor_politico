@@ -16,7 +16,9 @@
             "main": "src/main.ts",
             "tsConfig": "tsconfig.app.json",
             "inlineStyleLanguage": "css",
-            "assets": [],
+            "assets": ["src/assets"],
+            "serviceWorker": true,
+            "ngswConfigPath": "ngsw-config.json",
             "styles": ["src/styles.css"],
             "scripts": []
           },

@@ -11,6 +11,7 @@ const routes: Routes = [
 
   { path: 'nova', component: NovaFamiliaComponent },
   { path: 'editar/:id', component: NovaFamiliaComponent },
+  { path: 'cadastro-parceiro/:token', component: NovaFamiliaComponent },
 
   { path: 'mobile', component: FamiliasMobileComponent },
   { path: 'nova', component: NovaFamiliaComponent }

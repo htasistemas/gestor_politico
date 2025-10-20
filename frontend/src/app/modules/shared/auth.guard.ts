@@ -20,9 +20,16 @@ export class AuthGuard implements CanActivate {
       return false;
     }
     const segmentos = primary.segments.map(segmento => segmento.path);
-    if (segmentos.length >= 2 && segmentos[0] === 'familias' && segmentos[1] === 'nova') {
-      const token = urlTree.queryParams['parceiroToken'];
-      return typeof token === 'string' && token.trim().length > 0;
+    if (segmentos.length >= 2 && segmentos[0] === 'familias') {
+      if (segmentos[1] === 'nova') {
+        const tokenQuery = urlTree.queryParams['parceiroToken'];
+        return typeof tokenQuery === 'string' && tokenQuery.trim().length > 0;
+      }
+
+      if (segmentos[1] === 'cadastro-parceiro' && segmentos.length >= 3) {
+        const tokenRota = segmentos[2];
+        return tokenRota.trim().length > 0;
+      }
     }
     return false;
   }

@@ -285,8 +285,7 @@
               <ng-container *ngIf="membro.parceiro && membro.parceiroToken; else acaoParceiro">
                 <a
                   class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-emerald-600 bg-emerald-50 rounded-full hover:bg-emerald-100"
-                  [routerLink]="['/familias/nova']"
-                  [queryParams]="{ parceiroToken: membro.parceiroToken }"
+                  [routerLink]="['/familias/cadastro-parceiro', membro.parceiroToken]"
                   (click)="$event.stopPropagation()"
                 >
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

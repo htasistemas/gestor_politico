@@ -1,4 +1,5 @@
-import { Component, OnInit } from '@angular/core';
+import { DOCUMENT, isPlatformBrowser } from '@angular/common';
+import { Component, Inject, OnDestroy, OnInit, PLATFORM_ID, Renderer2 } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { combineLatest } from 'rxjs';
 import {
@@ -20,6 +21,12 @@ const VALOR_NOVO_BAIRRO = '__novo__';
 type ProbabilidadeVoto = 'Alta' | 'Média' | 'Baixa' | '';
 
 const PARENTESCO_RESPONSAVEL: GrauParentesco = GrauParentesco.RESPONSAVEL;
+
+interface BeforeInstallPromptEvent extends Event {
+  readonly platforms: string[];
+  prompt(): Promise<void>;
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>;
+}
 
 interface MembroFamiliaForm {
   id: number | null;
@@ -77,10 +84,11 @@ interface PreviaFamilia {
   templateUrl: './nova-familia.component.html',
   styleUrls: ['./nova-familia.component.css']
 })
-export class NovaFamiliaComponent implements OnInit {
+export class NovaFamiliaComponent implements OnInit, OnDestroy {
   readonly valorNovaRegiao = VALOR_NOVA_REGIAO;
   readonly valorNovoBairro = VALOR_NOVO_BAIRRO;
   readonly ehAdministrador: boolean;
+  private readonly manifestoScope = '/familias/cadastro-parceiro/';
 
   modoEdicao = false;
   modoParceiro = false;
@@ -132,6 +140,17 @@ export class NovaFamiliaComponent implements OnInit {
   previaFamilia: PreviaFamilia | null = null;
   salvandoFamilia = false;
 
+  mostrarBotaoInstalacao = false;
+  mostrarInstrucoesInstalacaoIos = false;
+  instalacaoEmProgresso = false;
+  private manifestLinkElement: HTMLLinkElement | null = null;
+  private beforeInstallPromptEvent: BeforeInstallPromptEvent | null = null;
+  private beforeInstallPromptListener?: (event: Event) => void;
+  private appInstalledListener?: () => void;
+  private displayModeMediaQuery: MediaQueryList | null = null;
+  private displayModeListener?: (event: MediaQueryListEvent) => void;
+  private displayModeLegacyListener?: () => void;
+
   constructor(
     private readonly route: ActivatedRoute,
     private readonly router: Router,
@@ -139,21 +158,30 @@ export class NovaFamiliaComponent implements OnInit {
     private readonly localidadesService: LocalidadesService,
     private readonly viaCepService: ViaCepService,
     private readonly authService: AuthService,
-    private readonly notificationService: NotificationService
+    private readonly notificationService: NotificationService,
+    private readonly renderer: Renderer2,
+    @Inject(DOCUMENT) private readonly document: Document,
+    @Inject(PLATFORM_ID) private readonly platformId: Object
   ) {
     this.ehAdministrador = this.authService.ehAdministrador();
     this.membros = [this.criarMembro(true)];
   }
 
   ngOnInit(): void {
+    this.configurarEventosDeInstalacao();
     combineLatest([this.route.paramMap, this.route.queryParamMap]).subscribe(([parametros, queryParams]) => {
-      const parceiroTokenParam = queryParams.get('parceiroToken');
+      const parceiroTokenParam =
+        parametros.get('token') ??
+        parametros.get('parceiroId') ??
+        queryParams.get('parceiroToken');
       this.definirContextoParceiro(parceiroTokenParam);
 
       const familiaIdParam = this.modoParceiro
         ? null
         : parametros.get('id') ?? parametros.get('familiaId') ?? queryParams.get('familiaId');
       this.atualizarModoPorParametro(familiaIdParam);
+
+      this.atualizarRecursosInstalacao();
     });
 
     this.localidadesService.listarCidades().subscribe({
@@ -174,6 +202,11 @@ export class NovaFamiliaComponent implements OnInit {
         this.aplicarCepFamiliaPendenteSeNecessario();
       }
     });
+  }
+
+  ngOnDestroy(): void {
+    this.removerManifestoDinamico();
+    this.removerEventosDeInstalacao();
   }
 
   private definirContextoParceiro(tokenParam: string | null): void {
@@ -201,6 +234,8 @@ export class NovaFamiliaComponent implements OnInit {
       this.familiasEncontradas = [];
       this.erroBuscaParceiro = '';
     }
+
+    this.atualizarEstadoInstalacao();
   }
 
   get tituloPagina(): string {
@@ -225,24 +260,17 @@ export class NovaFamiliaComponent implements OnInit {
   }
 
   get linkParceiroCompleto(): string | null {
-    if (!this.parceiroTokenContext) {
+    const relativo = this.obterLinkParceiroRelativo();
+    if (!relativo) {
       return null;
     }
 
     const origem = typeof window !== 'undefined' ? window.location.origin : '';
-    return `${origem}/familias/nova?parceiroToken=${this.parceiroTokenContext}`;
+    return `${origem}${relativo}`;
   }
 
   get linkParceiroTexto(): string {
-    if (this.linkParceiroCompleto) {
-      return this.linkParceiroCompleto;
-    }
-
-    if (this.parceiroTokenContext) {
-      return `/familias/nova?parceiroToken=${this.parceiroTokenContext}`;
-    }
-
-    return '';
+    return this.linkParceiroCompleto ?? this.obterLinkParceiroRelativo() ?? '';
   }
 
   get mensagemWhatsappParceiro(): string | null {
@@ -253,6 +281,207 @@ export class NovaFamiliaComponent implements OnInit {
 
     const mensagem = `Olá! Acesse seu link de cadastro: ${link}`;
     return encodeURIComponent(mensagem);
+  }
+
+  private obterLinkParceiroRelativo(): string | null {
+    if (!this.parceiroTokenContext) {
+      return null;
+    }
+    return `/familias/cadastro-parceiro/${this.parceiroTokenContext}`;
+  }
+
+  instalarAplicativo(): void {
+    if (!this.beforeInstallPromptEvent || !this.estaNoNavegador()) {
+      return;
+    }
+
+    this.instalacaoEmProgresso = true;
+    const evento = this.beforeInstallPromptEvent;
+    evento.prompt();
+    evento.userChoice
+      .then(escolha => {
+        if (escolha.outcome === 'accepted') {
+          this.beforeInstallPromptEvent = null;
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        this.instalacaoEmProgresso = false;
+        this.atualizarEstadoInstalacao();
+      });
+  }
+
+  private atualizarRecursosInstalacao(): void {
+    if (this.modoParceiro && this.caminhoAtualSuportaManifesto()) {
+      this.injetarManifestoDinamico();
+    } else {
+      this.removerManifestoDinamico();
+    }
+    this.atualizarEstadoInstalacao();
+  }
+
+  private caminhoAtualSuportaManifesto(): boolean {
+    const caminhoAtual = this.normalizarCaminhoAtual(this.router.url);
+    return caminhoAtual.startsWith(this.manifestoScope);
+  }
+
+  private configurarEventosDeInstalacao(): void {
+    if (!this.estaNoNavegador()) {
+      return;
+    }
+
+    this.beforeInstallPromptListener = evento => {
+      evento.preventDefault();
+      this.beforeInstallPromptEvent = evento as BeforeInstallPromptEvent;
+      this.atualizarEstadoInstalacao();
+    };
+    window.addEventListener('beforeinstallprompt', this.beforeInstallPromptListener);
+
+    this.appInstalledListener = () => {
+      this.beforeInstallPromptEvent = null;
+      this.atualizarEstadoInstalacao();
+    };
+    window.addEventListener('appinstalled', this.appInstalledListener);
+
+    this.displayModeMediaQuery = window.matchMedia('(display-mode: standalone)');
+    const atualizarEstado = () => this.atualizarEstadoInstalacao();
+
+    if (typeof this.displayModeMediaQuery.addEventListener === 'function') {
+      this.displayModeListener = () => atualizarEstado();
+      this.displayModeMediaQuery.addEventListener('change', this.displayModeListener);
+    } else if (typeof this.displayModeMediaQuery.addListener === 'function') {
+      this.displayModeLegacyListener = atualizarEstado;
+      this.displayModeMediaQuery.addListener(this.displayModeLegacyListener);
+    }
+
+    this.atualizarEstadoInstalacao();
+  }
+
+  private removerEventosDeInstalacao(): void {
+    if (!this.estaNoNavegador()) {
+      return;
+    }
+
+    if (this.beforeInstallPromptListener) {
+      window.removeEventListener('beforeinstallprompt', this.beforeInstallPromptListener);
+      this.beforeInstallPromptListener = undefined;
+    }
+
+    if (this.appInstalledListener) {
+      window.removeEventListener('appinstalled', this.appInstalledListener);
+      this.appInstalledListener = undefined;
+    }
+
+    if (this.displayModeMediaQuery) {
+      if (typeof this.displayModeMediaQuery.removeEventListener === 'function' && this.displayModeListener) {
+        this.displayModeMediaQuery.removeEventListener('change', this.displayModeListener);
+      } else if (typeof this.displayModeMediaQuery.removeListener === 'function' && this.displayModeLegacyListener) {
+        this.displayModeMediaQuery.removeListener(this.displayModeLegacyListener);
+      }
+    }
+
+    this.displayModeListener = undefined;
+    this.displayModeLegacyListener = undefined;
+    this.displayModeMediaQuery = null;
+  }
+
+  private injetarManifestoDinamico(): void {
+    if (!this.estaNoNavegador()) {
+      return;
+    }
+
+    const head = this.document.head;
+    if (!head) {
+      return;
+    }
+
+    const href = this.obterHrefManifesto();
+    if (!href) {
+      return;
+    }
+
+    if (this.manifestLinkElement) {
+      this.manifestLinkElement.setAttribute('href', href);
+      return;
+    }
+
+    const link = this.renderer.createElement('link') as HTMLLinkElement;
+    link.setAttribute('rel', 'manifest');
+    link.setAttribute('href', href);
+    link.setAttribute('data-origin', 'cadastro-parceiro');
+    this.renderer.appendChild(head, link);
+    this.manifestLinkElement = link;
+  }
+
+  private removerManifestoDinamico(): void {
+    if (!this.manifestLinkElement || !this.document.head) {
+      return;
+    }
+
+    this.renderer.removeChild(this.document.head, this.manifestLinkElement);
+    this.manifestLinkElement = null;
+  }
+
+  private obterHrefManifesto(): string | null {
+    const caminhoAtual = this.normalizarCaminhoAtual(this.router.url);
+    if (!caminhoAtual.startsWith(this.manifestoScope)) {
+      return null;
+    }
+
+    const startUrl = this.comporStartUrl(caminhoAtual);
+    const parametros = new URLSearchParams();
+    parametros.set('start', startUrl);
+    parametros.set('scope', this.manifestoScope);
+    return `/pwa/manifest?${parametros.toString()}`;
+  }
+
+  private comporStartUrl(caminho: string): string {
+    const origem = this.estaNoNavegador() ? window.location.origin : 'https://dummy.local';
+    const url = new URL(caminho, origem);
+    if (!url.searchParams.has('from')) {
+      url.searchParams.append('from', 'a2hs');
+    }
+    return `${url.pathname}${url.search}${url.hash}`;
+  }
+
+  private normalizarCaminhoAtual(url: string): string {
+    if (!url || url.length === 0) {
+      return '/';
+    }
+    return url.startsWith('/') ? url : `/${url}`;
+  }
+
+  private atualizarEstadoInstalacao(): void {
+    const podeInstalar =
+      this.modoParceiro &&
+      this.caminhoAtualSuportaManifesto() &&
+      !this.estaNoModoStandalone();
+
+    this.mostrarBotaoInstalacao = podeInstalar && !!this.beforeInstallPromptEvent && !this.ehDispositivoIos();
+    this.mostrarInstrucoesInstalacaoIos = podeInstalar && this.ehDispositivoIos();
+  }
+
+  private estaNoModoStandalone(): boolean {
+    if (!this.estaNoNavegador()) {
+      return false;
+    }
+
+    const media = window.matchMedia('(display-mode: standalone)');
+    const standalone = media.matches || (window.navigator as unknown as { standalone?: boolean }).standalone === true;
+    return standalone;
+  }
+
+  private ehDispositivoIos(): boolean {
+    if (!this.estaNoNavegador()) {
+      return false;
+    }
+
+    const userAgent = window.navigator.userAgent.toLowerCase();
+    return /iphone|ipad|ipod/.test(userAgent);
+  }
+
+  private estaNoNavegador(): boolean {
+    return isPlatformBrowser(this.platformId);
   }
 
   private atualizarModoPorParametro(familiaIdParam: string | null): void {
