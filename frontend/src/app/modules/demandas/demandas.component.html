@@ -48,10 +48,10 @@
             <form [formGroup]="formulario" (ngSubmit)="registrarDemanda()" class="space-y-5" autocomplete="off">
               <div class="flex flex-col gap-2">
                 <label class="text-xs font-semibold text-gray-600 uppercase tracking-wide">Família *</label>
-                <div class="flex items-center gap-3">
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
                   <input
                     type="text"
-                    class="flex-1 px-4 py-3 rounded-xl border border-gray-200 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    class="w-full sm:flex-1 px-4 py-3 rounded-xl border border-gray-200 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     [value]="familiaSelecionada ? obterFamiliaNome(familiaSelecionada.id) : ''"
                     placeholder="Selecione a família"
                     readonly
@@ -59,7 +59,7 @@
                   />
                   <button
                     type="button"
-                    class="w-11 h-11 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 transition-all flex items-center justify-center"
+                    class="w-full h-12 sm:w-11 sm:h-11 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 transition-all flex items-center justify-center"
                     (click)="abrirBuscaFamilias()"
                     [disabled]="carregandoFamilias"
                   >
