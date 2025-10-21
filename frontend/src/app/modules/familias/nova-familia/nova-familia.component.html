@@ -1,4 +1,4 @@
-<div class="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-10">
+<div *ngIf="!modoParceiro" class="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-10">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
     <div class="flex flex-col gap-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:py-0">
       <div class="flex flex-wrap items-center gap-3 sm:flex-nowrap sm:gap-4">
@@ -191,6 +191,7 @@
                 placeholder="00000-000"
                 maxlength="9"
                 autocomplete="postal-code"
+                inputmode="numeric"
               />
               <div class="flex items-center space-x-2">
                 <button
@@ -224,6 +225,7 @@
             class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all duration-200"
             [(ngModel)]="enderecoFamilia.numero"
             name="numeroFamilia"
+            inputmode="numeric"
           />
         </div>
 
@@ -434,6 +436,7 @@
                   (ngModelChange)="atualizarTelefoneMembro(i, $event)"
                   name="telefone_{{ i }}"
                   placeholder="(11) 99999-9999"
+                  inputmode="numeric"
                 />
                 <button
                   type="button"
